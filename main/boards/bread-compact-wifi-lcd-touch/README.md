@@ -37,6 +37,11 @@ It extends the stock `bread-compact-wifi-lcd` profile by:
 
 > T_CLK and T_DIN share the SPI3 bus lines with the ILI9341 display. Only
 > the CS pins differ, which is sufficient for SPI bus sharing.
+>
+> **Wiring tip:** Join module pin 6 (SDI/MOSI) and pin 12 (T_DIN) at the
+> same ESP32 GPIO (17). Add a **10 kΩ pull-up on T_CS (GPIO 47)** to 3.3 V
+> so the touch chip stays deselected while the display is drawing. Connect
+> T_IRQ (GPIO 2) — the firmware only reads touch when that line is low.
 
 ---
 

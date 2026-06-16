@@ -12,6 +12,7 @@
 
 #include <esp_log.h>
 #include <esp_timer.h>
+#include <driver/gpio.h>
 #include <driver/i2c_master.h>
 #include <esp_lcd_panel_vendor.h>
 #include <esp_lcd_panel_io.h>
@@ -19,7 +20,6 @@
 #include <driver/spi_common.h>
 #include <esp_lcd_touch.h>
 #include <esp_lcd_touch_xpt2046.h>
-#include <esp_lvgl_port_touch.h>
 
 #if defined(LCD_TYPE_ILI9341_SERIAL)
 #include "esp_lcd_ili9341.h"
@@ -40,6 +40,17 @@ static bool s_was_touched = false;
 static void TouchPollCallback(void* /*arg*/) {
     if (!g_lotusai || !s_touch_handle) return;
 
+    // PENIRQ is active-low: skip SPI when the panel is not touched to avoid
+    // bus contention with the ILI9341 on the shared MOSI/SCK lines.
+    if (gpio_get_level(TOUCH_IRQ_PIN) != 0) {
+        s_was_touched = false;
+        return;
+    }
+
+    auto* display = Board::GetInstance().GetDisplay();
+    if (!display) return;
+
+    DisplayLockGuard lock(display);
     esp_lcd_touch_read_data(s_touch_handle);
 
     uint16_t x[1] = {}, y[1] = {}, strength[1] = {};
@@ -96,7 +107,7 @@ private:
         io_config.cs_gpio_num      = DISPLAY_CS_PIN;
         io_config.dc_gpio_num      = DISPLAY_DC_PIN;
         io_config.spi_mode         = DISPLAY_SPI_MODE;
-        io_config.pclk_hz          = 40 * 1000 * 1000;
+        io_config.pclk_hz          = 26 * 1000 * 1000;
         io_config.trans_queue_depth = 10;
         io_config.lcd_cmd_bits     = 8;
         io_config.lcd_param_bits   = 8;
@@ -146,20 +157,18 @@ private:
 
         ESP_ERROR_CHECK(esp_lcd_touch_new_spi_xpt2046(touch_io, &touch_cfg, &s_touch_handle));
 
-        // Register with LVGL port so it gets polled by the LVGL task
-        lvgl_port_touch_cfg_t lvgl_touch_cfg = {};
-        lvgl_touch_cfg.disp   = lv_display_get_default();
-        lvgl_touch_cfg.handle = s_touch_handle;
-        lvgl_port_add_touch(&lvgl_touch_cfg);
+        // LotusAI uses TouchPollCallback below; do not call lvgl_port_add_touch()
+        // here — it would poll XPT2046 from the LVGL task and fight the display
+        // for the shared SPI bus (white screen flicker).
 
-        // Start a 100 ms timer for tap detection / recipe selection
+        // Start a 200 ms timer for tap detection / recipe selection
         esp_timer_create_args_t timer_args = {};
         timer_args.callback = &TouchPollCallback;
         timer_args.arg      = nullptr;
         timer_args.name     = "lotusai_touch";
         esp_timer_handle_t touch_timer = nullptr;
         ESP_ERROR_CHECK(esp_timer_create(&timer_args, &touch_timer));
-        ESP_ERROR_CHECK(esp_timer_start_periodic(touch_timer, 100 * 1000 /* µs */));
+        ESP_ERROR_CHECK(esp_timer_start_periodic(touch_timer, 200 * 1000 /* µs */));
     }
 
     void InitializeButtons() {
