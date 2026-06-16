@@ -128,6 +128,9 @@ choice BOARD_TYPE
     config BOARD_TYPE_BREAD_COMPACT_WIFI_LCD
         bool "Bread Compact WiFi + LCD (面包板)"
         depends on IDF_TARGET_ESP32S3
+    config BOARD_TYPE_BREAD_COMPACT_WIFI_LCD_TOUCH
+        bool "Bread Compact WiFi + LCD + Touch (面包板 + XPT2046)"
+        depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_BREAD_COMPACT_WIFI_CAM
         bool "Bread Compact WiFi + LCD + Camera (面包板)"
         depends on IDF_TARGET_ESP32S3
@@ -619,7 +622,7 @@ choice DISPLAY_OLED_TYPE
 endchoice
 
 choice DISPLAY_LCD_TYPE
-    depends on BOARD_TYPE_BREAD_COMPACT_WIFI_LCD || BOARD_TYPE_BREAD_COMPACT_ESP32_LCD || BOARD_TYPE_CGC || BOARD_TYPE_BREAD_COMPACT_WIFI_CAM
+    depends on BOARD_TYPE_BREAD_COMPACT_WIFI_LCD || BOARD_TYPE_BREAD_COMPACT_WIFI_LCD_TOUCH || BOARD_TYPE_BREAD_COMPACT_ESP32_LCD || BOARD_TYPE_CGC || BOARD_TYPE_BREAD_COMPACT_WIFI_CAM
     prompt "LCD Type"
     default LCD_ST7789_240X320
     help
@@ -982,5 +985,20 @@ menu "TAIJIPAI_S3_CONFIG"
     help
         启动双声道
 endmenu
+
+config LOTUSAI_BASE_URL
+    string "LotusAI backend base URL"
+    default "https://lotusfoodasmedicine.com"
+    help
+        Base URL for /api/xiaozhi/recommend and /api/xiaozhi/select.
+        Change to http://192.168.x.x:8000 for local development.
+
+config LOTUSAI_TOP_K
+    int "Default recipe suggestions (when user does not specify)"
+    default 3
+    range 3 12
+    help
+        Fallback top_k value when the user does not specify a count.
+        The LLM can override this at runtime via the top_k MCP parameter (3-12).
 
 endmenu
