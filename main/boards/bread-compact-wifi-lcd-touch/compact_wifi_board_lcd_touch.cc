@@ -9,6 +9,7 @@
 #include "mcp_server.h"
 #include "lotusai_controller.h"
 #include "led/single_led.h"
+#include "medicine_reminder.h"
 
 #include <esp_log.h>
 #include <esp_timer.h>
@@ -185,6 +186,8 @@ private:
     void InitializeTools() {
         static LotusAiController lotusai;
         g_lotusai = &lotusai;
+
+        static MedicineReminderController medicine_reminder;
     }
 
 public:
