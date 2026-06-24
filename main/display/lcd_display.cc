@@ -846,6 +846,27 @@ void LcdDisplay::SetupUI() {
     lv_obj_center(emoji_image_);
     lv_obj_add_flag(emoji_image_, LV_OBJ_FLAG_HIDDEN);
 
+    /* LotusAI content panel - persistent recipe list / QR label area.
+     * Must be created BEFORE preview_image_ so the QR overlay is drawn on top of it.
+     * Y offset matches LOTUSAI_CONTENT_Y_OFFSET (lotusai_utils.h). */
+    lotusai_panel_ = lv_obj_create(screen);
+    lv_obj_set_size(lotusai_panel_, LV_HOR_RES, height_ - 80);
+    lv_obj_set_pos(lotusai_panel_, 0, 80);
+    lv_obj_set_style_radius(lotusai_panel_, 0, 0);
+    lv_obj_set_style_bg_opa(lotusai_panel_, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(lotusai_panel_, 0, 0);
+    lv_obj_set_style_pad_all(lotusai_panel_, lvgl_theme->spacing(4), 0);
+    lv_obj_set_scrollbar_mode(lotusai_panel_, LV_SCROLLBAR_MODE_OFF);
+
+    lotusai_content_label_ = lv_label_create(lotusai_panel_);
+    lv_label_set_text(lotusai_content_label_, "");
+    lv_obj_set_width(lotusai_content_label_, LV_HOR_RES - lvgl_theme->spacing(8));
+    lv_label_set_long_mode(lotusai_content_label_, LV_LABEL_LONG_WRAP);
+    lv_obj_set_style_text_color(lotusai_content_label_, lvgl_theme->text_color(), 0);
+    lv_obj_set_style_text_align(lotusai_content_label_, LV_TEXT_ALIGN_LEFT, 0);
+    lv_obj_align(lotusai_content_label_, LV_ALIGN_TOP_LEFT, 0, 0);
+    lv_obj_add_flag(lotusai_panel_, LV_OBJ_FLAG_HIDDEN);
+
     /* Middle layer: preview_image_ - centered display */
     preview_image_ = lv_image_create(screen);
     lv_obj_set_size(preview_image_, width_ / 2, height_ / 2);
@@ -1068,8 +1089,25 @@ void LcdDisplay::ClearChatMessages() {
     if (bottom_bar_ != nullptr) {
         lv_obj_add_flag(bottom_bar_, LV_OBJ_FLAG_HIDDEN);
     }
+    if (lotusai_content_label_ != nullptr) {
+        lv_label_set_text(lotusai_content_label_, "");
+    }
+    if (lotusai_panel_ != nullptr) {
+        lv_obj_add_flag(lotusai_panel_, LV_OBJ_FLAG_HIDDEN);
+    }
 }
 #endif
+
+void LcdDisplay::SetLotusContent(const char* content) {
+    if (lotusai_panel_ == nullptr || lotusai_content_label_ == nullptr) return;
+    DisplayLockGuard lock(this);
+    lv_label_set_text(lotusai_content_label_, content);
+    if (content == nullptr || content[0] == '\0') {
+        lv_obj_add_flag(lotusai_panel_, LV_OBJ_FLAG_HIDDEN);
+    } else {
+        lv_obj_remove_flag(lotusai_panel_, LV_OBJ_FLAG_HIDDEN);
+    }
+}
 
 void LcdDisplay::SetEmotion(const char* emotion) {
     if (!setup_ui_called_) {

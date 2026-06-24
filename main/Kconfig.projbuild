@@ -750,6 +750,15 @@ config USE_MULTILINE_CHAT_MESSAGE
         When disabled (default), a single-line horizontally scrolling label
         is shown at the bottom of the screen.
 
+config PREVIEW_IMAGE_DURATION_MS
+    int "Preview image display duration in ms (safety fallback)"
+    default 300000
+    help
+        Maximum time in milliseconds the QR/preview image overlay stays visible
+        before auto-hiding. With the LotusAI voice-confirmation flow this acts
+        only as a safety net; 300000 (5 minutes) gives ample time for the user
+        to scan the QR code before the device auto-clears it.
+
 choice WAKE_WORD_TYPE
     prompt "Wake Word Implementation Type"
     default USE_AFE_WAKE_WORD if (IDF_TARGET_ESP32S3 || IDF_TARGET_ESP32P4) && SPIRAM

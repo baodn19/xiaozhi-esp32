@@ -73,14 +73,14 @@ private:
 
     static void ShowRecipeMenu(const std::string& formatted) {
         auto* display = Board::GetInstance().GetDisplay();
-        if (display) display->SetChatMessage("assistant", formatted.c_str());
+        if (display) display->SetLotusContent(formatted.c_str());
     }
 
     static void ShowQrCode(const std::string& qr_base64, const std::string& title) {
         auto* display = Board::GetInstance().GetDisplay();
         if (!display) return;
 
-        display->SetChatMessage("assistant", ("QR: " + title).c_str());
+        display->SetLotusContent(("QR: " + title).c_str());
 
         size_t png_len = 0;
         uint8_t* png_data = DecodeBase64(qr_base64, png_len);
@@ -98,6 +98,14 @@ private:
             ESP_LOGE(LOTUSAI_TAG, "QR image error: %s", e.what());
             heap_caps_free(png_data);
         }
+    }
+
+    static void DismissQr() {
+        auto* display = Board::GetInstance().GetDisplay();
+        if (!display) return;
+        display->SetLotusContent("");
+        auto* lvgl_disp = dynamic_cast<LvglDisplay*>(display);
+        if (lvgl_disp) lvgl_disp->SetPreviewImage(nullptr);
     }
 
     std::string DoRecommend(const PropertyList& props) {
@@ -194,6 +202,17 @@ public:
                 return SelectByIndex(props["option"].value<int>() - 1);
             }
         );
+
+        mcp.AddTool(
+            "lotusai.confirm_qr",
+            "Call this when the user confirms they have successfully scanned the QR code. "
+            "Hides the QR overlay and clears the recipe display.",
+            PropertyList(std::vector<Property>{}),
+            [](const PropertyList&) -> ReturnValue {
+                DismissQr();
+                return "The QR code has been dismissed. Enjoy your recipe!";
+            }
+        );
     }
 
     std::string SelectByIndex(int idx) {
@@ -240,9 +259,10 @@ public:
             ShowQrCode(qr_base64, title);
         }
 
-        return spoken_confirm.empty()
+        std::string response = spoken_confirm.empty()
             ? ("Here is the QR code for " + title + ".")
             : spoken_confirm;
+        return response + " Please let me know when you have finished scanning the QR code.";
     }
 
     int OptionFromPoint(int /*x*/, int y) const {

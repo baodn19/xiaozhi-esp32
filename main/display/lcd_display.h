@@ -11,7 +11,7 @@
 #include <atomic>
 #include <memory>
 
-#define PREVIEW_IMAGE_DURATION_MS 5000
+#define PREVIEW_IMAGE_DURATION_MS CONFIG_PREVIEW_IMAGE_DURATION_MS
 
 
 class LcdDisplay : public LvglDisplay {
@@ -35,6 +35,8 @@ protected:
     esp_timer_handle_t preview_timer_ = nullptr;
     std::unique_ptr<LvglImage> preview_image_cached_ = nullptr;
     bool hide_subtitle_ = false;  // Control whether to hide chat messages/subtitles
+    lv_obj_t* lotusai_panel_ = nullptr;
+    lv_obj_t* lotusai_content_label_ = nullptr;
 
     void InitializeLcdThemes();
     virtual bool Lock(int timeout_ms = 0) override;
@@ -49,6 +51,7 @@ public:
     virtual void SetEmotion(const char* emotion) override;
     virtual void SetChatMessage(const char* role, const char* content) override;
     virtual void ClearChatMessages() override;
+    virtual void SetLotusContent(const char* content) override;
     virtual void SetPreviewImage(std::unique_ptr<LvglImage> image) override;
     virtual void SetupUI() override;
     // Add theme switching function
