@@ -21,3 +21,6 @@ mmap_generate_*.h
 
 # Local documentation
 docs/
+
+# venv
+scripts/acoustic_check/audio_debug
