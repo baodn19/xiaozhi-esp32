@@ -813,6 +813,17 @@ config CUSTOM_WAKE_WORD_THRESHOLD
     help
         Custom Wake Word Threshold, range 1-99, the smaller the more sensitive, default 20
 
+config CUSTOM_WAKE_WORD_DEBUG_THRESHOLD
+    int "Debug: Override Custom Assets Threshold (%)"
+    default 0
+    range 0 99
+    depends on USE_CUSTOM_WAKE_WORD
+    help
+        Set to non-zero to override the threshold in assets.bin index.json at runtime.
+        0 = disabled (use value from assets.bin).
+        Try 20-30 to test if detection works at all before tuning the model.
+        Leave at 0 for production.
+
 config SEND_WAKE_WORD_DATA
     bool "Send Wake Word Data"
     default y
@@ -889,7 +900,7 @@ endmenu
 
 config AUDIO_DEBUG_UDP_SERVER
     string "Audio Debug UDP Server Address"
-    default "192.168.2.100:8000"
+    default "10.253.106.97:8000"
     depends on USE_AUDIO_DEBUGGER
     help
         UDP server address, format: IP:PORT, used to receive audio debugging data
