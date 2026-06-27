@@ -6,6 +6,14 @@ Firmware setup: enable `USE_AUDIO_DEBUGGER` and set `AUDIO_DEBUG_UDP_SERVER` to 
 
 For acoustic demod testing, use `sonic_wifi_config.html` or the PinMe-hosted [Xiaozhi acoustic Wi-Fi provisioning](https://iqf7jnhi.pinit.eth.limo) page to generate test tones.
 
+## Custom wake word (MultiNet6)
+
+When testing NanaBot's custom wake word, speak into the **ESP32 mic**, not the PC mic.
+
+The MultiNet6 model was trained on **"NA NA BOT"** (three syllables, spaces between them). Say it like **"NAH — NAH — BOT"** — slow, clear syllables with ~0.5 s pause between words. Do not say **"nanabot"** as one run-together word. Slow, deliberate speech is more consistent.
+
+See [`main/assets/nanabot/README.md`](../../main/assets/nanabot/README.md) for assets configuration and troubleshooting.
+
 # Acoustic decode test log
 
 > `✓` = decodes successfully from raw I2S DIN PCM. `△` = stable only with noise reduction or extra steps. `X` = poor even after noise reduction (may decode occasionally but is very unstable).

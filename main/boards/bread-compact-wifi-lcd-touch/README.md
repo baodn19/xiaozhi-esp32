@@ -45,6 +45,17 @@ It extends the stock `bread-compact-wifi-lcd` profile by:
 
 ---
 
+## NanaBot custom wake word
+
+NanaBot uses a custom MultiNet6 pack in `main/assets/nanabot/assets.bin`. See
+[`main/assets/nanabot/README.md`](../../assets/nanabot/README.md) for flashing and tuning.
+
+**Pronunciation:** The model expects three separate syllables, not one blended word.
+Say **"NAH — NAH — BOT"** with ~0.5 s pauses between words. Do **not** say
+"nanabot" as a single word. Slow, deliberate speech improves consistency.
+
+---
+
 ## Build & Flash
 
 ```bash
