@@ -19,7 +19,7 @@
 #define AUDIO_CODEC_ES8311_ADDR  ES8311_CODEC_DEFAULT_ADDR
 #define AUDIO_CODEC_ES7210_ADDR  0x82
 
-// GPIO1 拉低用于使能板载音频功放
+// Pull GPIO1 low to enable on-board audio PA
 #define AUDIO_PA_ENABLE_PIN      GPIO_NUM_1
 
 #define BUILTIN_LED_GPIO        GPIO_NUM_NC
@@ -32,14 +32,14 @@
 #define DISPLAY_DC_PIN          GPIO_NUM_46
 #define DISPLAY_SPI_CS_PIN      GPIO_NUM_10
 
-/******横屏显示******/
+/****** Landscape display ******/
 #define DISPLAY_WIDTH   320
 #define DISPLAY_HEIGHT  240
 #define DISPLAY_MIRROR_X false
 #define DISPLAY_MIRROR_Y true
 #define DISPLAY_SWAP_XY true
 
-/******竖屏显示（可选）******/
+/****** Portrait display (optional) ******/
 /*
 #define DISPLAY_WIDTH   240
 #define DISPLAY_HEIGHT  320

@@ -113,10 +113,10 @@ public:
         xl9535_->pin_mode(XL9535_ESP32P4_VCCA_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
         xl9535_->pin_mode(XL9535_5_0_V_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
         xl9535_->pin_mode(XL9535_3_3_V_POWER_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
-        // 开关3.3v电压时候必须先将GPS断电
+        // Power off GPS before toggling 3.3V
         xl9535_->pin_mode(XL9535_GPS_WAKE_UP, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
         xl9535_->pin_write(XL9535_GPS_WAKE_UP, Cpp_Bus_Driver::Xl95x5::Value::LOW);
-        // 开关3.3v电压时候必须先将ESP32C6断电
+        // Power off ESP32-C6 before toggling 3.3V
         xl9535_->pin_mode(XL9535_ESP32C6_EN, Cpp_Bus_Driver::Xl95x5::Mode::OUTPUT);
         xl9535_->pin_write(XL9535_ESP32C6_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
 
@@ -136,7 +136,7 @@ public:
         xl9535_->pin_write(XL9535_3_3_V_POWER_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
         vTaskDelay(pdMS_TO_TICKS(10));
 
-        // ESP32C6复位
+        // Reset ESP32-C6
         xl9535_->pin_write(XL9535_ESP32C6_EN, Cpp_Bus_Driver::Xl95x5::Value::HIGH);
         vTaskDelay(pdMS_TO_TICKS(100));
         xl9535_->pin_write(XL9535_ESP32C6_EN, Cpp_Bus_Driver::Xl95x5::Value::LOW);
@@ -354,23 +354,23 @@ void TouchTask(void *arg) {
             size_t current_time = board->esp32p4_->get_system_time_ms();
             
             if (!waiting_for_second_tap) {
-                // 第一次点击
+                // First click
                 first_touch_time = current_time;
                 waiting_for_second_tap = true;
                 printf("first touch detected, waiting for second...\n");
             } else {
-                // 第二次点击，检查时间间隔
-                // 500ms内完成双击
+                // Second click; check interval
+                // Double-click within 500ms
                 if ((current_time - first_touch_time) <= 500) {
                     printf("double touch trigger\n");
 
                     board->AppToggleChatState();
                     
-                    // 重置状态
+                    // Reset state
                     waiting_for_second_tap = false;
                     first_touch_time = 0;
                 } else {
-                    // 超时，重新开始
+                    // Timeout; restart
                     first_touch_time = current_time;
                     printf("first touch timeout, restart...\n");
                 }
@@ -379,7 +379,7 @@ void TouchTask(void *arg) {
             touch_lock_flag = true;
         }
         
-        // 处理双击超时
+        // Handle double-click timeout
         if (waiting_for_second_tap) {
             size_t current_time = board->esp32p4_->get_system_time_ms();
 

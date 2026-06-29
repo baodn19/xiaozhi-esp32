@@ -93,12 +93,12 @@ private:
             GetDisplay()->ShowNotification(Lang::Strings::MUTED);
         });
 
-        //不插耳机
+        // Headphones not plugged in
         phone_button_.OnPressDown([this]() {
             gpio_set_level(SPK_EN_PIN, 1);
         });
 
-        //插入耳机
+        // Headphones plugged in
         phone_button_.OnPressUp([this]() {
             gpio_set_level(SPK_EN_PIN, 0);
         });
@@ -107,7 +107,7 @@ private:
     void InitializeSt7735Display() {
         esp_lcd_panel_io_handle_t panel_io = nullptr;
         esp_lcd_panel_handle_t panel = nullptr;
-        // 液晶屏控制IO初始化
+        // Initialize LCD control IO
         ESP_LOGD(TAG, "Install panel IO");
         esp_lcd_panel_io_spi_config_t io_config = {};
         io_config.cs_gpio_num = LCD_CS_PIN;
@@ -119,7 +119,7 @@ private:
         io_config.lcd_param_bits = 8;
         esp_lcd_new_panel_io_spi(SPI2_HOST, &io_config, &panel_io);
 
-        // 初始化液晶屏驱动芯片ST7735
+        // Initialize LCD driver chipST7735
         ESP_LOGD(TAG, "Install LCD driver");
         esp_lcd_panel_dev_config_t panel_config = {};
         panel_config.reset_gpio_num = LCD_RST_PIN;
@@ -128,7 +128,7 @@ private:
         panel_config.data_endian = LCD_RGB_DATA_ENDIAN_BIG,
         esp_lcd_new_panel_st7789(panel_io, &panel_config, &panel);
         
-        //使能功放引脚
+        // Enable PA pin
         gpio_config_t io_conf;
         io_conf.intr_type = GPIO_INTR_DISABLE;
         io_conf.mode = GPIO_MODE_OUTPUT;
@@ -138,7 +138,7 @@ private:
         gpio_config(&io_conf);
         gpio_set_level(SPK_EN_PIN, 0);
 
-        //检测耳机是否插入，插入时为高电平
+        // Detect headphone insertion (high when plugged in)
         io_conf.intr_type = GPIO_INTR_DISABLE;
         io_conf.mode = GPIO_MODE_INPUT;
         io_conf.pin_bit_mask = (1ULL << PHONE_CK_PIN);
@@ -146,7 +146,7 @@ private:
         io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
         gpio_config(&io_conf);
 
-        //耳机插入
+        // Headphone inserted
         if (gpio_get_level(PHONE_CK_PIN)) {
             gpio_set_level(SPK_EN_PIN, 1);
         }

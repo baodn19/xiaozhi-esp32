@@ -44,9 +44,9 @@
 /* Camera pins */
 #define CAMERA_PIN_PWDN GPIO_NUM_NC
 #define CAMERA_PIN_RESET GPIO_NUM_NC
-#define CAMERA_PIN_XCLK  GPIO_NUM_NC // 像素时钟 (固定由 20MHz 外部晶振输入) 
-#define CAMERA_PIN_SIOD GPIO_NUM_NC  // 串行时钟 Using existing I2C port
-#define CAMERA_PIN_SIOC GPIO_NUM_NC  // 串行时钟 Using existing I2C port
+#define CAMERA_PIN_XCLK  GPIO_NUM_NC // Pixel clock (fixed 20MHz external crystal input) 
+#define CAMERA_PIN_SIOD GPIO_NUM_NC  // Serial clock; using existing I2C port
+#define CAMERA_PIN_SIOC GPIO_NUM_NC  // Serial clock; using existing I2C port
 #define CAMERA_PIN_D0 GPIO_NUM_39
 #define CAMERA_PIN_D1 GPIO_NUM_40
 #define CAMERA_PIN_D2 GPIO_NUM_41

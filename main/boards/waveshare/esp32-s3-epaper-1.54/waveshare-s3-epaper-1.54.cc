@@ -60,7 +60,7 @@ class CustomBoard : public WifiBoard {
 
     void InitializeTools() {
         auto &mcp_server = McpServer::GetInstance();
-        mcp_server.AddTool("self.disp.network", "重新配网", PropertyList(), [this](const PropertyList &) -> ReturnValue {
+        mcp_server.AddTool("self.disp.network", "Reconfigure network", PropertyList(), [this](const PropertyList &) -> ReturnValue {
             EnterWifiConfigMode();
             return true;
         });

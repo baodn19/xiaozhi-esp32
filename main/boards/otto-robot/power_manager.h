@@ -8,7 +8,7 @@
 
 class PowerManager {
 private:
-    // 电池电量区间-分压电阻为2个100k
+    // Battery levels - voltage divider uses two 100k resistors
     static constexpr struct {
         uint16_t adc;
         uint8_t level;
@@ -25,12 +25,12 @@ private:
     size_t adc_values_count_ = 0;
     uint8_t battery_level_ = 100;
     bool is_charging_ = false;
-    inline static bool battery_update_paused_ = false;  // 静态标志：是否暂停电量更新
+    inline static bool battery_update_paused_ = false;  // Static flag: battery update paused
 
     adc_oneshot_unit_handle_t adc_handle_;
 
     void CheckBatteryStatus() {
-      // 如果电量更新被暂停（动作进行中），则跳过更新
+      // Skip update when battery updates are paused (action in progress)
       if (battery_update_paused_) {
         return;
       }
@@ -62,7 +62,7 @@ private:
 
         CalculateBatteryLevel(average_adc);
 
-        // ESP_LOGI("PowerManager", "ADC值: %d 平均值: %ld 电量: %u%%", adc_value, average_adc,
+        // ESP_LOGI("PowerManager", "ADC value: %d average: %ld level: %u%%", adc_value, average_adc,
         //          battery_level_);
     }
 
@@ -91,9 +91,9 @@ public:
         io_conf.pull_down_en = GPIO_PULLDOWN_DISABLE;
         io_conf.pull_up_en = GPIO_PULLUP_ENABLE;
         gpio_config(&io_conf);
-        ESP_LOGI("PowerManager", "充电检测引脚配置完成: GPIO%d", charging_pin_);
+        ESP_LOGI("PowerManager", "Charging detect pin configured: GPIO%d", charging_pin_);
       } else {
-        ESP_LOGI("PowerManager", "充电检测引脚未配置，不进行充电状态检测");
+        ESP_LOGI("PowerManager", "Charging detect pin not configured; skipping charging state detection");
       }
 
         esp_timer_create_args_t timer_args = {
@@ -108,7 +108,7 @@ public:
             .skip_unhandled_events = true,
         };
         ESP_ERROR_CHECK(esp_timer_create(&timer_args, &timer_handle_));
-        ESP_ERROR_CHECK(esp_timer_start_periodic(timer_handle_, 1000000));  // 1秒
+        ESP_ERROR_CHECK(esp_timer_start_periodic(timer_handle_, 1000000));  // 1 second
 
         InitializeAdc();
     }
@@ -144,7 +144,7 @@ public:
 
     uint8_t GetBatteryLevel() { return battery_level_; }
 
-    // 暂停/恢复电量更新（用于动作执行时屏蔽更新）
+    // Pause/resume battery updates during actions
     static void PauseBatteryUpdate() { battery_update_paused_ = true; }
     static void ResumeBatteryUpdate() { battery_update_paused_ = false; }
 };

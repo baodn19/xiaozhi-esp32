@@ -51,13 +51,13 @@ private:
             return;
         }
 
-        // 如果电池电量数据不足，则读取电池电量数据
+        // Read battery level when not enough samples
         if (adc_values_.size() < kBatteryAdcDataCount) {
             ReadBatteryAdcData();
             return;
         }
 
-        // 如果电池电量数据充足，则每 kBatteryAdcInterval 个 tick 读取一次电池电量数据
+        // When enough samples exist, read battery every kBatteryAdcInterval ticks
         ticks_++;
         if (ticks_ % kBatteryAdcInterval == 0) {
             ReadBatteryAdcData();
@@ -78,7 +78,7 @@ private:
 public:
     PowerManager(gpio_num_t pin) : charging_pin_(pin) {
         power_controller_ = &PowerController::Instance();
-        // 初始化充电引脚
+        // Initialize charging detect pin
         gpio_config_t io_conf = {};
         io_conf.intr_type = GPIO_INTR_DISABLE;
         io_conf.mode = GPIO_MODE_INPUT;
@@ -87,7 +87,7 @@ public:
         io_conf.pull_up_en = GPIO_PULLUP_DISABLE;     
         gpio_config(&io_conf);
 
-        // 创建电池电量检查定时器
+        // Create battery monitoring timer
         esp_timer_create_args_t timer_args = {
             .callback = [](void* arg) {
                 PowerManager* self = static_cast<PowerManager*>(arg);
@@ -140,16 +140,16 @@ public:
     }
 
     bool IsCharging() {
-        // 如果电量已经满了，则不再显示充电中
+        // Do not show charging when battery is full
         if (battery_level_ == 100) {
-            //ESP_LOGI(TAG, "电量已满，不再显示充电中");
+            //ESP_LOGI(TAG, "Battery full, not showing charging");
             return false;
         }
         return is_charging_;
     }
 
     bool IsDischarging() {
-        // 没有区分充电和放电，所以直接返回相反状态
+        // Charging/discharging not distinguished; return inverted state
         return !is_charging_;
     }
 
@@ -158,23 +158,23 @@ public:
     }
 
     void RegisterAllCallbacks() {
-        //注册电源状态变更回调函数（优化版）
+        // Register power state change callback (optimized)
         power_controller_->OnStateChange([this](PowerState newState) {
             switch(newState) {
                 case PowerState::SHUTDOWN: {
 
-                    ESP_LOGD(TAG, "关机");
+                    ESP_LOGD(TAG, "Power off");
                     
-                //取消 PWR_EN 使能
-                    /* 防止关机后误唤醒 */
+                // Disable PWR_EN
+                    /* Prevent accidental wake after shutdown */
                     ESP_ERROR_CHECK(esp_sleep_enable_ext0_wakeup(PWR_BUTTON_GPIO, 0));
-                    ESP_ERROR_CHECK(rtc_gpio_pulldown_en(PWR_BUTTON_GPIO)); // 内部下拉
+                    ESP_ERROR_CHECK(rtc_gpio_pulldown_en(PWR_BUTTON_GPIO)); // Internal pulldown
                     ESP_ERROR_CHECK(rtc_gpio_pullup_dis(PWR_BUTTON_GPIO));
-                    /* 关闭电源使能 */
+                    /* Disable power enable */
                     rtc_gpio_set_level(PWR_EN_GPIO, 0);
                     rtc_gpio_hold_dis(PWR_EN_GPIO);
                     
-                    // 确保所有外设已关闭
+                    // Ensure all peripherals are off
                     vTaskDelay(200 / portTICK_PERIOD_MS);
                     ESP_LOGI(TAG, "Initiating deep sleep");
 

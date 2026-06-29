@@ -1,63 +1,56 @@
 # ESP-Spot
 
-## 简介
+## Introduction
 
 <div align="center">
-    <a href="https://oshwhub.com/esp-college/esp-spot"><b> 立创开源平台 </b></a>
-    |
-    <a href="https://www.bilibili.com/video/BV1ekRAYVEZ1/"><b> Bilibili Demo </b></a>
+    <a href="https://oshwhub.com/esp-college/esp-spot"><b> LCSC Open Source </b></a>
 </div>
 
-ESP-Spot 是 ESP Friends 开源的一款智能语音交互盒子，内置麦克风、扬声器、IMU 惯性传感器，可使用电池供电。ESP-Spot 不带屏幕，带有一个 RGB 指示灯和两个按钮。硬件详情可查看[立创开源项目](https://oshwhub.com/esp-college/esp-spot)。
+ESP-Spot is a smart voice interaction box from ESP Friends with microphone, speaker, and IMU; it can run on battery. There is no screen; it has an RGB indicator and two buttons. See the [LCSC project](https://oshwhub.com/esp-college/esp-spot) for hardware details.
 
-ESP-Spot 开源项目采用 ESP32-S3-WROOM-1-N16R8 模组或 ESP32-C5-WROOM-1-N8R8。如在复刻时使用了其他大小的 Flash，需修改对应的参数。
+The reference design uses ESP32-S3-WROOM-1-N16R8 or ESP32-C5-WROOM-1-N8R8. If you use a different Flash size, update the corresponding parameters.
 
+## Configuration and build
 
-## 配置、编译命令
-
-**配置编译目标**
+**Set build target**
 
 ```bash
-idf.py set-target esp32s3 # Spot S3
+idf.py set-target esp32s3
 # or
-idf.py set-target esp32c5 # Spot C5
+idf.py set-target esp32c5
 ```
 
-**打开 menuconfig 并配置**
+**Open menuconfig**
 
 ```bash
 idf.py menuconfig
 ```
 
-分别配置如下选项：
+Configure:
 
-- `Xiaozhi Assistant` → `Board Type` → 选择 `ESP-Spot-S3` / `ESP-Spot-C5`
+- `Xiaozhi Assistant` → `Board Type` → `ESP-Spot-S3` / `ESP-Spot-C5`
 
-按 `S` 保存，按 `Q` 退出。
+Press `S` to save, `Q` to quit.
 
-**编译**
+**Build**
 
 ```bash
 idf.py build
 ```
 
-**烧录**
+**Flash**
 
 ```bash
 idf.py flash
 ```
 
-> [!TIP]
+> **If the PC never finds the ESP-Spot serial port:**
+> 1. Open the front cover;
+> 2. Remove the PCB with the module;
+> 3. Hold <kbd>BOOT</kbd> while reinserting the PCB (do not reverse polarity);
 >
-> **若电脑始终无法找到 ESP-Spot 串口，可尝试如下步骤**
-> 1. 打开前盖；
-> 2. 拔出带有模组的 PCB 板；
-> 3. 按住 <kbd>BOOT</kbd> 同时插回 PCB 版，注意不要颠倒；
-> 
-> 此时， ESP-Spot 应当已进入下载模式。在烧录完成后，可能需要重新插拔 PCB 板。
+> ESP-Spot should enter download mode. You may need to reseat the PCB after flashing.
 
-## 低功耗
+## Low power
 
-ESP-Spot 支持 Deep Sleep 低功耗模式。
-
-当处于 idle 状态 10 分钟后，ESP-Spot 会自动进入 Deep Sleep 模式，按 Key 键或摇晃 ESP-Spot 即可唤醒。
+ESP-Spot supports Deep Sleep. After 10 minutes idle, it enters Deep Sleep; press the key or shake the device to wake.

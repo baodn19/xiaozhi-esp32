@@ -21,7 +21,7 @@
 #define XL9535_SDA IIC_1_SDA
 #define XL9535_SCL IIC_1_SCL
 #define XL9535_INT 5
-// XL9535引脚功能
+// XL9535 pin functions
 #define XL9535_3_3_V_POWER_EN Cpp_Bus_Driver::Xl95x5::Pin::IO0
 #define XL9535_SKY13453_VCTL Cpp_Bus_Driver::Xl95x5::Pin::IO1
 #define XL9535_SCREEN_RST Cpp_Bus_Driver::Xl95x5::Pin::IO2

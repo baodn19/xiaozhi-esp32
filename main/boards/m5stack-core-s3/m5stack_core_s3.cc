@@ -195,22 +195,22 @@ private:
     void PollTouchpad() {
         static bool was_touched = false;
         static int64_t touch_start_time = 0;
-        const int64_t TOUCH_THRESHOLD_MS = 500;  // 触摸时长阈值，超过500ms视为长按
+        const int64_t TOUCH_THRESHOLD_MS = 500;  // Touch duration threshold; >500ms counts as long press
         
         ft6336_->UpdateTouchPoint();
         auto& touch_point = ft6336_->GetTouchPoint();
         
-        // 检测触摸开始
+        // Detect touch start
         if (touch_point.num > 0 && !was_touched) {
             was_touched = true;
-            touch_start_time = esp_timer_get_time() / 1000; // 转换为毫秒
+            touch_start_time = esp_timer_get_time() / 1000; // Convert to milliseconds
         } 
-        // 检测触摸释放
+        // Detect touch release
         else if (touch_point.num == 0 && was_touched) {
             was_touched = false;
             int64_t touch_duration = (esp_timer_get_time() / 1000) - touch_start_time;
             
-            // 只有短触才触发
+            // Trigger only on short tap
             if (touch_duration < TOUCH_THRESHOLD_MS) {
                 auto& app = Application::GetInstance();
                 if (app.GetDeviceState() == kDeviceStateStarting) {
@@ -226,7 +226,7 @@ private:
         ESP_LOGI(TAG, "Init FT6336");
         ft6336_ = new Ft6336(i2c_bus_, 0x38);
         
-        // 创建定时器，20ms 间隔
+        // Create timer with 20ms interval
         esp_timer_create_args_t timer_args = {
             .callback = [](void* arg) {
                 M5StackCoreS3Board* board = (M5StackCoreS3Board*)arg;

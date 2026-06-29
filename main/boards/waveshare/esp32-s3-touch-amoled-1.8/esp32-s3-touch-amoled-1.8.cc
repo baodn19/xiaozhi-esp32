@@ -69,7 +69,7 @@ static const sh8601_lcd_init_cmd_t vendor_specific_init[] = {
     {0x29, (uint8_t[]){0x00}, 0, 10}
 };
 
-// 在waveshare_amoled_1_8类之前添加新的显示类
+// Add new display class before waveshare_amoled_1_8
 class CustomLcdDisplay : public SpiLcdDisplay {
 public:
     CustomLcdDisplay(esp_lcd_panel_io_handle_t io_handle,
@@ -280,7 +280,7 @@ private:
         esp_lcd_panel_io_handle_t panel_io = nullptr;
         esp_lcd_panel_handle_t panel = nullptr;
 
-        // 液晶屏控制IO初始化
+        // Initialize LCD control IO
         ESP_LOGD(TAG, "Install panel IO");
         esp_lcd_panel_io_spi_config_t io_config = SH8601_PANEL_IO_QSPI_CONFIG(
             EXAMPLE_PIN_NUM_LCD_CS,
@@ -289,7 +289,7 @@ private:
         );
         ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(SPI2_HOST, &io_config, &panel_io));
 
-        // 初始化液晶屏驱动芯片
+        // Initialize LCD driver IC
         ESP_LOGD(TAG, "Install LCD driver");
         const sh8601_vendor_config_t vendor_config = {
             .init_cmds = &vendor_specific_init[0],
@@ -359,7 +359,7 @@ private:
         ESP_LOGI(TAG, "Touch panel initialized successfully");
     }
 
-    // 初始化工具
+    // Initialize tools
     void InitializeTools() {
         auto &mcp_server = McpServer::GetInstance();
         mcp_server.AddTool("self.system.reconfigure_wifi",

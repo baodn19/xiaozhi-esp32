@@ -157,7 +157,7 @@ private:
         EXAMPLE_LCD_H_RES, EXAMPLE_LCD_V_RES, DISPLAY_OFFSET_X, DISPLAY_OFFSET_Y, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y, DISPLAY_SWAP_XY);
     }
 
-    void InitializeButtons() { //接入锂电池时,可长按PWR开机/关机
+    void InitializeButtons() { // With LiPo connected, long-press PWR to power on/off
         boot_button_.OnClick([this]() {
             auto& app = Application::GetInstance();
             if (app.GetDeviceState() == kDeviceStateStarting) {
@@ -236,7 +236,7 @@ private:
     void InitializeTools()
     {
         auto& mcp_server = McpServer::GetInstance();
-        mcp_server.AddTool("self.disp.setbacklight", "设置屏幕亮度", PropertyList({
+        mcp_server.AddTool("self.disp.setbacklight", "Set screen brightness", PropertyList({
             Property("level", kPropertyTypeInteger, 0, 255)
         }), [this](const PropertyList& properties) -> ReturnValue {
             int level = properties["level"].value<int>();

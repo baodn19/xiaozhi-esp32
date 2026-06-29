@@ -1,25 +1,25 @@
-# 编译配置命令
+# Build Configuration
 
-**配置编译目标为 ESP32S3：**
+**Set build target to ESP32S3:**
 
 ```bash
 idf.py set-target esp32s3
 ```
 
-**打开 menuconfig：**
+**Open menuconfig:**
 
 ```bash
 idf.py menuconfig
 ```
 
-**选择板子：**
+**Select board:**
 
 ```
 Xiaozhi Assistant -> Board Type -> LILYGO T-Circle-S3
 ```
 
 
-**编译：**
+**Build:**
 
 ```bash
 idf.py build

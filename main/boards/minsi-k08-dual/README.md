@@ -1,5 +1,5 @@
 
-minsi-k08-wifi和minsi-k08-ml307是敏思科技推出的基于ESP32S3N16R8，搭载MAX98357音频功率放大器和INMP441全向麦克风模块，通过改造K08透明机甲小钢炮音箱而成的带有朋克风格的大喇叭大电池小智AI聊天机器人方案。
+minsi-k08-wifi and minsi-k08-ml307 are Minsi Technology solutions based on ESP32S3N16R8 with MAX98357 audio amplifier and INMP441 omnidirectional microphone, built by retrofitting the K08 transparent mecha mini speaker into a punk-style large-speaker, large-battery Xiaozhi AI chatbot.
 
 <a href="https://item.taobao.com/item.htm?id=889892765588" target="_blank" title="SenseCAP Watcher">Minsi-k08</a>
 
@@ -9,27 +9,27 @@ minsi-k08-wifi和minsi-k08-ml307是敏思科技推出的基于ESP32S3N16R8，搭
 
 
 
-# 编译配置命令
+# Build Configuration
 
-**配置编译目标为 ESP32S3：**
+**Set build target to ESP32S3:**
 
 ```bash
 idf.py set-target esp32s3
 ```
 
-**打开 menuconfig：**
+**Open menuconfig:**
 
 ```bash
 idf.py menuconfig
 ```
 
-**选择板子：**
+**Select board:**
 
 ```
-Xiaozhi Assistant -> Board Type ->敏思科技K08(DUAL)
+Xiaozhi Assistant -> Board Type -> Minsi K08 (DUAL)
 ```
 
-**编译烧入：**
+**Build and flash:**
 
 ```bash
 idf.py build flash

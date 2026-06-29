@@ -48,20 +48,20 @@ private:
     {
         esp_err_t ret = esp_io_expander_new_i2c_tca95xx_16bit(i2c_bus_, I2C_ADDRESS, &io_expander);  
         if(ret != ESP_OK)
-            ESP_LOGE(TAG, "TCA9554 create returned error");                                                                                  // 打印引脚状态
+            ESP_LOGE(TAG, "TCA9554 create returned error");                                                                                  // Print pin state
 
-        ret = esp_io_expander_set_dir(io_expander, IO_EXPANDER_PIN_NUM_0 | IO_EXPANDER_PIN_NUM_1 | IO_EXPANDER_PIN_NUM_8|IO_EXPANDER_PIN_NUM_5|IO_EXPANDER_PIN_NUM_6, IO_EXPANDER_OUTPUT);                 // 设置引脚 EXIO0 和 EXIO1 模式为输出
+        ret = esp_io_expander_set_dir(io_expander, IO_EXPANDER_PIN_NUM_0 | IO_EXPANDER_PIN_NUM_1 | IO_EXPANDER_PIN_NUM_8|IO_EXPANDER_PIN_NUM_5|IO_EXPANDER_PIN_NUM_6, IO_EXPANDER_OUTPUT);                 // Set EXIO0 and EXIO1 pins as output
         ESP_ERROR_CHECK(ret);
-        ret = esp_io_expander_set_level(io_expander, IO_EXPANDER_PIN_NUM_0 | IO_EXPANDER_PIN_NUM_1, 1);                                // 复位 LCD 与 TouchPad
-        ESP_ERROR_CHECK(ret);
-        vTaskDelay(pdMS_TO_TICKS(10));
-        ret = esp_io_expander_set_level(io_expander, IO_EXPANDER_PIN_NUM_0 | IO_EXPANDER_PIN_NUM_1, 0);                                // 复位 LCD 与 TouchPad
+        ret = esp_io_expander_set_level(io_expander, IO_EXPANDER_PIN_NUM_0 | IO_EXPANDER_PIN_NUM_1, 1);                                // Reset LCD and TouchPad
         ESP_ERROR_CHECK(ret);
         vTaskDelay(pdMS_TO_TICKS(10));
-        ret = esp_io_expander_set_level(io_expander, IO_EXPANDER_PIN_NUM_0 | IO_EXPANDER_PIN_NUM_1, 1);                                // 复位 LCD 与 TouchPad
+        ret = esp_io_expander_set_level(io_expander, IO_EXPANDER_PIN_NUM_0 | IO_EXPANDER_PIN_NUM_1, 0);                                // Reset LCD and TouchPad
         ESP_ERROR_CHECK(ret);
-        ret = esp_io_expander_set_level(io_expander, IO_EXPANDER_PIN_NUM_8, 1);                                                         // 启用喇叭功放
-        ret = esp_io_expander_set_level(io_expander, IO_EXPANDER_PIN_NUM_5, false);                                                     // 复位摄像头
+        vTaskDelay(pdMS_TO_TICKS(10));
+        ret = esp_io_expander_set_level(io_expander, IO_EXPANDER_PIN_NUM_0 | IO_EXPANDER_PIN_NUM_1, 1);                                // Reset LCD and TouchPad
+        ESP_ERROR_CHECK(ret);
+        ret = esp_io_expander_set_level(io_expander, IO_EXPANDER_PIN_NUM_8, 1);                                                         // Enable speaker amplifier
+        ret = esp_io_expander_set_level(io_expander, IO_EXPANDER_PIN_NUM_5, false);                                                     // Reset camera
         vTaskDelay(pdMS_TO_TICKS(5));
         ret = esp_io_expander_set_level(io_expander, IO_EXPANDER_PIN_NUM_6, true); 
         vTaskDelay(pdMS_TO_TICKS(5));
@@ -82,7 +82,7 @@ private:
     void InitializeSt7789Display() {
         esp_lcd_panel_io_handle_t panel_io = nullptr;
         esp_lcd_panel_handle_t panel = nullptr;
-        // 液晶屏控制IO初始化
+        // Initialize LCD control IO
         ESP_LOGD(TAG, "Install panel IO");
         esp_lcd_panel_io_spi_config_t io_config = {};
         io_config.cs_gpio_num = DISPLAY_CS_PIN;
@@ -94,7 +94,7 @@ private:
         io_config.lcd_param_bits = 8;
         ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(SPI2_HOST, &io_config, &panel_io));
 
-        // 初始化液晶屏驱动芯片ST7789
+        // Initialize ST7789 LCD driver IC
         ESP_LOGD(TAG, "Install LCD driver");
         esp_lcd_panel_dev_config_t panel_config = {};
         panel_config.reset_gpio_num = GPIO_NUM_NC;
@@ -114,7 +114,7 @@ private:
     void InitializeJd9853Display() {
         esp_lcd_panel_io_handle_t panel_io = nullptr;
         esp_lcd_panel_handle_t panel = nullptr;
-        // 液晶屏控制IO初始化
+        // Initialize LCD control IO
         ESP_LOGD(TAG, "Install panel IO");
         esp_lcd_panel_io_spi_config_t io_config = {};
         io_config.cs_gpio_num = DISPLAY_CS_PIN;
@@ -126,7 +126,7 @@ private:
         io_config.lcd_param_bits = 8;
         ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(SPI2_HOST, &io_config, &panel_io));
 
-        // 初始化液晶屏驱动芯片JD9853
+        // Initialize LCD driver ICJD9853
         ESP_LOGD(TAG, "Install LCD driver");
         esp_lcd_panel_dev_config_t panel_config = {};
         panel_config.reset_gpio_num = GPIO_NUM_NC;
@@ -175,8 +175,8 @@ private:
         };
 
         esp_video_init_sccb_config_t sccb_config = {
-            .init_sccb = false,  // 不初始化新的 SCCB，使用现有的 I2C 总线
-            .i2c_handle = i2c_bus_,  // 使用现有的 I2C 总线句柄
+            .init_sccb = false,  // Do not init new SCCB; use existing I2C bus
+            .i2c_handle = i2c_bus_,  // Use existing I2C bus handle
             .freq = 100000,  // 100kHz
         };
 

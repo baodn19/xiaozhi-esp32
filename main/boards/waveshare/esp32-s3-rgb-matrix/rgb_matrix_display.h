@@ -32,7 +32,7 @@ private:
 
     Hub75Context* hub75_context_ = nullptr;
 
-    // UI 控件
+    // UI widgets
     lv_obj_t* main_container_ = nullptr;
     lv_obj_t* emoji_image_ = nullptr;
     lv_obj_t* emotion_icon_label_ = nullptr;

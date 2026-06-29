@@ -22,7 +22,7 @@ private:
 
     void InitializeDisplay() {
         display_ = new NoDisplay();
-        ESP_LOGI(TAG, "使用NoDisplay (无物理显示屏)");
+        ESP_LOGI(TAG, "Using NoDisplay (no physical screen)");
     }
 
     void InitializeButtons() {
@@ -40,7 +40,7 @@ public:
     EdaSuperBear() : boot_button_(BOOT_BUTTON_GPIO) {
         InitializeDisplay();
         InitializeButtons();
-        ESP_LOGI(TAG, "初始化EdaRobot机器人MCP控制器");
+        ESP_LOGI(TAG, "Initializing EdaRobot MCP controller");
         ::InitializeEdaSuperBearController();
     }
 

@@ -1,132 +1,121 @@
 # ESP-BOX-3
 
-## 简介
+## Introduction
 
 <div align="center">
-    <a href="https://github.com/espressif/esp-box"><b> ESP-BOX GitHub </b></a>
+    <a href="https://github.com/espressif/esp-box"><b> GitHub </b></a>
 </div>
 
-ESP-BOX-3 是乐鑫官方开发的 AIoT 开发套件，搭载 ESP32-S3-WROOM-1 模组，配备 2.4 英寸 320x240 ILI9341 显示屏，双麦克风阵列，支持离线语音唤醒与设备端回声消除（AEC）功能。
+ESP-BOX-3 is Espressif's AIoT dev kit with ESP32-S3-WROOM-1, 2.4-inch 320x240 ILI9341 display, dual-mic array, offline wake word, and device-side AEC.
 
-## 硬件特性
+## Hardware
 
-- **主控**: ESP32-S3-WROOM-1 (16MB Flash, 8MB PSRAM)
-- **显示屏**: 2.4 英寸 IPS LCD (320x240, ILI9341)
-- **音频**: ES8311 音频 Codec + ES7210 双麦 ADC
-- **音频功能**: 支持设备端 AEC (回声消除)
-- **按键**: Boot 按键 (单击/双击功能)
-- **其他**: USB-C 供电与通信
+- **SoC**: ESP32-S3-WROOM-1 (16MB Flash, 8MB PSRAM)
+- **Display**: 2.4-inch IPS LCD (320x240, ILI9341)
+- **Audio**: ES8311 codec + ES7210 dual-mic ADC
+- **Audio**: Device-side AEC supported
+- **Buttons**: Boot (click/double-click)
+- **Other**: USB-C power and data
 
-## 配置、编译命令
+## Configuration and build
 
-**配置编译目标为 ESP32S3**
+**Set target to ESP32S3**
 
 ```bash
 idf.py set-target esp32s3
 ```
 
-**打开 menuconfig 并配置**
+**Open menuconfig**
 
 ```bash
 idf.py menuconfig
 ```
 
-分别配置如下选项：
+Configure:
 
-### 基本配置
-- `Xiaozhi Assistant` → `Board Type` → 选择 `ESP BOX 3`
+### Basic
+- `Xiaozhi Assistant` → `Board Type` → `ESP BOX 3`
 
-### UI风格选择
+### UI style
 
-ESP-BOX-3 支持多种不同的 UI 显示风格，通过 menuconfig 配置选择：
+ESP-BOX-3 supports multiple UI styles via menuconfig:
 
-- `Xiaozhi Assistant` → `Select display style` → 选择显示风格
+- `Xiaozhi Assistant` → `Select display style`
 
-#### 可选风格
+#### Options
 
-##### 表情动画风格 (Emote animation style) - 推荐
-- **配置选项**: `USE_EMOTE_MESSAGE_STYLE`
-- **特点**: 使用自定义的 `EmoteDisplay` 表情显示系统
-- **功能**: 支持丰富的表情动画、眼睛动画、状态图标显示
-- **适用**: 智能助手场景，提供更生动的人机交互体验
-- **类**: `emote::EmoteDisplay`
+##### Emote animation style (recommended)
+- **Option**: `USE_EMOTE_MESSAGE_STYLE`
+- **Features**: Custom `EmoteDisplay` with rich emoji, eye animation, status icons
+- **Use case**: Assistant with expressive UI
+- **Class**: `emote::EmoteDisplay`
 
-**⚠️ 重要**: 选择此风格需要额外配置自定义资源文件：
-1. `Xiaozhi Assistant` → `Flash Assets` → 选择 `Flash Custom Assets`
-2. `Xiaozhi Assistant` → `Custom Assets File` → 填入资源文件地址：
-   ```
-   https://dl.espressif.com/AE/wn9_nihaoxiaozhi_tts-font_puhui_common_20_4-esp-box-3.bin
-   ```
+**Important**: This style needs custom assets:
+1. `Xiaozhi Assistant` → `Flash Assets` → `Flash Custom Assets`
+2. `Xiaozhi Assistant` → `Custom Assets File` → asset URL
 
-##### 默认消息风格 (Enable default message style)
-- **配置选项**: `USE_DEFAULT_MESSAGE_STYLE` (默认)
-- **特点**: 使用标准的消息显示界面
-- **功能**: 传统的文本和图标显示界面
-- **适用**: 标准的对话场景
-- **类**: `SpiLcdDisplay`
+##### Default message style
+- **Option**: `USE_DEFAULT_MESSAGE_STYLE` (default)
+- **Features**: Standard message UI
+- **Class**: `SpiLcdDisplay`
 
-##### 微信消息风格 (Enable WeChat Message Style)
-- **配置选项**: `USE_WECHAT_MESSAGE_STYLE`
-- **特点**: 仿微信聊天界面风格
-- **功能**: 类似微信的消息气泡显示
-- **适用**: 喜欢微信风格的用户
-- **类**: `SpiLcdDisplay`
+##### WeChat message style
+- **Option**: `USE_WECHAT_MESSAGE_STYLE`
+- **Features**: WeChat-like chat bubbles
+- **Class**: `SpiLcdDisplay`
 
-### 音频功能配置
+### Audio
 
-#### 设备端回声消除 (AEC)
-- `Xiaozhi Assistant` → `Enable Device-Side AEC` → 启用
+#### Device-side AEC
+- `Xiaozhi Assistant` → `Enable Device-Side AEC` → enable
 
-ESP-BOX-3 硬件支持设备端 AEC 功能，可有效消除扬声器播放声音对麦克风的干扰，提升语音识别准确率。
+ESP-BOX-3 hardware supports on-device AEC to reduce speaker bleed into the mic.
 
-**运行时切换**: 双击 Boot 按键可在运行时开启/关闭 AEC 功能。
+**Runtime toggle**: Double-click Boot to enable/disable AEC when idle.
 
-> **说明**: 设备端 AEC 需要干净的扬声器输出参考路径和良好的麦克风与扬声器物理隔离才能正常工作。ESP-BOX-3 硬件已做优化设计。
+> Device-side AEC needs a clean speaker reference path and good mic/speaker isolation. ESP-BOX-3 is designed for this.
 
-### 唤醒词配置
+### Wake word
 
-ESP-BOX-3 支持多种唤醒词实现方式：
+- `Xiaozhi Assistant` → `Wake Word Implementation Type`
 
-- `Xiaozhi Assistant` → `Wake Word Implementation Type` → 选择唤醒词类型
+Recommended: **Wakenet model with AFE** (`USE_AFE_WAKE_WORD`).
 
-推荐选择：
-- **Wakenet model with AFE** (`USE_AFE_WAKE_WORD`) - 支持 AEC 的唤醒词检测
+Press `S` to save, `Q` to quit.
 
-按 `S` 保存，按 `Q` 退出。
-
-**编译**
+**Build**
 
 ```bash
 idf.py build
 ```
 
-**烧录**
+**Flash**
 
-将 ESP-BOX-3 连接至电脑，并运行：
+Connect ESP-BOX-3 and run:
 
 ```bash
-idf.py flash
+idf.py flash monitor
 ```
 
-## 按键说明
+## Buttons
 
-### Boot 按键功能
+### Boot
 
-#### 单击
-- **配网状态**: 进入 WiFi 配置模式
-- **空闲状态**: 开始对话
-- **对话中**: 打断或停止当前对话
+#### Click
+- **Provisioning**: Enter WiFi config mode
+- **Idle**: Start conversation
+- **In conversation**: Interrupt or stop
 
-#### 双击 (需启用设备端 AEC)
-- **空闲状态**: 切换 AEC 开启/关闭
+#### Double-click (with device AEC)
+- **Idle**: Toggle AEC on/off
 
-## 常见问题
+## FAQ
 
-### 1. 为什么需要设备端 AEC？
-设备端 AEC 可以在本地实时消除扬声器播放声音对麦克风的干扰，在播放音乐或 TTS 回复时仍能准确识别语音指令。
+### Why device-side AEC?
+It removes speaker echo locally so voice commands work during music or TTS playback.
 
-### 2. 表情动画风格无法显示？
-请确保已经配置了正确的自定义资源文件地址，并且设备能够访问该 URL 下载资源。
+### Emote style not showing?
+Ensure custom assets URL is configured and the device can download them.
 
-### 3. 如何恢复出厂设置？
-长按 Boot 按键 3 秒以上，设备会清除所有配置并重启。
+### Factory reset?
+Hold Boot for 3+ seconds to clear settings and reboot.

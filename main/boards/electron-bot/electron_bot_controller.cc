@@ -1,5 +1,5 @@
 /*
-    Electron Bot机器人控制器 - MCP协议版本
+    Electron Bot controller - MCP protocol version
 */
 
 #include <cJSON.h>
@@ -33,34 +33,34 @@ private:
     bool is_action_in_progress_ = false;
 
     enum ActionType {
-        // 手部动作 1-12
-        ACTION_HAND_LEFT_UP = 1,      // 举左手
-        ACTION_HAND_RIGHT_UP = 2,     // 举右手
-        ACTION_HAND_BOTH_UP = 3,      // 举双手
-        ACTION_HAND_LEFT_DOWN = 4,    // 放左手
-        ACTION_HAND_RIGHT_DOWN = 5,   // 放右手
-        ACTION_HAND_BOTH_DOWN = 6,    // 放双手
-        ACTION_HAND_LEFT_WAVE = 7,    // 挥左手
-        ACTION_HAND_RIGHT_WAVE = 8,   // 挥右手
-        ACTION_HAND_BOTH_WAVE = 9,    // 挥双手
-        ACTION_HAND_LEFT_FLAP = 10,   // 拍打左手
-        ACTION_HAND_RIGHT_FLAP = 11,  // 拍打右手
-        ACTION_HAND_BOTH_FLAP = 12,   // 拍打双手
+        // Hand actions 1-12
+        ACTION_HAND_LEFT_UP = 1,      // Raise left hand
+        ACTION_HAND_RIGHT_UP = 2,     // Raise right hand
+        ACTION_HAND_BOTH_UP = 3,      // Raise both hands
+        ACTION_HAND_LEFT_DOWN = 4,    // Lower left hand
+        ACTION_HAND_RIGHT_DOWN = 5,   // Lower right hand
+        ACTION_HAND_BOTH_DOWN = 6,    // Lower both hands
+        ACTION_HAND_LEFT_WAVE = 7,    // Wave left hand
+        ACTION_HAND_RIGHT_WAVE = 8,   // Wave right hand
+        ACTION_HAND_BOTH_WAVE = 9,    // Wave both hands
+        ACTION_HAND_LEFT_FLAP = 10,   // Clap left hand
+        ACTION_HAND_RIGHT_FLAP = 11,  // Clap right hand
+        ACTION_HAND_BOTH_FLAP = 12,   // Clap both hands
 
-        // 身体动作 13-14
-        ACTION_BODY_TURN_LEFT = 13,    // 左转
-        ACTION_BODY_TURN_RIGHT = 14,   // 右转
-        ACTION_BODY_TURN_CENTER = 15,  // 回中心
+        // Body actions 13-14
+        ACTION_BODY_TURN_LEFT = 13,    // Turn left
+        ACTION_BODY_TURN_RIGHT = 14,   // Turn right
+        ACTION_BODY_TURN_CENTER = 15,  // Return to center
 
-        // 头部动作 16-20
-        ACTION_HEAD_UP = 16,          // 抬头
-        ACTION_HEAD_DOWN = 17,        // 低头
-        ACTION_HEAD_NOD_ONCE = 18,    // 点头一次
-        ACTION_HEAD_CENTER = 19,      // 回中心
-        ACTION_HEAD_NOD_REPEAT = 20,  // 连续点头
+        // Head actions 16-20
+        ACTION_HEAD_UP = 16,          // Look up
+        ACTION_HEAD_DOWN = 17,        // Look down
+        ACTION_HEAD_NOD_ONCE = 18,    // Nod once
+        ACTION_HEAD_CENTER = 19,      // Return to center
+        ACTION_HEAD_NOD_REPEAT = 20,  // Repeat nod
 
-        // 系统动作 21
-        ACTION_HOME = 21  // 复位到初始位置
+        // System action 21
+        ACTION_HOME = 21  // Reset to home position
     };
 
     static void ActionTask(void* arg) {
@@ -70,47 +70,47 @@ private:
 
         while (true) {
             if (xQueueReceive(controller->action_queue_, &params, pdMS_TO_TICKS(1000)) == pdTRUE) {
-                ESP_LOGI(TAG, "执行动作: %d", params.action_type);
-                controller->is_action_in_progress_ = true;  // 开始执行动作
+                ESP_LOGI(TAG, "Executing action: %d", params.action_type);
+                controller->is_action_in_progress_ = true;  // Action started
 
-                // 执行相应的动作
+                // Execute the corresponding action
                 if (params.action_type >= ACTION_HAND_LEFT_UP &&
                     params.action_type <= ACTION_HAND_BOTH_FLAP) {
-                    // 手部动作
+                    // Hand actions
                     controller->electron_bot_.HandAction(params.action_type, params.steps,
                                                          params.amount, params.speed);
                 } else if (params.action_type >= ACTION_BODY_TURN_LEFT &&
                            params.action_type <= ACTION_BODY_TURN_CENTER) {
-                    // 身体动作
+                    // Body actions
                     int body_direction = params.action_type - ACTION_BODY_TURN_LEFT + 1;
                     controller->electron_bot_.BodyAction(body_direction, params.steps,
                                                          params.amount, params.speed);
                 } else if (params.action_type >= ACTION_HEAD_UP &&
                            params.action_type <= ACTION_HEAD_NOD_REPEAT) {
-                    // 头部动作
+                    // Head actions
                     int head_action = params.action_type - ACTION_HEAD_UP + 1;
                     controller->electron_bot_.HeadAction(head_action, params.steps, params.amount,
                                                          params.speed);
                 } else if (params.action_type == ACTION_HOME) {
-                    // 复位动作
+                    // Home action
                     controller->electron_bot_.Home(true);
                 }
                 if (params.action_type != ACTION_HOME) {
                     UBaseType_t pending_actions =
                         uxQueueMessagesWaiting(controller->action_queue_);
-                    // 连续动作时跳过中间归位，避免动作衔接生硬
+                    // Skip intermediate homing during chained actions
                     if (pending_actions == 0) {
                         controller->electron_bot_.Home(true);
                     }
                 }
-                controller->is_action_in_progress_ = false;  // 动作执行完毕
+                controller->is_action_in_progress_ = false;  // Action finished
             }
             vTaskDelay(pdMS_TO_TICKS(20));
         }
     }
 
     void QueueAction(int action_type, int steps, int speed, int direction, int amount) {
-        ESP_LOGI(TAG, "动作控制: 类型=%d, 步数=%d, 速度=%d, 方向=%d, 幅度=%d", action_type, steps,
+        ESP_LOGI(TAG, "Action control: type=%d, steps=%d, speed=%d, direction=%d, amount=%d", action_type, steps,
                  speed, direction, amount);
 
         ElectronBotActionParams params = {action_type, steps, speed, direction, amount};
@@ -148,20 +148,20 @@ public:
         QueueAction(ACTION_HOME, 1, 1000, 0, 0);
 
         RegisterMcpTools();
-        ESP_LOGI(TAG, "Electron Bot控制器已初始化并注册MCP工具");
+        ESP_LOGI(TAG, "Electron Bot controller initialized and MCP tools registered");
     }
 
     void RegisterMcpTools() {
         auto& mcp_server = McpServer::GetInstance();
 
-        ESP_LOGI(TAG, "开始注册Electron Bot MCP工具...");
+        ESP_LOGI(TAG, "Registering Electron Bot MCP tools...");
 
-        // 手部动作统一工具
+        // Unified hand action tool
         mcp_server.AddTool(
             "self.electron.hand_action",
-            "手部动作控制。action: 1=举手, 2=放手, 3=挥手, 4=拍打; hand: 1=左手, 2=右手, 3=双手; "
-            "steps: 动作重复次数(1-10); speed: 动作速度(500-1500，数值越小越快); amount: "
-            "动作幅度(10-50，仅举手动作使用)",
+            "Hand action control. action: 1=raise, 2=lower, 3=wave, 4=clap; hand: 1=left, 2=right, 3=both; "
+            "steps: repeat count (1-10); speed: action speed (500-1500, lower is faster); amount: "
+            "action amount (10-50, raise only)",
             PropertyList({Property("action", kPropertyTypeInteger, 1, 1, 4),
                           Property("hand", kPropertyTypeInteger, 3, 1, 3),
                           Property("steps", kPropertyTypeInteger, 1, 1, 10),
@@ -174,24 +174,24 @@ public:
                 int speed = properties["speed"].value<int>();
                 int amount = properties["amount"].value<int>();
 
-                // 根据动作类型和手部类型计算具体动作
+                // Map action and hand type to concrete action
                 int base_action;
                 switch (action_type) {
                     case 1:
                         base_action = ACTION_HAND_LEFT_UP;
-                        break;  // 举手
+                        break;  // Raise
                     case 2:
                         base_action = ACTION_HAND_LEFT_DOWN;
                         amount = 0;
-                        break;  // 放手
+                        break;  // Lower
                     case 3:
                         base_action = ACTION_HAND_LEFT_WAVE;
                         amount = 0;
-                        break;  // 挥手
+                        break;  // Wave
                     case 4:
                         base_action = ACTION_HAND_LEFT_FLAP;
                         amount = 0;
-                        break;  // 拍打
+                        break;  // Clap
                     default:
                         base_action = ACTION_HAND_LEFT_UP;
                 }
@@ -201,11 +201,11 @@ public:
                 return true;
             });
 
-        // 身体动作
+        // Body actions
         mcp_server.AddTool(
             "self.electron.body_turn",
-            "身体转向。steps: 转向步数(1-10); speed: 转向速度(500-1500，数值越小越快); direction: "
-            "转向方向(1=左转, 2=右转, 3=回中心); angle: 转向角度(0-90度)",
+            "Body turn. steps: turn steps (1-10); speed: turn speed (500-1500, lower is faster); direction: "
+            "turn direction (1=left, 2=right, 3=center); angle: turn angle (0-90 deg)",
             PropertyList({Property("steps", kPropertyTypeInteger, 1, 1, 10),
                           Property("speed", kPropertyTypeInteger, 1000, 500, 1500),
                           Property("direction", kPropertyTypeInteger, 1, 1, 3),
@@ -235,11 +235,11 @@ public:
                 return true;
             });
 
-        // 头部动作
+        // Head actions
         mcp_server.AddTool("self.electron.head_move",
-                           "头部运动。action: 1=抬头, 2=低头, 3=点头, 4=回中心, 5=连续点头; steps: "
-                           "动作重复次数(1-10); speed: 动作速度(500-1500，数值越小越快); angle: "
-                           "头部转动角度(1-15度)",
+                           "Head motion. action: 1=look up, 2=look down, 3=nod once, 4=center, 5=repeat nod; steps: "
+                           "repeat count (1-10); speed: action speed (500-1500, lower is faster); angle: "
+                           "head rotation angle (1-15 deg)",
                            PropertyList({Property("action", kPropertyTypeInteger, 3, 1, 5),
                                          Property("steps", kPropertyTypeInteger, 1, 1, 10),
                                          Property("speed", kPropertyTypeInteger, 1000, 500, 1500),
@@ -254,37 +254,37 @@ public:
                                return true;
                            });
 
-        // 系统工具
-        mcp_server.AddTool("self.electron.stop", "立即停止", PropertyList(),
+        // System tools
+        mcp_server.AddTool("self.electron.stop", "Stop immediately", PropertyList(),
                            [this](const PropertyList& properties) -> ReturnValue {
-                               // 清空队列但保持任务常驻
+                               // Clear queue but keep task alive
                                xQueueReset(action_queue_);
                                is_action_in_progress_ = false;
                                QueueAction(ACTION_HOME, 1, 1000, 0, 0);
                                return true;
                            });
 
-        mcp_server.AddTool("self.electron.get_status", "获取机器人状态，返回 moving 或 idle",
+        mcp_server.AddTool("self.electron.get_status", "Get robot status; returns moving or idle",
                            PropertyList(), [this](const PropertyList& properties) -> ReturnValue {
                                return is_action_in_progress_ ? "moving" : "idle";
                            });
 
-        // 单个舵机校准工具
+        // Single-servo calibration tool
         mcp_server.AddTool(
             "self.electron.set_trim",
-            "校准单个舵机位置。设置指定舵机的微调参数以调整ElectronBot的初始姿态，设置将永久保存。"
-            "servo_type: 舵机类型(right_pitch:右臂旋转, right_roll:右臂推拉, left_pitch:左臂旋转, "
-            "left_roll:左臂推拉, body:身体, head:头部); "
-            "trim_value: 微调值(-30到30度)",
+            "Calibrate a single servo. Set trim to adjust ElectronBot initial posture; saved permanently."
+            "servo_type: servo type (right_pitch: right arm rotation, right_roll: right arm push/pull, left_pitch: left arm rotation, "
+            "left_roll: left arm push/pull, body: body, head: head); "
+            "trim_value: trim value (-30 to 30 degrees)",
             PropertyList({Property("servo_type", kPropertyTypeString, "right_pitch"),
                           Property("trim_value", kPropertyTypeInteger, 0, -30, 30)}),
             [this](const PropertyList& properties) -> ReturnValue {
                 std::string servo_type = properties["servo_type"].value<std::string>();
                 int trim_value = properties["trim_value"].value<int>();
 
-                ESP_LOGI(TAG, "设置舵机微调: %s = %d度", servo_type.c_str(), trim_value);
+                ESP_LOGI(TAG, "Set servo trim: %s = %d degrees", servo_type.c_str(), trim_value);
 
-                // 获取当前所有微调值
+                // Get all current trim values
                 Settings settings("electron_trims", true);
                 int right_pitch = settings.GetInt("right_pitch", 0);
                 int right_roll = settings.GetInt("right_roll", 0);
@@ -293,7 +293,7 @@ public:
                 int body = settings.GetInt("body", 0);
                 int head = settings.GetInt("head", 0);
 
-                // 更新指定舵机的微调值
+                // Update trim for the specified servo
                 if (servo_type == "right_pitch") {
                     right_pitch = trim_value;
                     settings.SetInt("right_pitch", right_pitch);
@@ -313,7 +313,7 @@ public:
                     head = trim_value;
                     settings.SetInt("head", head);
                 } else {
-                    return "错误：无效的舵机类型，请使用: right_pitch, right_roll, left_pitch, "
+                    return "Error: invalid servo type. Use: right_pitch, right_roll, left_pitch, "
                            "left_roll, body, head";
                 }
 
@@ -321,11 +321,11 @@ public:
 
                 QueueAction(ACTION_HOME, 1, 500, 0, 0);
 
-                return "舵机 " + servo_type + " 微调设置为 " + std::to_string(trim_value) +
-                       " 度，已永久保存";
+                return "Servo " + servo_type + " trim set to " + std::to_string(trim_value) +
+                       " degrees, saved permanently";
             });
 
-        mcp_server.AddTool("self.electron.get_trims", "获取当前的舵机微调设置", PropertyList(),
+        mcp_server.AddTool("self.electron.get_trims", "Get current servo trim settings", PropertyList(),
                            [this](const PropertyList& properties) -> ReturnValue {
                                Settings settings("electron_trims", false);
 
@@ -344,11 +344,11 @@ public:
                                    ",\"body\":" + std::to_string(body) +
                                    ",\"head\":" + std::to_string(head) + "}";
 
-                               ESP_LOGI(TAG, "获取微调设置: %s", result.c_str());
+                               ESP_LOGI(TAG, "Get trim settings: %s", result.c_str());
                                return result;
                            });
 
-        mcp_server.AddTool("self.battery.get_level", "获取机器人电池电量和充电状态", PropertyList(),
+        mcp_server.AddTool("self.battery.get_level", "Get robot battery level and charging status", PropertyList(),
                            [](const PropertyList& properties) -> ReturnValue {
                                auto& board = Board::GetInstance();
                                int level = 0;
@@ -362,7 +362,7 @@ public:
                                return status;
                            });
 
-        ESP_LOGI(TAG, "Electron Bot MCP工具注册完成");
+        ESP_LOGI(TAG, "Electron Bot MCP tool registration complete");
     }
 
     ~ElectronBotController() {
@@ -379,6 +379,6 @@ static ElectronBotController* g_electron_controller = nullptr;
 void InitializeElectronBotController() {
     if (g_electron_controller == nullptr) {
         g_electron_controller = new ElectronBotController();
-        ESP_LOGI(TAG, "Electron Bot控制器已初始化并注册MCP工具");
+        ESP_LOGI(TAG, "Electron Bot controller initialized and MCP tools registered");
     }
 }

@@ -92,10 +92,10 @@ private:
         if (output_enabled_) {
             ESP_ERROR_CHECK_WITHOUT_ABORT(
                 esp_codec_dev_write(output_dev_, (void*)data, samples * sizeof(int16_t)));
-            if (input_reference_) {  // 板子不支持硬件回采，采用缓存播放缓存来实现回声消除
+            if (input_reference_) {  // Board lacks hardware loopback; use playback buffer cache for echo cancellation
                 if (write_pos_ - read_pos_ + samples > ref_buffer_.size()) {
                     assert(ref_buffer_.size() >= samples);
-                    // 写溢出，只保留最近的数据
+                    // Write overflow; keep only recent data
                     read_pos_ = write_pos_ + samples - ref_buffer_.size();
                 }
                 if (read_pos_) {
@@ -118,8 +118,8 @@ public:
                      int output_sample_rate, gpio_num_t mclk, gpio_num_t bclk, gpio_num_t ws,
                      gpio_num_t dout, gpio_num_t din, uint8_t es8311_addr,
                      bool input_reference = false) {
-        duplex_ = true;                      // 是否双工
-        input_reference_ = input_reference;  // 是否使用参考输入，实现回声消除
+        duplex_ = true;                      // Full duplex
+        input_reference_ = input_reference;  // Use reference input for echo cancellation
         if (input_reference) {
             ref_buffer_.resize(960 * 2);
         }

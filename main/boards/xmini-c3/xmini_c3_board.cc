@@ -150,8 +150,8 @@ public:
         InitializePowerSaveTimer();
         InitializeTools();
 
-        // 避免使用错误的固件，把 EFUSE 操作放在最后
-        // 把 ESP32C3 的 VDD SPI 引脚作为普通 GPIO 口使用
+        // Place EFUSE ops last to avoid flashing wrong firmware
+        // Use ESP32-C3 VDD SPI pin as regular GPIO
         esp_efuse_write_field_bit(ESP_EFUSE_VDD_SPI_AS_GPIO);
     }
 

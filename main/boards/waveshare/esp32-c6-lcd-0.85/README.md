@@ -1,58 +1,58 @@
-# 产品链接
+# Product links
 
-[微雪电子 ESP32-C6-LCD-0.85](https://www.waveshare.net/shop/ESP32-C6-LCD-0.85.htm)
+[Waveshare ESP32-C6-LCD-0.85](https://www.waveshare.net/shop/ESP32-C6-LCD-0.85.htm)
 
-# 编译配置命令
+# Build configuration
 
-**克隆工程**
+**Clone the project**
 
 ```bash
 git clone https://github.com/78/xiaozhi-esp32.git
 ```
 
-**进入工程**
+**Enter the project directory**
 
 ```bash
 cd xiaozhi-esp32
 ```
 
-**配置编译目标为 ESP32C6**
+**Set build target to ESP32C6**
 
 ```bash
 idf.py set-target esp32C6
 ```
 
-**打开 menuconfig**
+**Open menuconfig**
 
 ```bash
 idf.py menuconfig
 ```
 
-**选择板子**
+**Select board**
 
 ```bash
 Xiaozhi Assistant -> Board Type -> Waveshare ESP32-C6-LCD-0.85
 ```
 
-**修改 flash 大小：**
+**Change flash size:**
 
 ```
 Serial flasher config -> Flash size -> 8 MB
 ```
 
-**修改分区表：**
+**Change partition table:**
 
 ```
 Partition Table -> Custom partition CSV file -> partitions/v2/8m.csv
 ```
 
-**编译**
+**Build**
 
 ```ba
 idf.py build
 ```
 
-**下载并打开串口终端**
+**Flash and open serial monitor**
 
 ```bash
 idf.py build flash monitor

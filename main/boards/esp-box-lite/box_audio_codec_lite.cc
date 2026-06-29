@@ -10,12 +10,12 @@ static const char TAG[] = "BoxAudioCodecLite";
 BoxAudioCodecLite::BoxAudioCodecLite(void* i2c_master_handle, int input_sample_rate, int output_sample_rate,
     gpio_num_t mclk, gpio_num_t bclk, gpio_num_t ws, gpio_num_t dout, gpio_num_t din,
     gpio_num_t pa_pin, bool input_reference) {
-    duplex_ = true; // 是否双工
-    input_reference_ = input_reference; // 是否使用参考输入，实现回声消除
+    duplex_ = true; // Full duplex
+    input_reference_ = input_reference; // Use reference input for AEC
     if (input_reference) {
         ref_buffer_.resize(960 * 2);
     }
-    input_channels_ = 2 + input_reference_; // 输入通道数
+    input_channels_ = 2 + input_reference_; // Input channel count
     input_sample_rate_ = input_sample_rate;
     output_sample_rate_ = output_sample_rate;
 
@@ -191,7 +191,7 @@ void BoxAudioCodecLite::EnableInput(bool enable) {
             fs.channel_mask |= ESP_CODEC_DEV_MAKE_CHANNEL_MASK(i);
         }
         ESP_ERROR_CHECK(esp_codec_dev_open(input_dev_, &fs));
-        // 麦克风增益解决收音太小的问题
+        // Mic gain to fix low input level
         ESP_ERROR_CHECK(esp_codec_dev_set_in_gain(input_dev_, 37.5)); 
     } else {
         ESP_ERROR_CHECK(esp_codec_dev_close(input_dev_));
@@ -253,10 +253,10 @@ int BoxAudioCodecLite::Read(int16_t* dest, int samples) {
 int BoxAudioCodecLite::Write(const int16_t* data, int samples) {
     if (output_enabled_) {
         ESP_ERROR_CHECK_WITHOUT_ABORT(esp_codec_dev_write(output_dev_, (void*)data, samples * sizeof(int16_t)));
-        if (input_reference_) { // 板子不支持硬件回采，采用缓存播放缓冲来实现回声消除
+        if (input_reference_) { // No HW loopback; use playback buffer cache for AEC
             if (write_pos_ - read_pos_ + samples > ref_buffer_.size()) { 
                 assert(ref_buffer_.size() >= samples);
-                // 写溢出，只保留最近的数据
+                // Write overflow; keep only recent data
                 read_pos_ = write_pos_ + samples - ref_buffer_.size();
             }
             if (read_pos_) {

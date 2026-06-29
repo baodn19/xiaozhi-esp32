@@ -24,7 +24,7 @@ public:
         WriteReg(0x22, 0b110); // PWRON > OFFLEVEL as POWEROFF Source enable
         WriteReg(0x27, 0x10);  // hold 4s to power off
     
-        WriteReg(0x93, 0x1C); // 配置 aldo2 输出为 3.3V
+        WriteReg(0x93, 0x1C); // Configure ALDO2 output to 3.3V
     
         uint8_t value = ReadReg(0x90); // XPOWERS_AXP2101_LDO_ONOFF_CTRL0
         value = value | 0x02; // set bit 1 (ALDO2)

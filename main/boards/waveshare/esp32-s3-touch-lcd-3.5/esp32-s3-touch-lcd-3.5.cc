@@ -192,8 +192,8 @@ private:
         };
 
         esp_video_init_sccb_config_t sccb_config = {
-            .init_sccb = false,  // 不初始化新的 SCCB，使用现有的 I2C 总线
-            .i2c_handle = i2c_bus_,  // 使用现有的 I2C 总线句柄
+            .init_sccb = false,  // Do not init new SCCB; use existing I2C bus
+            .i2c_handle = i2c_bus_,  // Use existing I2C bus handle
             .freq = 100000,  // 100kHz
         };
 
@@ -257,7 +257,7 @@ private:
     void InitializeLcdDisplay() {
         esp_lcd_panel_io_handle_t panel_io = nullptr;
         esp_lcd_panel_handle_t panel = nullptr;
-        // 液晶屏控制IO初始化
+        // Initialize LCD control IO
         ESP_LOGI(TAG, "Install panel IO");
         esp_lcd_panel_io_spi_config_t io_config = {};
         io_config.cs_gpio_num = DISPLAY_CS_PIN;
@@ -274,7 +274,7 @@ private:
             .init_cmds_size = sizeof(st7796_lcd_init_cmds) / sizeof(st7796_lcd_init_cmd_t),
         };      
 
-        // 初始化液晶屏驱动芯片
+        // Initialize LCD driver IC
         ESP_LOGI(TAG, "Install LCD driver");
         esp_lcd_panel_dev_config_t panel_config = {};
         panel_config.reset_gpio_num = DISPLAY_RST_PIN;
@@ -306,7 +306,7 @@ private:
         });
     }
 
-    // 初始化工具
+    // Initialize tools
     void InitializeTools() {
         auto &mcp_server = McpServer::GetInstance();
         mcp_server.AddTool("self.system.reconfigure_wifi",
@@ -327,7 +327,7 @@ public:
         InitializeAxp2101();
         InitializeSpi();
         InitializeLcdDisplay();
-        // 解决部分开机黑屏的问题
+        // Fix black screen on some boots
         if (esp_reset_reason() == ESP_RST_POWERON) {
             fflush(stdout);
             esp_restart();

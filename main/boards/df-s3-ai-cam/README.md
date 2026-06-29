@@ -1,53 +1,53 @@
-# DFRobot ESP32-S3 AI智能摄像头模块
+# DFRobot ESP32-S3 AI Camera Module
 
-## 介绍
-ESP32-S3 AI CAM是一款基于ESP32-S3芯片设计的智能摄像头模组，专为视频图像处理和语音交互打造，适用于视频监控、边缘图像识别、语音对话等AI项目。
+## Introduction
+ESP32-S3 AI CAM is a smart camera module based on the ESP32-S3, designed for video/image processing and voice interaction. It suits video monitoring, edge vision, and voice AI projects.
 ![](https://ws.dfrobot.com.cn/FsTrGbrX2NZAwzWS8OSQGOGikuYA)
 
-[点击查看详细介绍](https://wiki.dfrobot.com.cn/SKU_DFR1154_ESP32_S3_AI_CAM)
+[View detailed introduction](https://wiki.dfrobot.com.cn/SKU_DFR1154_ESP32_S3_AI_CAM)
 
-[点击查看视觉功能演示](https://www.bilibili.com/video/BV1ktjSzNEUU/)
+[View vision demo video](https://www.bilibili.com/video/BV1ktjSzNEUU/)
 
-# 特性
-* 使用PDM麦克风
-* 板载 OV3660 摄像头
+# Features
+* PDM microphone
+* On-board OV3660 camera
 
-## 按键配置
-* BOOT：短按-打断/唤醒
+## Button Configuration
+* BOOT: Short press - interrupt/wake
 
-## 编译配置命令
+## Build Configuration
 
-**配置编译目标为 ESP32S3：**
+**Set build target to ESP32S3:**
 
 ```bash
 idf.py set-target esp32s3
 ```
 
-**打开 menuconfig：**
+**Open menuconfig:**
 
 ```bash
 idf.py menuconfig
 ```
 
-**选择板子：**
+**Select board:**
 
 ```
-Xiaozhi Assistant -> Board Type -> DFRobot ESP32-S3 AI智能摄像头模块
+Xiaozhi Assistant -> Board Type -> DFRobot ESP32-S3 AI Camera Module
 ```
 
-**修改 psram 配置：**
+**Adjust PSRAM configuration:**
 
 ```
 Component config -> ESP PSRAM -> SPI RAM config -> Mode (QUAD/OCT) -> Octal Mode PSRAM
 ```
 
-**修改 WiFi 发射功率 为 10：**
+**Set WiFi TX power to 10:**
 
 ```
 Component config -> PHY -> (10)Max WiFi TX power (dBm)
 ```
 
-**配置摄像头：**
+**Configure camera:**
 
 * **OV3660**
 ```
@@ -69,7 +69,7 @@ Component config -> Espressif Camera Sensors Configurations -> Camera Sensor Con
 Component config -> Espressif Camera Sensors Configurations -> Camera Sensor Configuration -> Select and Set Camera Sensor -> OV2640 ->  Select default output format for DVP interface (YUV422 240x240 25fps, DVP 8-bit, 20M input)
 ```
 
-**编译：**
+**Build:**
 
 ```bash
 idf.py build

@@ -1,11 +1,11 @@
-## EDA-Robot-Pro 机器狗
+## EDA-Robot-Pro Robot Dog
 
-### 项目文档
-- [EDA-Robot-Pro 项目文档](https://wiki.lceda.cn/zh-hans/course-projects/smart-internet/eda-robot/eda-robot-introduce.html)
+### Project Documentation
+- [EDA-Robot-Pro Project Documentation](https://wiki.lceda.cn/zh-hans/course-projects/smart-internet/eda-robot/eda-robot-introduce.html)
 
-### 编译配置
-Flash大小按ESP32S3模组大小调整  
-例如模组Flash容量为8MB时：
+### Build Configuration
+Adjust flash size according to the ESP32-S3 module.  
+For example, with an 8MB flash module:
 
 ```
 Partition Table  --->

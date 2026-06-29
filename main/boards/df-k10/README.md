@@ -1,42 +1,42 @@
-# DFRobot 行空板 K10
+# DFRobot UNIHIKER K10
 
-## 按键配置
-* A：短按-打断/唤醒，长按1s-音量调大
-* B：短按-打断/唤醒，长按1s-音量调小
+## Button Configuration
+* A: Short press - interrupt/wake, long press 1s - volume up
+* B: Short press - interrupt/wake, long press 1s - volume down
 
-## 编译配置命令
+## Build Configuration
 
-**配置编译目标为 ESP32S3：**
+**Set build target to ESP32S3:**
 
 ```bash
 idf.py set-target esp32s3
 ```
 
-**打开 menuconfig：**
+**Open menuconfig:**
 
 ```bash
 idf.py menuconfig
 ```
 
-**选择板子：**
+**Select board:**
 
 ```
-Xiaozhi Assistant -> Board Type -> DFRobot 行空板 K10
+Xiaozhi Assistant -> Board Type -> DFRobot UNIHIKER K10
 ```
 
-**修改 psram 配置：**
+**Adjust PSRAM configuration:**
 
 ```
 Component config -> ESP PSRAM -> SPI RAM config -> Mode (QUAD/OCT) -> Octal Mode PSRAM
 ```
 
-**使能摄像头缓冲区大小端交换：**
+**Enable camera buffer byte swap:**
 
 ```
 Xiaozhi Assistant -> Camera Configuration -> Enable software camera buffer endianness swapping
 ```
 
-**配置摄像头：**
+**Configure camera:**
 ```
 Component config -> Espressif Camera Sensors Configurations -> Camera Sensor Configuration -> Select and Set Camera Sensor -> GC2145 ->  Auto detect GC2145
 
@@ -47,7 +47,7 @@ Component config -> Espressif Camera Sensors Configurations -> Camera Sensor Con
 
 ```
 
-**编译：**
+**Build:**
 
 ```bash
 idf.py build

@@ -25,7 +25,7 @@
 
 #define TAG "ZhengchenCamBoard_ML307"
 
-//控制器初始化函数声明
+// Controller init function declarations
 void InitializeMCPController();
 
 LV_FONT_DECLARE(font_puhui_20_4);
@@ -137,7 +137,7 @@ private:
             Settings settings(FIRST_BOOT_NS, true);
             bool is_first_boot = settings.GetInt(FIRST_BOOT_KEY, 1) != 0;
             if (is_first_boot) {
-                ESP_LOGI(TAG, "首次启动，启用双击拍照功能");
+                ESP_LOGI(TAG, "First boot: double-tap photo enabled");
                 auto camera = GetCamera();
                 if (!camera->Capture()) {
                     ESP_LOGE(TAG, "Camera capture failed");
@@ -146,7 +146,7 @@ private:
 
                 
             } else {
-                ESP_LOGI(TAG, "非首次启动，禁用双击拍照功能");
+                ESP_LOGI(TAG, "Not first boot: double-tap photo disabled");
                 auto& app = Application::GetInstance();
                 if (app.GetDeviceState() == kDeviceStateIdle) {
                     app.SetAecMode(app.GetAecMode() == kAecOff ? kAecOnDeviceSide : kAecOff);
@@ -197,7 +197,7 @@ private:
     void InitializeSt7789Display() {
         esp_lcd_panel_io_handle_t panel_io = nullptr;
         esp_lcd_panel_handle_t panel = nullptr;
-        // 液晶屏控制IO初始化
+        // Initialize LCD panel IO
         ESP_LOGD(TAG, "Install panel IO");
         esp_lcd_panel_io_spi_config_t io_config = {};
         io_config.cs_gpio_num = GPIO_NUM_NC;
@@ -209,7 +209,7 @@ private:
         io_config.lcd_param_bits = 8;
         ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(SPI3_HOST, &io_config, &panel_io));
 
-        // 初始化液晶屏驱动芯片ST7789
+        // Initialize ST7789 LCD driver
         ESP_LOGD(TAG, "Install LCD driver");
         esp_lcd_panel_dev_config_t panel_config = {};
         panel_config.reset_gpio_num = GPIO_NUM_NC;
@@ -227,14 +227,14 @@ private:
         bool is_landscape = settings.GetInt("lcd_mode", 1) != 0;
         
         if(is_landscape) {
-            // 横屏模式
+            // Landscape mode
             esp_lcd_panel_swap_xy(panel, DISPLAY_SWAP_XY);
             esp_lcd_panel_mirror(panel, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y);
             display_ = new SpiLcdDisplay(panel_io, panel,
                                         DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_OFFSET_X, DISPLAY_OFFSET_Y, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y, DISPLAY_SWAP_XY);
 
         } else {
-            // 竖屏模式
+            // Portrait mode
             esp_lcd_panel_swap_xy(panel, DISPLAY_SWAP_XY_1);
             esp_lcd_panel_mirror(panel, DISPLAY_MIRROR_X_1, DISPLAY_MIRROR_Y_1);
             display_ = new SpiLcdDisplay(panel_io, panel,
@@ -248,8 +248,8 @@ private:
         pca9557_->SetOutputState(2, 0);
 
         camera_config_t config = {};
-        config.ledc_channel = LEDC_CHANNEL_2;  // LEDC通道选择  用于生成XCLK时钟 但是S3不用
-        config.ledc_timer = LEDC_TIMER_2; // LEDC timer选择  用于生成XCLK时钟 但是S3不用
+        config.ledc_channel = LEDC_CHANNEL_2;  // LEDC channel for XCLK clock (unused on S3)
+        config.ledc_timer = LEDC_TIMER_2; // LEDC timer for XCLK clock (unused on S3)
         config.pin_d0 = CAMERA_PIN_D0;
         config.pin_d1 = CAMERA_PIN_D1;
         config.pin_d2 = CAMERA_PIN_D2;
@@ -262,7 +262,7 @@ private:
         config.pin_pclk = CAMERA_PIN_PCLK;
         config.pin_vsync = CAMERA_PIN_VSYNC;
         config.pin_href = CAMERA_PIN_HREF;
-        config.pin_sccb_sda = -1;   // 这里写-1 表示使用已经初始化的I2C接口
+        config.pin_sccb_sda = -1;   // -1 means use the already initialized I2C bus
         config.pin_sccb_scl = CAMERA_PIN_SIOC;
         config.sccb_i2c_port = 1;
         config.pin_pwdn = CAMERA_PIN_PWDN;

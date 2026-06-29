@@ -101,9 +101,9 @@ private:
         power_save_timer_->OnShutdownRequest([this]() {
             ESP_LOGI(TAG, "Shutting down");
             rtc_gpio_set_level(GPIO_NUM_3, 0);
-            // 启用保持功能，确保睡眠期间电平不变
+            // Enable hold so levels stay stable during sleep
             rtc_gpio_hold_en(GPIO_NUM_3);
-            esp_lcd_panel_disp_on_off(panel_, false); //关闭显示
+            esp_lcd_panel_disp_on_off(panel_, false); // turn off display
             esp_deep_sleep_start();
         });
         power_save_timer_->SetEnabled(true);
@@ -148,21 +148,21 @@ private:
         auto touchpad = board.GetTouchpad();
         static bool was_touched = false;
         static int64_t touch_start_time = 0;
-        const int64_t TOUCH_THRESHOLD_MS = 500;  // 触摸时长阈值，超过500ms视为长按
+        const int64_t TOUCH_THRESHOLD_MS = 500;  // Touch duration threshold; >500ms counts as long press
 
         touchpad->UpdateTouchPoint();
         auto touch_point = touchpad->GetTouchPoint();
-        // 检测触摸开始
+        // Detect touch start
         if (touch_point.num > 0 && !was_touched) {
             was_touched = true;
-            touch_start_time = esp_timer_get_time() / 1000; // 转换为毫秒
+            touch_start_time = esp_timer_get_time() / 1000; // Convert to milliseconds
         }
-        // 检测触摸释放
+        // Detect touch release
         else if (touch_point.num == 0 && was_touched) {
             was_touched = false;
             int64_t touch_duration = (esp_timer_get_time() / 1000) - touch_start_time;
 
-            // 只有短触才触发
+            // Trigger only on short tap
             if (touch_duration < TOUCH_THRESHOLD_MS) {
                 auto& app = Application::GetInstance();
                 if (app.GetDeviceState() == kDeviceStateStarting) {
@@ -178,7 +178,7 @@ private:
         ESP_LOGI(TAG, "Init Cst816D");
         cst816d_ = new Cst816d(i2c_bus_, 0x15);
 
-        // 创建定时器，10ms 间隔
+        // Create timer with 10ms interval
         esp_timer_create_args_t timer_args = {
             .callback = touchpad_timer_callback,
             .arg = NULL,
@@ -193,7 +193,7 @@ private:
 
     void EnableLcdCs() {
         if(io_expander_ != NULL) {
-            esp_io_expander_set_level(io_expander_, DISPLAY_SPI_CS_PIN, 0);// 置低 LCD CS
+            esp_io_expander_set_level(io_expander_, DISPLAY_SPI_CS_PIN, 0);// Drive LCD CS low
         }
     }
 
@@ -211,7 +211,7 @@ private:
     void InitializeSt7789Display() {
         esp_lcd_panel_io_handle_t panel_io = nullptr;
         esp_lcd_panel_handle_t panel = nullptr;
-        // 液晶屏控制IO初始化
+        // Initialize LCD control IO
         ESP_LOGD(TAG, "Install panel IO");
         esp_lcd_panel_io_spi_config_t io_config = {};
         io_config.cs_gpio_num = DISPLAY_SPI_CS_PIN;
@@ -223,7 +223,7 @@ private:
         io_config.lcd_param_bits = 8;
         ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(SPI3_HOST, &io_config, &panel_io));
 
-        // 初始化液晶屏驱动芯片ST7789
+        // Initialize LCD driver chip ST7789
         ESP_LOGD(TAG, "Install LCD driver");
         esp_lcd_panel_dev_config_t panel_config = {};
         panel_config.reset_gpio_num = DISPLAY_SPI_RESET_PIN;

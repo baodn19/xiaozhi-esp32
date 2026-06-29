@@ -14,12 +14,12 @@
 #include "emoji_collection.h"
 #include "hub75.h"
 
-// 声明中文字体
+// Declare Chinese font
 LV_FONT_DECLARE(font_puhui_14_1);
 LV_FONT_DECLARE(BUILTIN_ICON_FONT);
 LV_FONT_DECLARE(font_awesome_30_4);
 
-// 声明32x32 Emoji集合
+// Declare 32x32 emoji collection
 class Twemoji32;
 
 struct Hub75Context {
@@ -113,7 +113,7 @@ std::string TransformMessageText(const char* role, const char* content) {
     return content;
 }
 
-// 重新映射状态文本，将原始文本更换为更简短的文本
+// Remap status text to shorter display strings
 const char* RemapStatusText(const char* text) {
     if (text == nullptr) {
         return nullptr;
@@ -125,18 +125,18 @@ const char* RemapStatusText(const char* text) {
     };
 
     static const MapItem Map[] = {
-        {Lang::Strings::SCANNING_WIFI, "扫描中"},
-        {Lang::Strings::CONNECTING, "连接中"},
-        {Lang::Strings::WIFI_CONFIG_MODE, "配网中"},
-        {Lang::Strings::CHECKING_NEW_VERSION, "检查中"},
-        {Lang::Strings::LOADING_PROTOCOL, "登录中"},
-        {Lang::Strings::REGISTERING_NETWORK, "配网中"},
-        {Lang::Strings::DETECTING_MODULE, "检测中"},
-        {Lang::Strings::ACTIVATION, "激活中"},
-        {Lang::Strings::PLEASE_WAIT, "等待中"},
-        {Lang::Strings::LISTENING, "聆听"},
-        {Lang::Strings::SPEAKING, "说话"},
-        {Lang::Strings::STANDBY, "待命"},
+        {Lang::Strings::SCANNING_WIFI, "Scanning"},
+        {Lang::Strings::CONNECTING, "Connecting"},
+        {Lang::Strings::WIFI_CONFIG_MODE, "Configuring"},
+        {Lang::Strings::CHECKING_NEW_VERSION, "Checking"},
+        {Lang::Strings::LOADING_PROTOCOL, "Signing in"},
+        {Lang::Strings::REGISTERING_NETWORK, "Configuring"},
+        {Lang::Strings::DETECTING_MODULE, "Detecting"},
+        {Lang::Strings::ACTIVATION, "Activating"},
+        {Lang::Strings::PLEASE_WAIT, "Waiting"},
+        {Lang::Strings::LISTENING, "Listening"},
+        {Lang::Strings::SPEAKING, "Speaking"},
+        {Lang::Strings::STANDBY, "Standby"},
     };
 
     size_t i = 0;
@@ -151,11 +151,11 @@ const char* RemapStatusText(const char* text) {
     }
 
     if (StartsWith(text, Lang::Strings::CONNECT_TO)) {
-        return "连接中";
+        return "Connecting";
     }
 
     if (StartsWith(text, Lang::Strings::CONNECTED_TO)) {
-        return "已连接";
+        return "Connected";
     }
 
     if (StartsWith(text, Lang::Strings::VERSION)) {
@@ -270,17 +270,17 @@ void CustomMatrixDisplay::SetupUI() {
     }
     Display::SetupUI();
 
-    // 初始化 Emoji 资源（用于 SetEmotion）
+    // Initialize emoji resources (for SetEmotion)
     emoji_collection_ = std::make_shared<Twemoji32>();
 
     const int ui_width_px = width_;
     const int ui_height_px = height_;
 
-    // 屏幕根对象：全黑背景
+    // Screen root: black background
     auto* screen = lv_screen_active();
     lv_obj_set_style_bg_color(screen, lv_color_black(), 0);
 
-    // 主容器：承载所有控件
+    // Main container for all widgets
     main_container_ = lv_obj_create(screen);
     lv_obj_set_size(main_container_, ui_width_px, ui_height_px);
     lv_obj_set_style_bg_color(main_container_, lv_color_black(), 0);
@@ -288,14 +288,14 @@ void CustomMatrixDisplay::SetupUI() {
     lv_obj_set_style_pad_all(main_container_, 0, 0);
     lv_obj_center(main_container_);
 
-    // 左上角：WiFi 图标（UpdateStatusBar 更新内容）
+    // Top-left: WiFi icon (updated by UpdateStatusBar)
     network_label_ = lv_label_create(main_container_);
     lv_label_set_text(network_label_, "");
     lv_obj_set_style_text_font(network_label_, &BUILTIN_ICON_FONT, 0);
     lv_obj_set_style_text_color(network_label_, lv_color_white(), 0);
     lv_obj_align(network_label_, LV_ALIGN_TOP_LEFT, 0, 0);
 
-    // 右上角：状态文本 + 时间
+    // Top-right: status text + time
     status_label_ = lv_label_create(main_container_);
     lv_obj_set_size(status_label_, ui_width_px - 16, 16);
     lv_label_set_long_mode(status_label_, LV_LABEL_LONG_CLIP);
@@ -303,10 +303,10 @@ void CustomMatrixDisplay::SetupUI() {
     lv_obj_set_style_text_color(status_label_, lv_color_white(), 0);
     lv_obj_set_style_text_font(status_label_, &font_puhui_14_1, 0);
     lv_obj_align(status_label_, LV_ALIGN_TOP_RIGHT, 0, -1);
-    status_text_ = "初始化";
+    status_text_ = "Initializing";
     RefreshStatusLabelLocked();
 
-    // 底部滚动文本：SetChatMessage 使用
+    // Bottom scrolling text for SetChatMessage
     message_label_ = lv_label_create(main_container_);
     lv_obj_set_width(message_label_, ui_width_px);
     lv_label_set_long_mode(message_label_, LV_LABEL_LONG_SCROLL_CIRCULAR);
@@ -314,9 +314,9 @@ void CustomMatrixDisplay::SetupUI() {
     lv_obj_set_style_text_color(message_label_, lv_color_white(), 0);
     lv_obj_set_style_text_font(message_label_, &font_puhui_14_1, 0);
     lv_obj_align(message_label_, LV_ALIGN_BOTTOM_MID, 0, 0);
-    lv_label_set_text(message_label_, "hi 小智");
+    lv_label_set_text(message_label_, "hi Xiaozhi");
 
-    // Emoji 图片：SetEmotion 使用
+    // Emoji image for SetEmotion
     emoji_image_ = lv_image_create(main_container_);
     lv_obj_align(emoji_image_, LV_ALIGN_CENTER, 0, -1);
     lv_obj_add_flag(emoji_image_, LV_OBJ_FLAG_HIDDEN);
@@ -338,7 +338,7 @@ void CustomMatrixDisplay::SetEmotion(const char* emotion) {
         return;
     }
 
-    // 尝试获取表情图片
+    // Try to get emoji image
     const LvglImage* emoji_lvgl_image = nullptr;
     if (emoji_collection_ && !UseBuiltInEmotionIcon(emotion)) {
         emoji_lvgl_image = emoji_collection_->GetEmojiImage(emotion);

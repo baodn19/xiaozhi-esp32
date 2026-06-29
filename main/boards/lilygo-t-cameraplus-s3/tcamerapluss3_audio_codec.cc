@@ -13,9 +13,9 @@ Tcamerapluss3AudioCodec::Tcamerapluss3AudioCodec(int input_sample_rate, int outp
     gpio_num_t mic_bclk, gpio_num_t mic_ws, gpio_num_t mic_data,
     gpio_num_t spkr_bclk, gpio_num_t spkr_lrclk, gpio_num_t spkr_data,
     bool input_reference) {
-    duplex_ = true;                             // 是否双工
-    input_reference_ = input_reference;         // 是否使用参考输入，实现回声消除
-    input_channels_ = input_reference_ ? 2 : 1; // 输入通道数
+    duplex_ = true;                             // Full duplex
+    input_reference_ = input_reference;         // Use reference input for AEC
+    input_channels_ = input_reference_ ? 2 : 1; // Input channel count
     input_sample_rate_ = input_sample_rate;
     output_sample_rate_ = output_sample_rate;
 
@@ -78,7 +78,7 @@ void Tcamerapluss3AudioCodec::CreateVoiceHardware(gpio_num_t mic_bclk, gpio_num_
             .invert_flags = {
                 .mclk_inv = false,
                 .bclk_inv = false,
-                .ws_inv = true // 默认右通道
+                .ws_inv = true // Default right channel
             }
         }
     };
@@ -145,7 +145,7 @@ int Tcamerapluss3AudioCodec::Read(int16_t *dest, int samples) {
         size_t bytes_read;
         i2s_channel_read(rx_handle_, dest, samples * sizeof(int16_t), &bytes_read, portMAX_DELAY);
         
-        // 麦克风接收音量放大20倍（限制在 int16_t 范围内防止溢出）
+        // Amplify mic input 20x (clamped to int16_t range to prevent overflow)
         int16_t *ptr = dest;
         for (int i = 0; i < samples; i++) {
             int32_t amplified = *ptr * 20;

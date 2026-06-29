@@ -90,9 +90,9 @@ private:
     }
 
 
-    // EDA机器狗控制器初始化
+    // EDA robot dog controller initialization
     void InitializeEDARobotDogController() {
-        ESP_LOGI(TAG, "初始化EDA机器狗MCP控制器");
+        ESP_LOGI(TAG, "Initializing EDA robot dog MCP controller");
         ::InitializeEDARobotDogController();
     }
 void InitializeButtons() {

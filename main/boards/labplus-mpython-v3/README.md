@@ -1,61 +1,61 @@
-# labplus 掌控板V3
+# labplus mPython Board V3
 
-## 板载资源
-    主控：ESP32-S3 外挂8MB psram 16MB flash	
-    传感器:
-        按钮(A B按键）	IO0 IO46
-        光照传感器	IIC
-        6轴	IIC
-        磁力计	IIC
-        声音触发	IO6
-        触摸按键  P Y T H O N
-        摄像头	IIC
-    执行器:
-        蜂鸣器	IO21
-        RGB灯	IO16
-        录音播放 es8388	IIC	
+## On-Board Resources
+    MCU: ESP32-S3 with 8MB PSRAM and 16MB flash	
+    Sensors:
+        Buttons (A/B)	IO0 IO46
+        Light sensor	I2C
+        6-axis IMU	I2C
+        Magnetometer	I2C
+        Sound trigger	IO6
+        Touch keys P Y T H O N
+        Camera	I2C
+    Actuators:
+        Buzzer	IO21
+        RGB LED	IO16
+        Audio ES8388	I2C	
         TFT LCD	jd9853 SPI
 
 
-## 编译配置
+## Build Configuration
 
-### 配置编译目标为 ESP32S3，USB JTAG下载
+### Set build target to ESP32S3 with USB JTAG download
 
 ```bash
 idf.py set-target esp32s3
 ```
 
-### menuconfig配置
+### menuconfig Configuration
 
 ```bash
 idf.py menuconfig
 ```
 
-***选择板子：***
+***Select board:***
 
 ```
 Xiaozhi Assistant -> Board Type -> labplus mpython_v3 board
 ```
 
-***修改 psram 配置：***
+***Adjust PSRAM configuration:***
 
 ```
 Component config -> ESP PSRAM -> SPI RAM config -> Mode (QUAD/OCT) -> quad Mode PSRAM
 ```
 
-**编译：**
+**Build:**
 
 ```bash
 idf.py build
 ```
 
-**固件打包：**
+**Package firmware:**
 
 ```bash
 esptool.py -p /dev/ttyACM0 -b 1500000 --before default_reset --after hard_reset --chip esp32s3 write_flash --flash_mode dio --flash_freq 80m --flash_size 16MB 0x0 bootloader/bootloader.bin 0x100000 xiaozhi.bin 0x8000 partition_table/partition-table.bin 0xd000 ota_data_initial.bin 0x10000 srmodels/srmodels.bin 
 ```
 
-## 使用
+## Usage
 
-### 按键配置
-* A：短按-打断/唤醒
+### Button Configuration
+* A: Short press - interrupt/wake

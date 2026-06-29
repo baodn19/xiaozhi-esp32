@@ -79,7 +79,7 @@ private:
     void InitializeLcdDisplay() {
         esp_lcd_panel_io_handle_t panel_io = nullptr;
         esp_lcd_panel_handle_t panel = nullptr;
-        // 液晶屏控制IO初始化
+        // Initialize LCD control IO
         ESP_LOGD(TAG, "Install panel IO");
         esp_lcd_panel_io_spi_config_t io_config = {};
         io_config.cs_gpio_num = DISPLAY_CS_PIN;
@@ -91,7 +91,7 @@ private:
         io_config.lcd_param_bits = 8;
         ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(SPI3_HOST, &io_config, &panel_io));
 
-        // 初始化液晶屏驱动芯片
+        // Initialize LCD driver IC
         ESP_LOGD(TAG, "Install LCD driver");
         esp_lcd_panel_dev_config_t panel_config = {};
         panel_config.reset_gpio_num = DISPLAY_RST_PIN;
@@ -124,15 +124,15 @@ private:
 
     void InitializeButtons() {
 
-        // 配置 GPIO
+        // Configure GPIO
         gpio_config_t io_conf = {
-            .pin_bit_mask = 1ULL << BUILTIN_LED_GPIO,  // 设置需要配置的 GPIO 引脚
-            .mode = GPIO_MODE_OUTPUT,           // 设置为输出模式
-            .pull_up_en = GPIO_PULLUP_DISABLE,  // 禁用上拉
-            .pull_down_en = GPIO_PULLDOWN_DISABLE,  // 禁用下拉
-            .intr_type = GPIO_INTR_DISABLE      // 禁用中断
+            .pin_bit_mask = 1ULL << BUILTIN_LED_GPIO,  // GPIO pin to configure
+            .mode = GPIO_MODE_OUTPUT,           // Output mode
+            .pull_up_en = GPIO_PULLUP_DISABLE,  // Disable pull-up
+            .pull_down_en = GPIO_PULLDOWN_DISABLE,  // Disable pull-down
+            .intr_type = GPIO_INTR_DISABLE      // Disable interrupt
         };
-        gpio_config(&io_conf);  // 应用配置
+        gpio_config(&io_conf);  // Apply config
 
         boot_button_.OnClick([this]() {
             auto& app = Application::GetInstance();
@@ -145,6 +145,7 @@ private:
         });
 
         asr_button_.OnClick([this]() {
+            // Chinese wake phrase required by the built-in WakeNet model; do not translate
             std::string wake_word="你好小智";
             Application::GetInstance().WakeWordInvoke(wake_word);
         });

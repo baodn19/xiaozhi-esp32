@@ -37,13 +37,13 @@ private:
             return;
         }
 
-        // 如果电池电量数据不足，则读取电池电量数据
+        // Read battery ADC data when insufficient samples collected
         if (adc_values_.size() < kBatteryAdcDataCount) {
             ReadBatteryAdcData();
             return;
         }
 
-        // 如果电池电量数据充足，则每 kBatteryAdcInterval 个 tick 读取一次电池电量数据
+        // When enough samples exist, read battery ADC every kBatteryAdcInterval ticks
         ticks_++;
         if (ticks_ % kBatteryAdcInterval == 0) {
             ReadBatteryAdcData();
@@ -54,7 +54,7 @@ private:
         int adc_value;
         ESP_ERROR_CHECK(adc_oneshot_read(adc_handle_, ADC_CHANNEL_2, &adc_value));
 
-        // 将 ADC 值添加到队列中
+        // Append ADC value to the queue
         adc_values_.push_back(adc_value);
         if (adc_values_.size() > kBatteryAdcDataCount) {
             adc_values_.erase(adc_values_.begin());
@@ -65,7 +65,7 @@ private:
         }
         average_adc /= adc_values_.size();
 
-        // 定义电池电量区间
+        // Battery level lookup table
         const struct {
             uint16_t adc;
             uint8_t level;
@@ -78,15 +78,15 @@ private:
             {3760, 100}
         };
 
-        // 低于最低值时
+        // Below minimum ADC value
         if (average_adc < levels[0].adc) {
             battery_level_ = 0;
         }
-        // 高于最高值时
+        // Above maximum ADC value
         else if (average_adc >= levels[5].adc) {
             battery_level_ = 100;
         } else {
-            // 线性插值计算中间值
+            // Linear interpolation for intermediate values
             for (int i = 0; i < 5; i++) {
                 if (average_adc >= levels[i].adc && average_adc < levels[i+1].adc) {
                     float ratio = static_cast<float>(average_adc - levels[i].adc) / (levels[i+1].adc - levels[i].adc);
@@ -115,8 +115,8 @@ public:
 
         
         if (charging_pin_ != GPIO_NUM_NC) {
-            // 不初始化 ADC，不检测
-            // 初始化充电引脚
+            // Skip ADC init and battery monitoring
+            // Initialize charging detect pin
             gpio_config_t io_conf = {};
             io_conf.intr_type = GPIO_INTR_DISABLE;
             io_conf.mode = GPIO_MODE_INPUT;
@@ -127,7 +127,7 @@ public:
         }
         
 
-        // 创建电池电量检查定时器
+        // Create battery level check timer
         esp_timer_create_args_t timer_args = {
             .callback = [](void* arg) {
                 PowerManager* self = static_cast<PowerManager*>(arg);
@@ -141,7 +141,7 @@ public:
         ESP_ERROR_CHECK(esp_timer_create(&timer_args, &timer_handle_));
         ESP_ERROR_CHECK(esp_timer_start_periodic(timer_handle_, 1000000));
 
-        // 初始化 ADC
+        // Initialize ADC
         adc_oneshot_unit_init_cfg_t init_config = {
             .unit_id = ADC_UNIT_1,  
             .ulp_mode = ADC_ULP_MODE_DISABLE,
@@ -169,7 +169,7 @@ public:
     }
 
     bool IsCharging() {        
-        // 如果电量已经满了，则不再显示充电中
+        // Do not show charging when battery is full
         if (battery_level_ == 100) {
             return false;
         }
@@ -183,7 +183,7 @@ public:
         if (charging_pin_ == GPIO_NUM_NC) {
             return false;
         }
-        // 没有区分充电和放电，所以直接返回相反状态
+        // Charging/discharging not distinguished; return inverse of charging state
         return !is_charging_;
     }
 

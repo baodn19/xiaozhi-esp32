@@ -44,7 +44,7 @@ static const rm69a10_lcd_init_cmd_t vendor_specific_init_default[] = {
     {0x3A, (uint8_t[]){0x77}, 1, 0}, // interface pixel format 24bit/pixel
 #endif
     // {0x51, (uint8_t[]){0xFE}, 1, 0},
-    {0x51, (uint8_t[]){0x00}, 1, 0}, // 设置屏幕亮度为0
+    {0x51, (uint8_t[]){0x00}, 1, 0}, // Set screen brightness to 0
     {0x11, (uint8_t[]){0x00}, 0, 120},
     {0x29, (uint8_t[]){0x00}, 0, 0},
     //============ Gamma END===========

@@ -68,7 +68,7 @@ In menuconfig navigate to:
 
 ```
 Xiaozhi Assistant →
-  Board Type            → Bread Compact WiFi + LCD + Touch (面包板 + XPT2046)
+  Board Type            → Bread Compact WiFi + LCD + Touch (breadboard + XPT2046)
   Display → LCD Type    → ILI9341 240*320
   LotusAI backend base URL  → https://lotusfoodasmedicine.com
                               (or http://192.168.x.x:8000 for local dev)

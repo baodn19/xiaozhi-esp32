@@ -11,7 +11,7 @@ static const char *TAG = "EDARobotDogMovements";
 
 EDARobotDog::EDARobotDog() {
   is_dog_resting_ = false;
-  // 初始化所有舵机管脚为-1（未连接）
+  // Initialize all servo pins to -1 (not connected)
   for (int i = 0; i < SERVO_COUNT; i++) {
     servo_pins_[i] = -1;
     servo_trim_[i] = 0;
@@ -213,7 +213,7 @@ void EDARobotDog::SetRestState(bool state) { is_dog_resting_ = state; }
 
 void EDARobotDog::LiftLeftFrontLeg(int period, int height) {
 
-  // 获取当前位置
+  // Get current positions
   int current_pos[SERVO_COUNT];
   for (int i = 0; i < SERVO_COUNT; i++) {
     if (servo_pins_[i] != -1) {
@@ -223,7 +223,7 @@ void EDARobotDog::LiftLeftFrontLeg(int period, int height) {
     }
   }
 
-  // 重复3次摇摆动作
+  // Repeat sway 3 times
   for (int num = 0; num < 3; num++) {
     // servo1.write(180); delay(100);
     current_pos[LEFT_FRONT_LEG] = 0; // servo1
@@ -241,7 +241,7 @@ void EDARobotDog::LiftLeftFrontLeg(int period, int height) {
 
 void EDARobotDog::LiftLeftRearLeg(int period, int height) {
 
-  // 获取当前位置
+  // Get current positions
   int current_pos[SERVO_COUNT];
   for (int i = 0; i < SERVO_COUNT; i++) {
     if (servo_pins_[i] != -1) {
@@ -251,7 +251,7 @@ void EDARobotDog::LiftLeftRearLeg(int period, int height) {
     }
   }
 
-  // 重复3次摇摆动作
+  // Repeat sway 3 times
   for (int num = 0; num < 3; num++) {
     // servo1.write(180); delay(100);
     current_pos[LEFT_REAR_LEG] = 180; // servo1
@@ -269,7 +269,7 @@ void EDARobotDog::LiftLeftRearLeg(int period, int height) {
 
 void EDARobotDog::LiftRightFrontLeg(int period, int height) {
   
-  // 获取当前位置
+  // Get current positions
   int current_pos[SERVO_COUNT];
   for (int i = 0; i < SERVO_COUNT; i++) {
     if (servo_pins_[i] != -1) {
@@ -279,7 +279,7 @@ void EDARobotDog::LiftRightFrontLeg(int period, int height) {
     }
   }
 
-  // 重复3次摇摆动作
+  // Repeat sway 3 times
   for (int num = 0; num < 3; num++) {
     // servo1.write(180); delay(100);
     current_pos[RIGHT_FRONT_LEG] = 180; // servo1
@@ -297,7 +297,7 @@ void EDARobotDog::LiftRightFrontLeg(int period, int height) {
 
 void EDARobotDog::LiftRightRearLeg(int period, int height) {
 
-  // 获取当前位置
+  // Get current positions
   int current_pos[SERVO_COUNT];
   for (int i = 0; i < SERVO_COUNT; i++) {
     if (servo_pins_[i] != -1) {
@@ -307,7 +307,7 @@ void EDARobotDog::LiftRightRearLeg(int period, int height) {
     }
   }
 
-  // 重复3次摇摆动作
+  // Repeat sway 3 times
   for (int num = 0; num < 3; num++) {
     // servo1.write(180); delay(100);
     current_pos[RIGHT_REAR_LEG] = 0; // servo1
@@ -327,27 +327,27 @@ void EDARobotDog::LiftRightRearLeg(int period, int height) {
 //-- DOG GAIT MOVEMENTS -----------------------------------------//
 ///////////////////////////////////////////////////////////////////
 
-// 舵机方向分析（从 Stretch/Sleep 推断物理前后方向）：
+// Servo direction analysis (forward/back inferred from Stretch/Sleep):
 //
 //   Stretch: LF=0, LR=180, RF=180, RR=0
-//   → 前腿向前伸，后腿向后伸
+//   -> Front legs extend forward, rear legs extend backward
 //
-//   LEFT_FRONT_LEG  (0): 减小=向前, 增大=向后
-//   LEFT_REAR_LEG   (1): 减小=向前, 增大=向后
-//   RIGHT_FRONT_LEG (2): 增大=向前, 减小=向后
-//   RIGHT_REAR_LEG  (3): 增大=向前, 减小=向后
+//   LEFT_FRONT_LEG  (0): decrease=forward, increase=backward
+//   LEFT_REAR_LEG   (1): decrease=forward, increase=backward
+//   RIGHT_FRONT_LEG (2): increase=forward, decrease=backward
+//   RIGHT_REAR_LEG  (3): increase=forward, decrease=backward
 //
-//   即：左侧两腿同向（减=前），右侧两腿同向（增=前）
-//   对角线A: 左前 + 右后 → 前进时左前减小, 右后减小（都是各自的"向前"）
-//   对角线B: 左后 + 右前 → 前进时左后减小, 右前增大（都是各自的"向前"）
+//   Left legs move together (decrease=forward); right legs move together (increase=forward)
+//   Diagonal A: LF + RR -> when walking forward, LF decreases, RR decreases (each "forward")
+//   Diagonal B: LR + RF -> when walking forward, LR decreases, RF increases (each "forward")
 //
-//   抬腿方向（从 Lift 函数）：
-//   LEFT_FRONT_LEG:  0°   (减小=抬)
-//   LEFT_REAR_LEG:   180° (增大=抬)
-//   RIGHT_FRONT_LEG: 180° (增大=抬)
-//   RIGHT_REAR_LEG:  0°   (减小=抬)
+//   Lift direction (from Lift function):
+//   LEFT_FRONT_LEG:  0°   (decrease=lift)
+//   LEFT_REAR_LEG:   180° (increase=lift)
+//   RIGHT_FRONT_LEG: 180° (increase=lift)
+//   RIGHT_REAR_LEG:  0°   (decrease=lift)
 
-// 辅助：获取当前所有舵机位置
+// Helper: get current positions of all servos
 void EDARobotDog::GetCurrentPositions(int pos[SERVO_COUNT]) {
   for (int i = 0; i < SERVO_COUNT; i++) {
     if (servo_pins_[i] != -1) {
@@ -363,18 +363,18 @@ void EDARobotDog::Turn(float steps, int period, int dir) {
     SetRestState(false);
   }
 
-  // 转弯 = 左侧后退 + 右侧前进（左转），或反过来（右转）
-  // 从 Walk 的已验证方向推导：
-  //   前进: LF=90-s, LR=90-s, RF=90+s, RR=90+s
-  //   后退: LF=90+s, LR=90+s, RF=90-s, RR=90-s
+  // Turn = left side backward + right side forward (left turn), or the reverse (right turn)
+  // Derived from verified Walk directions:
+  //   Forward: LF=90-s, LR=90-s, RF=90+s, RR=90+s
+  //   Backward: LF=90+s, LR=90+s, RF=90-s, RR=90-s
   //
-  // 左转(d=1): 左侧后退+右侧前进
-  //   LF=90+s, LR=90+s, RF=90+s, RR=90+s → 全部 90+s
-  //   地面反推: 全部 90-s
+  // Left turn (d=1): left backward + right forward
+  //   LF=90+s, LR=90+s, RF=90+s, RR=90+s -> all 90+s
+  //   Ground push: all 90-s
   //
-  // 右转(d=-1): 左侧前进+右侧后退
-  //   LF=90-s, LR=90-s, RF=90-s, RR=90-s → 全部 90-s
-  //   地面反推: 全部 90+s
+  // Right turn (d=-1): left forward + right backward
+  //   LF=90-s, LR=90-s, RF=90-s, RR=90-s -> all 90-s
+  //   Ground push: all 90+s
 
   const int swing = 60;
   const int lift = 25;
@@ -387,42 +387,42 @@ void EDARobotDog::Turn(float steps, int period, int dir) {
     int pos[SERVO_COUNT];
     GetCurrentPositions(pos);
 
-    // 拍1: 抬A（LF+RR）
+    // Beat 1: lift A (LF+RR)
     pos[LEFT_FRONT_LEG]  = 90 - lift;
     pos[RIGHT_REAR_LEG]  = 90 - lift;
     MoveServos(t, pos);
 
-    // 拍2: A空中摆 + B地面反推
-    pos[LEFT_FRONT_LEG]  = 90 - lift + d * swing;  // LF空中
-    pos[RIGHT_REAR_LEG]  = 90 - lift + d * swing;  // RR空中
-    pos[LEFT_REAR_LEG]   = 90 - d * swing;         // LR地面反推
-    pos[RIGHT_FRONT_LEG] = 90 - d * swing;         // RF地面反推
+    // Beat 2: A swings in air + B pushes on ground
+    pos[LEFT_FRONT_LEG]  = 90 - lift + d * swing;  // LF in air
+    pos[RIGHT_REAR_LEG]  = 90 - lift + d * swing;  // RR in air
+    pos[LEFT_REAR_LEG]   = 90 - d * swing;         // LR ground push
+    pos[RIGHT_FRONT_LEG] = 90 - d * swing;         // RF ground push
     MoveServos(t, pos);
 
-    // 拍3: 放下A
+    // Beat 3: lower A
     pos[LEFT_FRONT_LEG]  = 90 + d * swing;
     pos[RIGHT_REAR_LEG]  = 90 + d * swing;
     MoveServos(t / 2, pos);
 
-    // 拍4: 抬B（LR+RF）
+    // Beat 4: lift B (LR+RF)
     pos[LEFT_REAR_LEG]   = 90 + lift;
     pos[RIGHT_FRONT_LEG] = 90 + lift;
     MoveServos(t, pos);
 
-    // 拍5: B空中摆 + A地面反推
-    pos[LEFT_REAR_LEG]   = 90 + lift + d * swing;  // LR空中
-    pos[RIGHT_FRONT_LEG] = 90 + lift + d * swing;  // RF空中
-    pos[LEFT_FRONT_LEG]  = 90 - d * swing;         // LF地面反推
-    pos[RIGHT_REAR_LEG]  = 90 - d * swing;         // RR地面反推
+    // Beat 5: B swings in air + A pushes on ground
+    pos[LEFT_REAR_LEG]   = 90 + lift + d * swing;  // LR in air
+    pos[RIGHT_FRONT_LEG] = 90 + lift + d * swing;  // RF in air
+    pos[LEFT_FRONT_LEG]  = 90 - d * swing;         // LF ground push
+    pos[RIGHT_REAR_LEG]  = 90 - d * swing;         // RR ground push
     MoveServos(t, pos);
 
-    // 拍6: 放下B
+    // Beat 6: lower B
     pos[LEFT_REAR_LEG]   = 90 + d * swing;
     pos[RIGHT_FRONT_LEG] = 90 + d * swing;
     MoveServos(t / 2, pos);
   }
 
-  // 结束回中
+  // Return to center
   int home[SERVO_COUNT] = {90, 90, 90, 90};
   MoveServos(150, home);
 }
@@ -432,9 +432,9 @@ void EDARobotDog::Walk(float steps, int period, int dir) {
     SetRestState(false);
   }
 
-  // Trot 对角步态
-  // 方向: LF减=前, LR减=前, RF增=前, RR增=前
-  // 抬腿: LF减=抬, LR增=抬, RF增=抬, RR减=抬
+  // Trot diagonal gait
+  // Direction: LF dec=forward, LR dec=forward, RF inc=forward, RR inc=forward
+  // Lift: LF dec=lift, LR inc=lift, RF inc=lift, RR dec=lift
 
   const int lift = 25;
   const int swing = 30;
@@ -447,42 +447,42 @@ void EDARobotDog::Walk(float steps, int period, int dir) {
     int pos[SERVO_COUNT];
     GetCurrentPositions(pos);
 
-    // 拍1: 抬起对角线A（LF+RR）
+    // Beat 1: lift diagonal A (LF+RR)
     pos[LEFT_FRONT_LEG]  = 90 - lift;
     pos[RIGHT_REAR_LEG]  = 90 - lift;
     MoveServos(t, pos);
 
-    // 拍2: A空中前摆 + B地面后推（同时）
-    pos[LEFT_FRONT_LEG]  = 90 - lift - fwd * swing;  // LF: 保持抬 + 前摆
-    pos[RIGHT_REAR_LEG]  = 90 - lift + fwd * swing;  // RR: 保持抬 + 前摆(增=前)
-    pos[LEFT_REAR_LEG]   = 90 + fwd * swing;         // LR: 地面后推(增=后)
-    pos[RIGHT_FRONT_LEG] = 90 - fwd * swing;         // RF: 地面后推(减=后)
+    // Beat 2: A swings forward in air + B pushes backward on ground (simultaneous)
+    pos[LEFT_FRONT_LEG]  = 90 - lift - fwd * swing;  // LF: stay lifted + forward swing
+    pos[RIGHT_REAR_LEG]  = 90 - lift + fwd * swing;  // RR: stay lifted + forward swing (inc=forward)
+    pos[LEFT_REAR_LEG]   = 90 + fwd * swing;         // LR: ground push backward (inc=backward)
+    pos[RIGHT_FRONT_LEG] = 90 - fwd * swing;         // RF: ground push backward (dec=backward)
     MoveServos(t, pos);
 
-    // 拍3: 放下A（着地到前摆位置）
+    // Beat 3: lower A (land at forward swing position)
     pos[LEFT_FRONT_LEG]  = 90 - fwd * swing;
     pos[RIGHT_REAR_LEG]  = 90 + fwd * swing;
     MoveServos(t / 2, pos);
 
-    // 拍4: 抬起对角线B（LR+RF）
+    // Beat 4: lift diagonal B (LR+RF)
     pos[LEFT_REAR_LEG]   = 90 + lift;
     pos[RIGHT_FRONT_LEG] = 90 + lift;
     MoveServos(t, pos);
 
-    // 拍5: B空中前摆 + A地面后推（同时）
-    pos[LEFT_REAR_LEG]   = 90 + lift - fwd * swing;  // LR: 保持抬 + 前摆(减=前)
-    pos[RIGHT_FRONT_LEG] = 90 + lift + fwd * swing;  // RF: 保持抬 + 前摆(增=前)
-    pos[LEFT_FRONT_LEG]  = 90 + fwd * swing;         // LF: 地面后推(增=后)
-    pos[RIGHT_REAR_LEG]  = 90 - fwd * swing;         // RR: 地面后推(减=后)
+    // Beat 5: B swings forward in air + A pushes backward on ground (simultaneous)
+    pos[LEFT_REAR_LEG]   = 90 + lift - fwd * swing;  // LR: stay lifted + forward swing (dec=forward)
+    pos[RIGHT_FRONT_LEG] = 90 + lift + fwd * swing;  // RF: stay lifted + forward swing (inc=forward)
+    pos[LEFT_FRONT_LEG]  = 90 + fwd * swing;         // LF: ground push backward (inc=backward)
+    pos[RIGHT_REAR_LEG]  = 90 - fwd * swing;         // RR: ground push backward (dec=backward)
     MoveServos(t, pos);
 
-    // 拍6: 放下B（不回中，直接衔接下一步）
+    // Beat 6: lower B (no re-center; chain into next step)
     pos[LEFT_REAR_LEG]   = 90 - fwd * swing;
     pos[RIGHT_FRONT_LEG] = 90 + fwd * swing;
     MoveServos(t / 2, pos);
   }
 
-  // 结束回中
+  // Return to center
   int home[SERVO_COUNT] = {90, 90, 90, 90};
   MoveServos(150, home);
 }
@@ -506,14 +506,14 @@ int current_pos[SERVO_COUNT];
 }
 
 void EDARobotDog::Stand(int period) {
-  // 站立：所有腿回到中立位置
+  // Stand: return all legs to neutral
   Home();
 }
 
 void EDARobotDog::Stretch(int period) {
 
 
-  // 获取当前位置
+  // Get current positions
 int current_pos[SERVO_COUNT];
       for (int i = 0; i < SERVO_COUNT; i++) {
         if (servo_pins_[i] != -1) {
@@ -532,10 +532,10 @@ int current_pos[SERVO_COUNT];
 }
 
 void EDARobotDog::Shake(int period) {
-  // 摇摆：左右摇摆身体，左前腿和右后腿运动方向相反
-  int A[SERVO_COUNT] = {20, 0, 20, 0}; // 只有前腿摇摆
+  // Sway: body sways; left front and right rear move opposite
+  int A[SERVO_COUNT] = {20, 0, 20, 0}; // Front legs only sway
   int O[SERVO_COUNT] = {0, LEG_HOME_POSITION, 0, LEG_HOME_POSITION};
-  // 左前腿和右前腿反相摇摆
+  // Left and right front legs sway out of phase
   double phase_diff[SERVO_COUNT] = {DEG2RAD(180), 0, DEG2RAD(0), 0};
 
   Execute(A, O, period, phase_diff, 3);

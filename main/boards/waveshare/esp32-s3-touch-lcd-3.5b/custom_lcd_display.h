@@ -3,7 +3,7 @@
 
 #include "lcd_display.h"
 
-// // SPI LCD显示器
+// SPI LCD display
 class CustomLcdDisplay : public LcdDisplay {
 public:
     CustomLcdDisplay(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_handle_t panel,

@@ -1,4 +1,4 @@
-# 播放p3格式的音频文件
+# Play P3 format audio files
 import opuslib
 import struct
 import numpy as np
@@ -7,18 +7,18 @@ import argparse
 
 def play_p3_file(input_file):
     """
-    播放p3格式的音频文件
-    p3格式: [1字节类型, 1字节保留, 2字节长度, Opus数据]
+    Play a P3 format audio file.
+    P3 format: [1 byte type, 1 byte reserved, 2 byte length, Opus data]
     """
-    # 初始化Opus解码器
-    sample_rate = 16000  # 采样率固定为16000Hz
-    channels = 1  # 单声道
+    # Initialize Opus decoder
+    sample_rate = 16000  # Sample rate fixed at 16000Hz
+    channels = 1  # Mono
     decoder = opuslib.Decoder(sample_rate, channels)
     
-    # 帧大小 (60ms)
+    # Frame size (60ms)
     frame_size = int(sample_rate * 60 / 1000)
     
-    # 打开音频流
+    # Open audio stream
     stream = sd.OutputStream(
         samplerate=sample_rate,
         channels=channels,
@@ -28,41 +28,41 @@ def play_p3_file(input_file):
     
     try:
         with open(input_file, 'rb') as f:
-            print(f"正在播放: {input_file}")
+            print(f"Playing: {input_file}")
             
             while True:
-                # 读取头部 (4字节)
+                # Read header (4 bytes)
                 header = f.read(4)
                 if not header or len(header) < 4:
                     break
                 
-                # 解析头部
+                # Parse header
                 packet_type, reserved, data_len = struct.unpack('>BBH', header)
                 
-                # 读取Opus数据
+                # Read Opus data
                 opus_data = f.read(data_len)
                 if not opus_data or len(opus_data) < data_len:
                     break
                 
-                # 解码Opus数据
+                # Decode Opus data
                 pcm_data = decoder.decode(opus_data, frame_size)
                 
-                # 将字节转换为numpy数组
+                # Convert bytes to numpy array
                 audio_array = np.frombuffer(pcm_data, dtype=np.int16)
                 
-                # 播放音频
+                # Play audio
                 stream.write(audio_array)
                 
     except KeyboardInterrupt:
-        print("\n播放已停止")
+        print("\nPlayback stopped")
     finally:
         stream.stop()
         stream.close()
-        print("播放完成")
+        print("Playback complete")
 
 def main():
-    parser = argparse.ArgumentParser(description='播放p3格式的音频文件')
-    parser.add_argument('input_file', help='输入的p3文件路径')
+    parser = argparse.ArgumentParser(description='Play P3 format audio files')
+    parser.add_argument('input_file', help='Input P3 file path')
     args = parser.parse_args()
     
     play_p3_file(args.input_file)

@@ -45,7 +45,7 @@ int Sy6970::GetChargeTargetVoltage() {
 
 int Sy6970::GetBatteryLevel() {
     int level = 0;
-    // 电池所能掉电的最低电压
+    // Minimum battery voltage
     int battery_minimum_voltage = 3200;
     int battery_voltage = GetBatteryVoltage();
     int charge_voltage_limit = GetChargeTargetVoltage();
@@ -53,7 +53,7 @@ int Sy6970::GetBatteryLevel() {
     if (battery_voltage > battery_minimum_voltage && charge_voltage_limit > battery_minimum_voltage) {
         level = (((float) battery_voltage - (float) battery_minimum_voltage) / ((float) charge_voltage_limit - (float) battery_minimum_voltage)) * 100.0;
     }
-    // 不连接电池时读取的充电状态不稳定且battery_voltage有时会超过charge_voltage_limit
+    // Without battery, charge state is unstable and battery_voltage may exceed limit
     if (level > 100) {
         level = 100;
     }

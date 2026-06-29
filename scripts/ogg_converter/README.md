@@ -1,36 +1,35 @@
-# ogg_covertor 小智AI OGG 音效批量转换器
+# ogg_converter Xiaozhi AI OGG Sound Batch Converter
 
-本脚本为OGG批量转换工具，支持将输入的音频文件转换为小智可使用的OGG格式
+This script is an OGG batch conversion tool that converts input audio files to OGG format usable by Xiaozhi.
 
-基于Python第三方库 `ffmpeg-python` 实现，**需要** `ffmpeg` 环境  
+Implemented using the Python third-party library `ffmpeg-python`; requires an `ffmpeg` environment.
 
-可前往[此处](https://ffmpeg.org/download.html)下载对应你自己系统的ffmpeg发行版，并添加到环境变量或者放在脚本所在目录
+Download the ffmpeg distribution for your system [here](https://ffmpeg.org/download.html) and add it to your PATH or place it in the script directory.
 
-支持OGG和音频之间的互转，响度调节等功能
+Supports conversion between OGG and audio formats, loudness adjustment, and more.
 
-# 创建并激活虚拟环境
+# Create and Activate Virtual Environment
 
 ```bash
-# 创建虚拟环境
+# Create virtual environment
 python -m venv venv
-# 激活虚拟环境
+# Activate virtual environment
 source venv/bin/activate # Mac/Linux
 venv\Scripts\activate # Windows
 ```
-# 下载FFmpeg
-前往[此处](https://ffmpeg.org/download.html)下载ffmpeg  
+# Download FFmpeg
+Download ffmpeg [here](https://ffmpeg.org/download.html).
 
-根据你当前的系统下载对应的版本，并将`ffmpeg`的可执行文件放置在脚本所在目录或者添加可执行文件所在目录到环境变量
+Download the version for your system and place the `ffmpeg` executable in the script directory or add its directory to your PATH.
 
-# 安装依赖
-请在虚拟环境中执行
+# Install Dependencies
+Run inside the virtual environment:
 
 ```bash
 pip install ffmpeg-python
 ```
 
-# 运行脚本
+# Run Script
 ```bash
 python ogg_covertor.py
 ```
-

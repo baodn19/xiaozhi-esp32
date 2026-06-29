@@ -10,9 +10,9 @@ static const char TAG[] = "K10AudioCodec";
 K10AudioCodec::K10AudioCodec(void* i2c_master_handle, int input_sample_rate, int output_sample_rate,
     gpio_num_t mclk, gpio_num_t bclk, gpio_num_t ws, gpio_num_t dout, gpio_num_t din,
     gpio_num_t pa_pin, uint8_t es8311_addr, uint8_t es7210_addr, bool input_reference) {
-    duplex_ = true; // 是否双工
-    input_reference_ = input_reference; // 是否使用参考输入，实现回声消除
-    input_channels_ = input_reference_ ? 2 : 1; // 输入通道数
+    duplex_ = true; // Full duplex
+    input_reference_ = input_reference; // Use reference input for AEC
+    input_channels_ = input_reference_ ? 2 : 1; // Input channel count
     input_sample_rate_ = input_sample_rate;
     output_sample_rate_ = output_sample_rate;
 
@@ -177,7 +177,7 @@ void K10AudioCodec::EnableInput(bool enable) {
             fs.channel_mask |= ESP_CODEC_DEV_MAKE_CHANNEL_MASK(1);
         }
         ESP_ERROR_CHECK(esp_codec_dev_open(input_dev_, &fs));
-        ESP_ERROR_CHECK(esp_codec_dev_set_in_gain(input_dev_, 37.5)); //麦克风增益解决收音太小的问题
+        ESP_ERROR_CHECK(esp_codec_dev_set_in_gain(input_dev_, 37.5)); // Mic gain to fix low input level
     } else {
         ESP_ERROR_CHECK(esp_codec_dev_close(input_dev_));
     }

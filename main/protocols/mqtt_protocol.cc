@@ -229,7 +229,7 @@ bool MqttProtocol::OpenAudioChannel() {
         return false;
     }
 
-    // 等待服务器响应
+    // Wait for server response
     EventBits_t bits = xEventGroupWaitBits(event_group_handle_, MQTT_PROTOCOL_SERVER_HELLO_EVENT, pdTRUE, pdFALSE, pdMS_TO_TICKS(10000));
     if (!(bits & MQTT_PROTOCOL_SERVER_HELLO_EVENT)) {
         ESP_LOGE(TAG, "Failed to receive server hello");
@@ -295,7 +295,7 @@ bool MqttProtocol::OpenAudioChannel() {
 }
 
 std::string MqttProtocol::GetHelloMessage() {
-    // 发送 hello 消息申请 UDP 通道
+    // Send hello message to request UDP channel
     cJSON* root = cJSON_CreateObject();
     cJSON_AddStringToObject(root, "type", "hello");
     cJSON_AddNumberToObject(root, "version", 3);
@@ -366,12 +366,12 @@ void MqttProtocol::ParseServerHello(const cJSON* root) {
 }
 
 static const char hex_chars[] = "0123456789ABCDEF";
-// 辅助函数，将单个十六进制字符转换为对应的数值
+// Helper: convert a single hex character to its numeric value
 static inline uint8_t CharToHex(char c) {
     if (c >= '0' && c <= '9') return c - '0';
     if (c >= 'A' && c <= 'F') return c - 'A' + 10;
     if (c >= 'a' && c <= 'f') return c - 'a' + 10;
-    return 0;  // 对于无效输入，返回0
+    return 0;  // return 0 for invalid input
 }
 
 std::string MqttProtocol::DecodeHexString(const std::string& hex_string) {
