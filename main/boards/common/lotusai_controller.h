@@ -16,6 +16,7 @@
 #include <string>
 #include <vector>
 
+// nanabot/bin/uvicorn backend.app.main:app --host 0.0.0.0 --port 8006
 #ifndef CONFIG_LOTUSAI_BASE_URL
 #define CONFIG_LOTUSAI_BASE_URL "https://lotusfoodasmedicine.com"
 #endif
