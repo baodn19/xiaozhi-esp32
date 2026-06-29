@@ -5,6 +5,7 @@
 #include "application.h"
 #include "display/lvgl_display/lvgl_display.h"
 #include "settings.h"
+#include "assets/lang_config.h" // Ensures Lang::Sounds definitions are accessible
 
 #include <esp_log.h>
 #include <cJSON.h>
@@ -79,16 +80,112 @@ done:
         }
     }
 
+    /* Second option for looping (nagging) notification until they take their medicine:
+    static void TimeMonitorTask(void* pvParameters) {
+        auto* self = static_cast<MedicineReminderController*>(pvParameters);
+        struct tm timeinfo;
+        int last_minute = -1;
+        
+        // Track the last time we nagged the user (in ticks or seconds)
+        TickType_t last_nag_tick = 0; 
+        const TickType_t nag_interval = pdMS_TO_TICKS(60000); // Nag every 60 seconds
+
+        while (true) {
+            time_t now;
+            time(&now);
+            localtime_r(&now, &timeinfo);
+
+            // --- PART 1: Check for NEW alarms (Minute change) ---
+            if (timeinfo.tm_year > (2020 - 1900) && timeinfo.tm_min != last_minute) {
+                last_minute = timeinfo.tm_min;
+
+                xSemaphoreTake(self->schedule_mutex_, portMAX_DELAY);
+                int current_day_bit = 1 << timeinfo.tm_wday;
+
+                for (const auto& med : self->schedule_) {
+                    if (med.active &&
+                        med.hour == timeinfo.tm_hour &&
+                        med.minute == timeinfo.tm_min &&
+                        (med.days_bitmask & current_day_bit)) {
+
+                        std::string med_name = med.name;
+                        // Set this as the active alert needing verification
+                        self->active_alert_med_ = med_name; 
+                        xSemaphoreGive(self->schedule_mutex_);
+                        
+                        self->TriggerAlarm(med_name);
+                        last_nag_tick = xTaskGetTickCount(); // Reset nag timer
+                        goto loop_delay;
+                    }
+                }
+                xSemaphoreGive(self->schedule_mutex_);
+            }
+
+            // --- PART 2: Check for PENDING unconfirmed alarms (Nagging) ---
+            xSemaphoreTake(self->schedule_mutex_, portMAX_DELAY);
+            if (!self->active_alert_med_.empty()) {
+                TickType_t current_tick = xTaskGetTickCount();
+                
+                // If enough time has passed since the last announcement, nag them again
+                if ((current_tick - last_nag_tick) >= nag_interval) {
+                    std::string pending_med = self->active_alert_med_;
+                    xSemaphoreGive(self->schedule_mutex_);
+                    
+                    ESP_LOGI(MED_TAG, "Nagging user for unconfirmed medicine: %s", pending_med.c_str());
+                    self->TriggerAlarm(pending_med);
+                    last_nag_tick = current_tick;
+                    goto loop_delay;
+                }
+            }
+            xSemaphoreGive(self->schedule_mutex_);
+
+loop_delay:
+            vTaskDelay(pdMS_TO_TICKS(5000));
+        }
+    }
+    */
+
     void TriggerAlarm(const std::string& med_name) {
+        // Define a local tag specifically for this module's logs
+        const char* LOCAL_TAG = "MedicineReminder";
+
         xSemaphoreTake(schedule_mutex_, portMAX_DELAY);
         active_alert_med_ = med_name;
         xSemaphoreGive(schedule_mutex_);
 
+        auto& app = Application::GetInstance();
+
+        // Interrupt current speech/listening
+        if (app.GetDeviceState() == kDeviceStateSpeaking ||
+            app.GetDeviceState() == kDeviceStateListening) {
+            app.AbortSpeaking(kAbortReasonWakeWordDetected);
+        }
+
+        // Local notification sound
+        app.PlaySound(Lang::Sounds::OGG_SUCCESS);
+
+        std::string reminder = "Time to take " + med_name;
+
+        ESP_LOGW(LOCAL_TAG, "MED REMINDER: %s", reminder.c_str());
+
+        // Update display
         auto* display = Board::GetInstance().GetDisplay();
         if (display) {
-            std::string msg = "⏰ MED REMINDER: Time for " + med_name + ".";
-            display->SetChatMessage("assistant", msg.c_str());
+            display->SetChatMessage(
+                "assistant",
+                ("⏰ " + reminder).c_str());
         }
+
+        // Send MCP event to cloud via direct Application method
+        std::string payload =
+            "{"
+            "\"event\":\"medicine_reminder\","
+            "\"medicine\":\"" + med_name + "\","
+            "\"message\":\"" + reminder + "\""
+            "}";
+
+        app.SendMcpMessage(payload);
+        ESP_LOGI(LOCAL_TAG, "Sent medicine reminder MCP event");
     }
 
     static std::string FormatTime(int hour, int minute) {
@@ -335,6 +432,94 @@ public:
                     "Added medicine reminder for " +
                     name + " at " +
                     FormatTime(hour, minute));
+            });
+
+        // --- NEW MCP TOOL: Delete just one specific medication entry ---
+        McpServer::GetInstance().AddTool(
+            "self.medicine.delete_entry",
+            "Remove a single medication from the schedule by its exact name string.",
+            PropertyList(std::vector<Property>{
+                Property("name", kPropertyTypeString)
+            }),
+            [this](const PropertyList& properties) -> ReturnValue {
+                auto target_name = properties["name"].value<std::string>();
+                
+                xSemaphoreTake(schedule_mutex_, portMAX_DELAY);
+                auto initial_size = schedule_.size();
+                
+                // Erase-remove idiom to filter out any object matching the name
+                schedule_.erase(
+                    std::remove_if(schedule_.begin(), schedule_.end(),
+                        [&target_name](const Medication& med) {
+                            return med.name == target_name;
+                        }), 
+                    schedule_.end()
+                );
+                
+                bool removed = (schedule_.size() < initial_size);
+                
+                // If the deleted medication was actively alarming, clear it
+                if (active_alert_med_ == target_name) {
+                    active_alert_med_.clear();
+                }
+                xSemaphoreGive(schedule_mutex_);
+
+                if (!removed) {
+                    return "No scheduled medication found with the name: " + target_name;
+                }
+
+                SaveScheduleToStorage();
+
+                auto* display = Board::GetInstance().GetDisplay();
+                if (display) {
+                    std::string msg = "🗑️ Removed reminder: " + target_name;
+                    display->SetChatMessage("assistant", msg.c_str());
+                }
+
+                return "Successfully removed " + target_name + " from the schedule.";
+            });
+
+        // --- MCP TOOL: Clear entire schedule ---
+        McpServer::GetInstance().AddTool(
+            "self.medicine.clear_all",
+            "Wipe the entire medication schedule from memory and persistent storage.",
+            PropertyList(std::vector<Property>()),
+            [this](const PropertyList&) -> ReturnValue {
+                xSemaphoreTake(schedule_mutex_, portMAX_DELAY);
+                schedule_.clear();
+                active_alert_med_.clear();
+                xSemaphoreGive(schedule_mutex_);
+
+                SaveScheduleToStorage();
+
+                auto* display = Board::GetInstance().GetDisplay();
+                if (display) {
+                    display->SetChatMessage("assistant", "All schedules cleared.");
+                }
+
+                return "Successfully cleared the entire medication schedule.";
+            });
+
+        // --- MCP TOOL: Read all scheduled medications ---
+        McpServer::GetInstance().AddTool(
+            "self.medicine.list",
+            "Retrieve a list of all currently scheduled medications.",
+            PropertyList(std::vector<Property>()),
+            [this](const PropertyList&) -> ReturnValue {
+                std::string summary = "Current Scheduled Medications:\n";
+                
+                xSemaphoreTake(schedule_mutex_, portMAX_DELAY);
+                if (schedule_.empty()) {
+                    summary += "No medications scheduled.";
+                } else {
+                    for (const auto& med : schedule_) {
+                        summary += "- " + med.name + " at " + FormatTime(med.hour, med.minute) + 
+                                   " (Active: " + (med.active ? "Yes" : "No") + ")\n";
+                    }
+                }
+                xSemaphoreGive(schedule_mutex_);
+
+                return summary;
             });
 
         StartLocalWebServer();
