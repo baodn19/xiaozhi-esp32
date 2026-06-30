@@ -67,7 +67,7 @@
   #define GC9309NA_CMD_REG_ENABLE1   0xFE
   #define GC9309NA_CMD_REG_ENABLE2   0xEF
   
-  // 自检模式颜色定义
+  // Self-test mode color definitions
  
  
   static const char *TAG = "lcd_panel.gc9309na";
@@ -218,11 +218,11 @@
      ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, 0x8D, (uint8_t[]){0x51}, 1), TAG, "DINV failed");
      ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, 0x8E, (uint8_t[]){0x70}, 1), TAG, "DINV failed");
  
-     //高低位交换 
+     // Swap high/low bytes 
      ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, 0xB4, (uint8_t[]){0x80}, 1), TAG, "DINV failed");
  
      gc9309->colmod_val = 0x05; // RGB565
-     gc9309->madctl_val = 0x48;  // BGR顺序，设置bit3=1（即0x08）
+     gc9309->madctl_val = 0x48;  // BGR order, set bit3=1 (0x08)
      ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, GC9309NA_CMD_COLMOD, &gc9309->colmod_val, 1), TAG, "DINV failed");
      ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, GC9309NA_CMD_MADCTL, &gc9309->madctl_val, 1), TAG, "DINV failed");
      ESP_RETURN_ON_ERROR(esp_lcd_panel_io_tx_param(io, 0XBF, (uint8_t[]){0X1F}, 1), TAG, "DINV failed");

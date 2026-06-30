@@ -1109,8 +1109,8 @@ static const jd9365_lcd_init_cmd_t lcd_init_cmds[] = {
     {0x02, (uint8_t[]){0xB3}, 1, 0},
     {0x09, (uint8_t[]){0x61}, 1, 0},
     {0x0E, (uint8_t[]){0x48}, 1, 0},
-    {0x37, (uint8_t[]){0x58}, 1, 0}, // 全志
-    {0x2B, (uint8_t[]){0x0F}, 1, 0}, // 全志
+    {0x37, (uint8_t[]){0x58}, 1, 0}, // Allwinner
+    {0x2B, (uint8_t[]){0x0F}, 1, 0}, // Allwinner
 
     {0xE0, (uint8_t[]){0x00}, 1, 0},
 

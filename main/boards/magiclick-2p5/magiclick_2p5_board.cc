@@ -72,7 +72,7 @@ private:
 
     uint8_t pcb_version_ = 0;
 
-    // 屏幕配置结构体
+    // Display configuration struct
     struct DisplayConfig {
         bool use_gc9107;
         bool mirror_x;
@@ -195,7 +195,7 @@ private:
         
     }
 
-    //通过adc读取IO3引脚的电压来获取PCB版本
+    // Read IO3 voltage via ADC to determine PCB version
     void CheckPCBVersion() {
         adc_oneshot_unit_handle_t adc1_handle;
         adc_oneshot_unit_init_cfg_t init_config1 = {
@@ -209,7 +209,7 @@ private:
         };
         ESP_ERROR_CHECK(adc_oneshot_config_channel(adc1_handle, ADC_CHANNEL_2, &config));
 
-        //获取10次， 然后求平均
+        // Sample 10 times then average
         int adc_value = 0;
         int raw_value;
         for (int i = 0; i < 10; i++) {
@@ -220,10 +220,10 @@ private:
         
         int voltage = adc_value * (3300 / 4095.0);
         if (voltage < 100) {
-            // 版本1
+            // Version 1
             pcb_version_ = PCB_VERSION_2_5A;
         } else if (voltage > 3200 ) {
-            // 版本2
+            // Version 2
             pcb_version_ = PCB_VERSION_2_5A1;   
         }
         // test
@@ -294,7 +294,7 @@ private:
     }
 
     void InitializeLedPower() {
-        // 设置GPIO模式
+        // Set GPIO mode
         gpio_reset_pin(BUILTIN_LED_POWER);
         gpio_set_direction(BUILTIN_LED_POWER, GPIO_MODE_OUTPUT);
         gpio_set_level(BUILTIN_LED_POWER, BUILTIN_LED_POWER_OUTPUT_INVERT ? 0 : 1);
@@ -315,11 +315,11 @@ private:
         esp_lcd_panel_io_handle_t panel_io = nullptr;
         esp_lcd_panel_handle_t panel = nullptr;
 
-        // 获取屏幕配置
+        // Get display configuration
         DisplayConfig config = GetDisplayConfig();
         ESP_LOGW(TAG, "PCB Version: %d, Using %s screen", pcb_version_, config.screen_name);
 
-        // 液晶屏控制IO初始化
+        // Initialize LCD control IO
         ESP_LOGD(TAG, "Install panel IO");
         esp_lcd_panel_io_spi_config_t io_config = {};
         io_config.cs_gpio_num = DISPLAY_CS_PIN;
@@ -331,7 +331,7 @@ private:
         io_config.lcd_param_bits = 8;
         ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(SPI3_HOST, &io_config, &panel_io));
 
-        // 初始化液晶屏驱动芯片
+        // Initialize LCD driver chip
         ESP_LOGD(TAG, "Install LCD driver");  
         esp_lcd_panel_dev_config_t panel_config = {};
         panel_config.reset_gpio_num = DISPLAY_RST_PIN;

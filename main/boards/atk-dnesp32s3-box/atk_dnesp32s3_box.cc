@@ -154,9 +154,9 @@ private:
         xl9555_in_ = new XL9555_IN(i2c_bus_, 0x20);
 
         if (xl9555_in_->GetPingState(0x0020) == 1) {
-            es8311_detected_ = true;    /* 音频设备标志位，SPK_CTRL_IO为高电平时，该标志位置1，且判定为ES8311 */
+            es8311_detected_ = true;    /* Audio device flag: set when SPK_CTRL_IO is high (ES8311) */
         } else {
-            es8311_detected_ = false;    /* 音频设备标志位，SPK_CTRL_IO为低电平时，该标志位置0，且判定为NS4168 */
+            es8311_detected_ = false;    /* Audio device flag: set when SPK_CTRL_IO is low (NS4168) */
         }
 
         xl9555_in_->xl9555_cfg();
@@ -165,7 +165,7 @@ private:
     void InitializeATK_ST7789_80_Display() {
         esp_lcd_panel_io_handle_t panel_io = nullptr;
         esp_lcd_panel_handle_t panel = nullptr;
-        /* 配置RD引脚 */
+        /* Configure RD pin */
         gpio_config_t gpio_init_struct;
         gpio_init_struct.intr_type = GPIO_INTR_DISABLE;
         gpio_init_struct.mode = GPIO_MODE_INPUT_OUTPUT;
@@ -261,9 +261,9 @@ public:
     }
 
     virtual AudioCodec* GetAudioCodec() override {
-        /* 根据探测结果初始化编解码器 */
+        /* Initialize codec based on detection result */
         if (es8311_detected_) {
-            /* 使用ES8311 驱动 */
+            /* Use ES8311 driver */
             static Es8311AudioCodec audio_codec(
                 i2c_bus_, 
                 I2C_NUM_0, 

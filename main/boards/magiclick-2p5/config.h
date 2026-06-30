@@ -18,7 +18,7 @@
 #define AUDIO_CODEC_ES8311_ADDR ES8311_CODEC_DEFAULT_ADDR
 
 //led power
-#define BUILTIN_LED_POWER GPIO_NUM_39 // 低电平有效
+#define BUILTIN_LED_POWER GPIO_NUM_39 // Active low
 #define BUILTIN_LED_POWER_OUTPUT_INVERT true
 
 #define BUILTIN_LED_NUM 2
@@ -38,9 +38,9 @@
 #define DISPLAY_WIDTH 128
 #define DISPLAY_HEIGHT 128
 
-// 根据PCB版本动态选择屏幕类型和配置 
-#define PCB_VERSION_2_5A  1 // 使用GC9107
-#define PCB_VERSION_2_5A1 2 // 使用ST7735
+// Select display type and config dynamically by PCB version 
+#define PCB_VERSION_2_5A  1 // Uses GC9107
+#define PCB_VERSION_2_5A1 2 // Uses ST7735
 
 #define DISPLAY_OFFSET_X 0
 #define DISPLAY_OFFSET_Y 0

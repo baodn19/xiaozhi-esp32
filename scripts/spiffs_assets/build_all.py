@@ -47,8 +47,8 @@ def build_assets(wakenet_model, text_font, emoji_collection, build_dir, final_di
         emoji_path = os.path.join("../../components/xiaozhi-fonts/build", emoji_collection)
         cmd.extend(["--emoji_collection", emoji_path])
     
-    print(f"\n正在构建: {wakenet_model}-{text_font}-{emoji_collection}")
-    print(f"执行命令: {' '.join(cmd)}")
+    print(f"\nBuilding: {wakenet_model}-{text_font}-{emoji_collection}")
+    print(f"Running command: {' '.join(cmd)}")
     
     try:
         # Run build.py
@@ -63,17 +63,17 @@ def build_assets(wakenet_model, text_font, emoji_collection, build_dir, final_di
         
         if os.path.exists(src_path):
             shutil.copy2(src_path, dst_path)
-            print(f"✓ 成功生成: {output_name}")
+            print(f"✓ Successfully generated: {output_name}")
             return True
         else:
-            print(f"✗ 错误: 未找到生成的 assets.bin 文件")
+            print(f"✗ Error: generated assets.bin file not found")
             return False
             
     except subprocess.CalledProcessError as e:
-        print(f"✗ 构建失败: {e}")
+        print(f"✗ Build failed: {e}")
         return False
     except Exception as e:
-        print(f"✗ 未知错误: {e}")
+        print(f"✗ Unknown error: {e}")
         return False
 
 
@@ -110,8 +110,8 @@ def main():
     ensure_dir(build_dir)
     ensure_dir(final_dir)
     
-    print("开始构建多个 SPIFFS assets 分区...")
-    print(f"输出目录: {final_dir}")
+    print("Starting build of multiple SPIFFS assets partitions...")
+    print(f"Output directory: {final_dir}")
     
     # Calculate total combinations
     total_combinations = len(wakenet_models) * len(text_fonts) * len(emoji_collections)
@@ -126,20 +126,20 @@ def main():
                 if build_assets(wakenet_model, text_font, emoji_collection, build_dir, final_dir):
                     successful_builds += 1
     
-    print(f"\n构建完成!")
-    print(f"成功构建: {successful_builds}/{total_combinations}")
-    print(f"输出文件位置: {final_dir}")
+    print(f"\nBuild complete!")
+    print(f"Successful builds: {successful_builds}/{total_combinations}")
+    print(f"Output files location: {final_dir}")
     
     # List generated files
     if os.path.exists(final_dir):
         files = [f for f in os.listdir(final_dir) if f.endswith('.bin')]
         if files:
-            print("\n生成的文件:")
+            print("\nGenerated files:")
             for file in sorted(files):
                 file_size = os.path.getsize(os.path.join(final_dir, file))
                 print(f"  {file} ({file_size:,} bytes)")
         else:
-            print("\n未找到生成的 .bin 文件")
+            print("\nNo generated .bin files found")
 
 
 if __name__ == "__main__":

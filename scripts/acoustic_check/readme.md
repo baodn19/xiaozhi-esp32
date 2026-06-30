@@ -1,23 +1,33 @@
-# 声波测试
-该gui用于测试接受小智设备通过`udp`回传的`pcm`转时域/频域, 可以保存窗口长度的声音, 用于判断噪音频率分布和测试声波传输ascii的准确度,
+# Acoustic Check
 
-固件测试需要打开`USE_AUDIO_DEBUGGER`, 并设置好`AUDIO_DEBUG_UDP_SERVER`是本机地址.
-声波`demod`可以通过`sonic_wifi_config.html`或者上传至`PinMe`的[小智声波配网](https://iqf7jnhi.pinit.eth.limo)来输出声波测试
+This GUI receives PCM audio streamed over UDP from a Xiaozhi device, plots time-domain and frequency-domain views, and can save the captured audio window. Use it to inspect noise frequency distribution and to verify acoustic ASCII transmission accuracy.
 
-# 声波解码测试记录
+Firmware setup: enable `USE_AUDIO_DEBUGGER` and set `AUDIO_DEBUG_UDP_SERVER` to this machine's IP address.
 
-> `✓`代表在I2S DIN接收原始PCM信号时就能成功解码, `△`代表需要降噪或额外操作可稳定解码, `X`代表降噪后效果也不好(可能能解部分但非常不稳定)。
-> 个别ADC需要I2C配置阶段做更精细的降噪调整, 由于设备不通用暂只按照boards内提供的config测试
+For acoustic demod testing, use `sonic_wifi_config.html` or the PinMe-hosted [Xiaozhi acoustic Wi-Fi provisioning](https://iqf7jnhi.pinit.eth.limo) page to generate test tones.
 
-| 设备 | ADC | MIC | 效果 | 备注 |
-| ---- | ---- | --- | --- | ---- |
-| bread-compact | INMP441 | 集成MEMEMIC | ✓ |
+## Custom wake word (MultiNet6)
+
+When testing NanaBot's custom wake word, speak into the **ESP32 mic**, not the PC mic.
+
+The MultiNet6 model was trained on **"NA NA BOT"** (three syllables, spaces between them). Say it like **"NAH — NAH — BOT"** — slow, clear syllables with ~0.5 s pause between words. Do not say **"nanabot"** as one run-together word. Slow, deliberate speech is more consistent.
+
+See [`main/assets/nanabot/README.md`](../../main/assets/nanabot/README.md) for assets configuration and troubleshooting.
+
+# Acoustic decode test log
+
+> `✓` = decodes successfully from raw I2S DIN PCM. `△` = stable only with noise reduction or extra steps. `X` = poor even after noise reduction (may decode occasionally but is very unstable).
+> Some ADCs need finer noise tuning during I2C setup; results below were tested only with board configs in this repo.
+
+| Device | ADC | MIC | Result | Notes |
+| ---- | ---- | --- | --- | --- |
+| bread-compact | INMP441 | onboard MEMS mic | ✓ |
 | atk-dnesp32s3-box | ES8311 | | ✓ |
 | magiclick-2p5 | ES8311 | | ✓ |
-| lichuang-dev  | ES7210 | | △ | 测试时需要关掉INPUT_REFERENCE
-| kevin-box-2 | ES7210 | | △ | 测试时需要关掉INPUT_REFERENCE
-| m5stack-core-s3 | ES7210 | | △ | 测试时需要关掉INPUT_REFERENCE
-| xmini-c3 | ES8311 | | △ | 需降噪
-| atoms3r-echo-base | ES8311 | | △ | 需降噪
-| atk-dnesp32s3-box0 | ES8311 | | X | 能接收且解码, 但是丢包率很高
-| movecall-moji-esp32s3 | ES8311 | | X | 能接收且解码, 但是丢包率很高
+| lichuang-dev  | ES7210 | | △ | disable INPUT_REFERENCE during testing |
+| kevin-box-2 | ES7210 | | △ | disable INPUT_REFERENCE during testing |
+| m5stack-core-s3 | ES7210 | | △ | disable INPUT_REFERENCE during testing |
+| xmini-c3 | ES8311 | | △ | noise reduction required |
+| atoms3r-echo-base | ES8311 | | △ | noise reduction required |
+| atk-dnesp32s3-box0 | ES8311 | | X | receives and decodes, but high packet loss |
+| movecall-moji-esp32s3 | ES8311 | | X | receives and decodes, but high packet loss |

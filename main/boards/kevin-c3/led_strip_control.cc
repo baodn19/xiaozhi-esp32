@@ -23,9 +23,9 @@ StripColor LedStripControl::RGBToColor(int red, int green, int blue) {
 
 LedStripControl::LedStripControl(CircularStrip* led_strip) 
     : led_strip_(led_strip) {
-    // 从设置中读取亮度等级
+    // Read brightness level from settings
     Settings settings("led_strip");
-    brightness_level_ = settings.GetInt("brightness", 4);  // 默认等级4
+    brightness_level_ = settings.GetInt("brightness", 4);  // Default level 4
     led_strip_->SetBrightness(LevelToBrightness(brightness_level_), 4);
 
     auto& mcp_server = McpServer::GetInstance();
@@ -45,7 +45,7 @@ LedStripControl::LedStripControl(CircularStrip* led_strip)
             brightness_level_ = level;
             led_strip_->SetBrightness(LevelToBrightness(brightness_level_), 4);
 
-            // 保存设置
+            // Save settings
             Settings settings("led_strip", true);
             settings.SetInt("brightness", brightness_level_);
 
@@ -87,7 +87,7 @@ LedStripControl::LedStripControl(CircularStrip* led_strip)
         });
 
     mcp_server.AddTool("self.led_strip.blink", 
-        "Blink the led strip. (闪烁)", 
+        "Blink the LED strip.", 
         PropertyList({
             Property("red", kPropertyTypeInteger, 0, 255),
             Property("green", kPropertyTypeInteger, 0, 255),
@@ -105,7 +105,7 @@ LedStripControl::LedStripControl(CircularStrip* led_strip)
         });
 
     mcp_server.AddTool("self.led_strip.scroll", 
-        "Scroll the led strip. (跑马灯)", 
+        "Scroll the LED strip.", 
         PropertyList({
             Property("red", kPropertyTypeInteger, 0, 255),
             Property("green", kPropertyTypeInteger, 0, 255),

@@ -3,19 +3,19 @@
 
 #include <driver/gpio.h>
 
-// 音频采样率
+// Audio sample rate
 #define AUDIO_INPUT_SAMPLE_RATE 16000
 #define AUDIO_OUTPUT_SAMPLE_RATE 16000
 #define AUDIO_INPUT_REFERENCE    true
 
-// I2S 引脚
+// I2S pins
 #define AUDIO_I2S_GPIO_MCLK  GPIO_NUM_12
 #define AUDIO_I2S_GPIO_WS    GPIO_NUM_38
 #define AUDIO_I2S_GPIO_BCLK  GPIO_NUM_43
 #define AUDIO_I2S_GPIO_DIN   GPIO_NUM_39
 #define AUDIO_I2S_GPIO_DOUT  GPIO_NUM_21
 
-// Audio Codec 相关
+// Audio codec related
 #define AUDIO_CODEC_PA_PIN       GPIO_NUM_11
 #define AUDIO_CODEC_I2C_SDA_PIN  GPIO_NUM_47
 #define AUDIO_CODEC_I2C_SCL_PIN  GPIO_NUM_48

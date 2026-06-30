@@ -65,8 +65,8 @@ private:
     PowerSaveTimer* power_save_timer_;
     PowerManager* power_manager_;
     void InitializePowerManager() {
-        // PowerManager需要复用按钮的ADC句柄，所以在InitializeButtons之后调用
-        // 传入按钮的ADC句柄指针，让PowerManager复用
+        // PowerManager reuses button ADC handle; call after InitializeButtons
+        // Pass button ADC handle pointer for PowerManager reuse
         power_manager_ = new PowerManager(GPIO_NUM_NC, &bsp_adc_handle);
     }
     
@@ -128,13 +128,13 @@ private:
                 return;
             }
         }
-        // 配置IO0-IO3为输出模式
+        // Configure IO0-IO3 as output
         ESP_ERROR_CHECK(esp_io_expander_set_dir(io_expander_, 
             IO_EXPANDER_PIN_NUM_0 | IO_EXPANDER_PIN_NUM_1 | 
             IO_EXPANDER_PIN_NUM_2 | IO_EXPANDER_PIN_NUM_3, 
             IO_EXPANDER_OUTPUT));
 
-        // 复位LCD和TouchPad
+        // Reset LCD and TouchPad
         ESP_ERROR_CHECK(esp_io_expander_set_level(io_expander_,
             IO_EXPANDER_PIN_NUM_0 | IO_EXPANDER_PIN_NUM_1 | IO_EXPANDER_PIN_NUM_2, 1));
         vTaskDelay(pdMS_TO_TICKS(300));
@@ -147,7 +147,7 @@ private:
 
     void EnableLcdCs() {
         if(io_expander_ != NULL) {
-            esp_io_expander_set_level(io_expander_, IO_EXPANDER_PIN_NUM_3, 0);// 置低 LCD CS
+            esp_io_expander_set_level(io_expander_, IO_EXPANDER_PIN_NUM_3, 0);// Drive LCD CS low
         }
     }
 
@@ -277,7 +277,7 @@ private:
         esp_lcd_panel_io_handle_t panel_io = nullptr;
         esp_lcd_panel_handle_t panel = nullptr;
 
-        // 液晶屏控制IO初始化
+        // Initialize LCD control IO
         ESP_LOGD(TAG, "Install panel IO");
         esp_lcd_panel_io_spi_config_t io_config = {};
         io_config.cs_gpio_num = GPIO_NUM_NC;
@@ -289,7 +289,7 @@ private:
         io_config.lcd_param_bits = 8;
         ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(SPI3_HOST, &io_config, &panel_io));
 
-        // 初始化液晶屏驱动芯片
+        // Initialize LCD driver IC
         ESP_LOGD(TAG, "Install LCD driver");
         const ili9341_vendor_config_t vendor_config = {
             .init_cmds = &vendor_specific_init[0],
@@ -318,7 +318,7 @@ private:
     void InitializeSt7789Display() {
         esp_lcd_panel_io_handle_t panel_io = nullptr;
         esp_lcd_panel_handle_t panel = nullptr;
-        // 液晶屏控制IO初始化
+        // Initialize LCD control IO
         ESP_LOGD(TAG, "Install panel IO");
         esp_lcd_panel_io_spi_config_t io_config = {};
         io_config.cs_gpio_num = GPIO_NUM_46;
@@ -330,7 +330,7 @@ private:
         io_config.lcd_param_bits = 8;
         ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(SPI3_HOST, &io_config, &panel_io));
 
-        // 初始化液晶屏驱动芯片ST7789
+        // Initialize ST7789 LCD driver IC
         ESP_LOGD(TAG, "Install LCD driver");
         esp_lcd_panel_dev_config_t panel_config = {};
         panel_config.reset_gpio_num = GPIO_NUM_NC;
@@ -395,8 +395,8 @@ public:
         InitializeTca9554();
         InitializeCamera();
         InitializeSpi();
-        InitializeButtons();  // 先初始化按钮（创建ADC1句柄）
-        InitializePowerManager();  // 后初始化PowerManager（复用ADC1句柄）
+        InitializeButtons();  // Init buttons first (creates ADC1 handle)
+        InitializePowerManager();  // Then PowerManager (reuses ADC1 handle)
         #ifdef LCD_TYPE_ILI9341_SERIAL
         InitializeIli9341Display(); 
         #else

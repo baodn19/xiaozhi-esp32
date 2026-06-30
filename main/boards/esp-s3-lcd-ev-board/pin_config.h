@@ -1,7 +1,7 @@
 
 #pragma once
 
-//关于开发板和屏幕的资料参考
+// Board and display documentation
 //https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-lcd-ev-board/user_guide.html
 
 #define GC9503V_LCD_H_RES 480
@@ -33,12 +33,12 @@
 
 #define GC9503V_PIN_NUM_DATA5 GPIO_NUM_21  // G0
 
-//如果开发板是V1.4 IO 定义为
+// If board is V1.4, IO defined as
 #ifdef CONFIG_ESP_S3_LCD_EV_Board_1p4
     #define GC9503V_PIN_NUM_DATA6 GPIO_NUM_47  // G1
     #define GC9503V_PIN_NUM_DATA7 GPIO_NUM_48  // G2
 #endif
-//如果开发板是V1.5 IO 定义为
+// If board is V1.5, IO defined as
 #ifdef CONFIG_ESP_S3_LCD_EV_Board_1p5
     #define GC9503V_PIN_NUM_DATA6  GPIO_NUM_8  // G1
     #define GC9503V_PIN_NUM_DATA7  GPIO_NUM_18  // G2

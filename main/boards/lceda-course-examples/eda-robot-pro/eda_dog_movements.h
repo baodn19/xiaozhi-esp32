@@ -54,10 +54,10 @@ public:
     void SetRestState(bool state);
 
     //-- Basic leg movements
-    void LiftLeftFrontLeg(int period = 1000, int height = 45);   // 抬起左前腿
-    void LiftLeftRearLeg(int period = 1000, int height = 45);    // 抬起左后腿
-    void LiftRightFrontLeg(int period = 1000, int height = 45);  // 抬起右前腿
-    void LiftRightRearLeg(int period = 1000, int height = 45);   // 抬起右后腿
+    void LiftLeftFrontLeg(int period = 1000, int height = 45);   // Lift left front leg
+    void LiftLeftRearLeg(int period = 1000, int height = 45);    // Lift left rear leg
+    void LiftRightFrontLeg(int period = 1000, int height = 45);  // Lift right front leg
+    void LiftRightRearLeg(int period = 1000, int height = 45);   // Lift right rear leg
 
     //-- Dog gait movements
     void GetCurrentPositions(int pos[SERVO_COUNT]);
@@ -67,7 +67,7 @@ public:
     void Stand(int period = 1500);
     void Stretch(int period = 2000);
     void Shake(int period = 1000);
-    void Sleep();  // 睡觉动作
+    void Sleep();  // Sleep action
 
     // -- Servo limiter
     void EnableServoLimit(int speed_limit_degree_per_sec = SERVO_LIMIT_DEFAULT);

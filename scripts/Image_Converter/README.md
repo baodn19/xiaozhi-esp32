@@ -1,45 +1,45 @@
-# LVGL图片转换工具  
+# LVGL Image Converter
 
-这个目录包含两个用于处理和转换图片为LVGL格式的Python脚本：
+This directory contains two Python scripts for processing and converting images to LVGL format:
 
 ## 1. LVGLImage (LVGLImage.py)
 
-引用自LVGL[官方repo](https://github.com/lvgl/lvgl)的转换脚本[LVGLImage.py](https://github.com/lvgl/lvgl/blob/master/scripts/LVGLImage.py)  
+Adapted from the LVGL [official repo](https://github.com/lvgl/lvgl) conversion script [LVGLImage.py](https://github.com/lvgl/lvgl/blob/master/scripts/LVGLImage.py).
 
-## 2. LVGL图片转换工具 (lvgl_tools_gui.py)
+## 2. LVGL Image Converter (lvgl_tools_gui.py)
 
-调用`LVGLImage.py`，将图片批量转换为LVGL图片格式  
-可用于修改小智的默认表情，具体修改教程[在这里](https://www.bilibili.com/video/BV12FQkYeEJ3/)
+Calls `LVGLImage.py` to batch convert images to LVGL image format.
+Can be used to modify Xiaozhi's default emojis; see the tutorial [here](https://www.bilibili.com/video/BV12FQkYeEJ3/).
 
-### 特性
+### Features
 
-- 图形化操作，界面更友好
-- 支持批量转换图片
-- 自动识别图片格式并选择最佳的颜色格式转换
-- 多分辨率支持
+- Graphical interface for easier operation
+- Batch image conversion support
+- Auto-detect image format and choose optimal color format conversion
+- Multiple resolution support
 
-### 使用方法
+### Usage
 
-创建虚拟环境
+Create virtual environment
 ```bash
-# 创建 venv
+# Create venv
 python -m venv venv
-# 激活环境
+# Activate environment
 source venv/bin/activate  # Linux/Mac
 venv\Scripts\activate      # Windows
 ```
 
-安装依赖
+Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-运行转换工具
+Run conversion tool
 
 ```bash
-# 激活环境
+# Activate environment
 source venv/bin/activate  # Linux/Mac
 venv\Scripts\activate      # Windows
-# 运行
+# Run
 python lvgl_tools_gui.py
 ```

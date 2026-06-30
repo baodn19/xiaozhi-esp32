@@ -8,6 +8,7 @@
 #include <esp_mn_models.h>
 #include <esp_mn_speech_commands.h>
 #include <cJSON.h>
+#include <cmath>
 
 #define TAG "CustomWakeWord"
 
@@ -103,7 +104,7 @@ bool CustomWakeWord::Initialize(AudioCodec* codec, srmodel_list_t* models_list) 
         return false;
     }
 
-    // 初始化 multinet (命令词识别)
+    // Initialize multinet (command word recognition)
     mn_name_ = esp_srmodel_filter(models_, ESP_MN_PREFIX, language_.c_str());
     if (mn_name_ == nullptr) {
         ESP_LOGW(TAG, "Language '%s' multinet not found, falling back to any multinet model", language_.c_str());
@@ -117,6 +118,12 @@ bool CustomWakeWord::Initialize(AudioCodec* codec, srmodel_list_t* models_list) 
 
     multinet_ = esp_mn_handle_from_name(mn_name_);
     multinet_model_data_ = multinet_->create(mn_name_, duration_);
+#if defined(CONFIG_CUSTOM_WAKE_WORD_DEBUG_THRESHOLD) && CONFIG_CUSTOM_WAKE_WORD_DEBUG_THRESHOLD > 0
+    // Debug: override threshold from assets.bin to test detection sensitivity
+    float debug_threshold = CONFIG_CUSTOM_WAKE_WORD_DEBUG_THRESHOLD / 100.0f;
+    ESP_LOGW(TAG, "DEBUG: Overriding threshold %.2f -> %.2f (Kconfig debug setting)", threshold_, debug_threshold);
+    threshold_ = debug_threshold;
+#endif
     multinet_->set_det_threshold(multinet_model_data_, threshold_);
     esp_mn_commands_clear();
     for (int i = 0; i < commands_.size(); i++) {
@@ -164,12 +171,33 @@ void CustomWakeWord::Feed(const std::vector<int16_t>& data) {
     }
     
     int chunksize = multinet_->get_samp_chunksize(multinet_model_data_);
+    // Diagnostic counters: log audio RMS and state every ~3 seconds
+    static int score_log_counter = 0;
+    static int64_t rms_accum = 0;
+    static int rms_samples = 0;
     while (input_buffer_.size() >= chunksize) {
         std::vector<int16_t> chunk(input_buffer_.begin(), input_buffer_.begin() + chunksize);
         StoreWakeWordData(chunk);
+
+        // Accumulate RMS for diagnostic logging
+        for (auto s : chunk) {
+            rms_accum += (int64_t)s * s;
+        }
+        rms_samples += chunk.size();
         
         esp_mn_state_t mn_state = multinet_->detect(multinet_model_data_, chunk.data());
         
+        // Every ~3 seconds, log state and signal RMS so we can confirm real audio is reaching MultiNet
+        score_log_counter++;
+        if (score_log_counter >= 100) {
+            score_log_counter = 0;
+            float rms = (rms_samples > 0) ? sqrtf((float)rms_accum / rms_samples) : 0.0f;
+            rms_accum = 0;
+            rms_samples = 0;
+            ESP_LOGI(TAG, "MN probe: state=%d RMS=%.1f threshold=%.2f (RMS>500 = real audio)",
+                     mn_state, rms, threshold_);
+        }
+
         if (mn_state == ESP_MN_STATE_DETECTED) {
             esp_mn_results_t *mn_result = multinet_->get_results(multinet_model_data_);
             for (int i = 0; i < mn_result->num && running_; i++) {
@@ -188,7 +216,7 @@ void CustomWakeWord::Feed(const std::vector<int16_t>& data) {
             }
             multinet_->clean(multinet_model_data_);
         } else if (mn_state == ESP_MN_STATE_TIMEOUT) {
-            ESP_LOGD(TAG, "Command word detection timeout, cleaning state");
+            ESP_LOGI(TAG, "MN timeout: no wake word in window, resetting");
             multinet_->clean(multinet_model_data_);
         }
         

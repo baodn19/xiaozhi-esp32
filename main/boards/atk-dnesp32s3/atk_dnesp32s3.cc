@@ -98,7 +98,7 @@ private:
         esp_lcd_panel_io_handle_t panel_io = nullptr;
         esp_lcd_panel_handle_t panel = nullptr;
         ESP_LOGD(TAG, "Install panel IO");
-        // 液晶屏控制IO初始化
+        // Initialize LCD control IO
         esp_lcd_panel_io_spi_config_t io_config = {};
         io_config.cs_gpio_num = LCD_CS_PIN;
         io_config.dc_gpio_num = LCD_DC_PIN;
@@ -109,7 +109,7 @@ private:
         io_config.lcd_param_bits = 8;
         esp_lcd_new_panel_io_spi(SPI2_HOST, &io_config, &panel_io);
 
-        // 初始化液晶屏驱动芯片ST7789
+        // Initialize ST7789 LCD driver chip
         ESP_LOGD(TAG, "Install LCD driver");
         esp_lcd_panel_dev_config_t panel_config = {};
         panel_config.reset_gpio_num = GPIO_NUM_NC;
@@ -130,14 +130,14 @@ private:
                                     DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_OFFSET_X, DISPLAY_OFFSET_Y, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y, DISPLAY_SWAP_XY);
     }
 
-    // 初始化摄像头：ov2640；
-    // 根据正点原子官方示例参数
+    // Initialize OV2640 camera
+    // Based on ALIENTEK official example parameters
     void InitializeCamera() {
-        xl9555_->SetOutputState(OV_PWDN_IO, 0); // PWDN=低 (上电)
-        xl9555_->SetOutputState(OV_RESET_IO, 0); // 确保复位
-        vTaskDelay(pdMS_TO_TICKS(50));           // 延长复位保持时间
-        xl9555_->SetOutputState(OV_RESET_IO, 1); // 释放复位
-        vTaskDelay(pdMS_TO_TICKS(50));           // 延长 50ms
+        xl9555_->SetOutputState(OV_PWDN_IO, 0); // PWDN=low (power on)
+        xl9555_->SetOutputState(OV_RESET_IO, 0); // Assert reset
+        vTaskDelay(pdMS_TO_TICKS(50));           // Hold reset longer
+        xl9555_->SetOutputState(OV_RESET_IO, 1); // Release reset
+        vTaskDelay(pdMS_TO_TICKS(50));           // Wait 50ms
 
         static esp_cam_ctlr_dvp_pin_config_t dvp_pin_config = {
             .data_width = CAM_CTLR_DATA_WIDTH_8,
@@ -169,8 +169,8 @@ private:
 
         esp_video_init_dvp_config_t dvp_config = {
             .sccb_config = sccb_config,
-            .reset_pin = CAM_PIN_RESET,   // 实际由 XL9555 控制
-            .pwdn_pin = CAM_PIN_PWDN,     // 实际由 XL9555 控制
+            .reset_pin = CAM_PIN_RESET,   // Actually controlled by XL9555
+            .pwdn_pin = CAM_PIN_PWDN,     // Actually controlled by XL9555
             .dvp_pin = dvp_pin_config,
             .xclk_freq = 20000000,
         };

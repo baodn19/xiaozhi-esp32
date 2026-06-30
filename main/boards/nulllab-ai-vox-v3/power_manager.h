@@ -59,7 +59,7 @@ private:
 
         CalculateBatteryLevel(average_adc);
 
-        ESP_LOGI("PowerManager", "ADC值: %d 平均值: %ld 电量: %u%%", adc_value, average_adc,
+        ESP_LOGI("PowerManager", "ADC value: %d average: %ld level: %u%%", adc_value, average_adc,
                  battery_level_);
     }
 
@@ -78,7 +78,7 @@ private:
 public:
     PowerManager(gpio_num_t adc_pin_, gpio_num_t charging_pin)
         : adc_pin_(adc_pin_), charging_pin_(charging_pin) {
-        // 初始化充电引脚
+        // Initialize charging pin
         if (charging_pin_ != GPIO_NUM_NC) {
             gpio_config_t io_conf = {};
             io_conf.intr_type = GPIO_INTR_DISABLE;
@@ -101,7 +101,7 @@ public:
             .skip_unhandled_events = true,
         };
         ESP_ERROR_CHECK(esp_timer_create(&timer_args, &timer_handle_));
-        ESP_ERROR_CHECK(esp_timer_start_periodic(timer_handle_, 1000000));  // 1秒
+        ESP_ERROR_CHECK(esp_timer_start_periodic(timer_handle_, 1000000));  // 1 second
 
         InitializeAdc();
     }
@@ -134,7 +134,7 @@ public:
     }
 
     bool IsCharging() {
-        // 如果电量已经满了，则不再显示充电中
+        // Do not show charging when battery is full
         if (battery_level_ == 100) {
             return false;
         }
@@ -142,7 +142,7 @@ public:
     }
 
     bool IsDischarging() {
-        // 没有区分充电和放电，所以直接返回相反状态
+        // Charging/discharging not distinguished; return inverted state
         return !is_charging_;
     }
 

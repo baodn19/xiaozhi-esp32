@@ -18,3 +18,9 @@ main/mmap_generate_emoji.h
 *.bin
 mmap_generate_*.h
 .clangd
+
+# Local documentation
+docs/
+
+# venv
+scripts/acoustic_check/audio_debug

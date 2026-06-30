@@ -13,6 +13,7 @@
 #include <esp_pm.h>
 
 #include <string>
+#include <vector>
 #include <chrono>
 
 class Theme {
@@ -36,6 +37,8 @@ public:
     virtual void SetEmotion(const char* emotion);
     virtual void SetChatMessage(const char* role, const char* content);
     virtual void ClearChatMessages();
+    virtual void SetLotusContent(const char* content);
+    virtual void SetLotusRecipeList(const std::vector<std::string>& rows);
     virtual void SetTheme(Theme* theme);
     virtual Theme* GetTheme() { return current_theme_; }
     virtual void UpdateStatusBar(bool update_all = false);

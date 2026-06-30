@@ -8,7 +8,7 @@
 
 class PowerManager {
 private:
-    // 电池电量区间-分压电阻为2个100k
+    // Battery voltage divider uses two 100k resistors
     static constexpr struct {
         uint16_t adc;
         uint8_t level;
@@ -51,7 +51,7 @@ private:
 
         CalculateBatteryLevel(average_adc);
 
-        // ESP_LOGI("PowerManager", "ADC值: %d 平均值: %ld 电量: %u%%", adc_value, average_adc,
+        // ESP_LOGI("PowerManager", "ADC: %d avg: %ld level: %u%%", adc_value, average_adc,
         //          battery_level_);
     }
 
@@ -91,7 +91,7 @@ public:
             .skip_unhandled_events = true,
         };
         ESP_ERROR_CHECK(esp_timer_create(&timer_args, &timer_handle_));
-        ESP_ERROR_CHECK(esp_timer_start_periodic(timer_handle_, 1000000));  // 1秒
+        ESP_ERROR_CHECK(esp_timer_start_periodic(timer_handle_, 1000000));  // 1 second
 
         InitializeAdc();
     }

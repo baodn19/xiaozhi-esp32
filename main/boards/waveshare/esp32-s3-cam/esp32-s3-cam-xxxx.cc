@@ -34,16 +34,16 @@ void switch_to_main(void)
                                  ESP_PARTITION_SUBTYPE_APP_FACTORY,
                                  NULL);
     if (!factory_part) {
-        ESP_LOGE("APP_SWITCH", "未找到 factory 分区");
+        ESP_LOGE("APP_SWITCH", "factory partition not found");
         return;
     }
 
     esp_err_t err = esp_ota_set_boot_partition(factory_part);
     if (err == ESP_OK) {
-        ESP_LOGI("APP_SWITCH", "已设置 factory 为启动分区，重启回到主程序");
+        ESP_LOGI("APP_SWITCH", "Set factory as boot partition; reboot to main app");
         esp_restart();
     } else {
-        ESP_LOGE("APP_SWITCH", "设置启动分区失败: %s", esp_err_to_name(err));
+        ESP_LOGE("APP_SWITCH", "Failed to set boot partition: %s", esp_err_to_name(err));
     }
 }
 
@@ -116,7 +116,7 @@ private:
     void InitializeSt7789Display() {
         esp_lcd_panel_io_handle_t panel_io = nullptr;
         esp_lcd_panel_handle_t panel = nullptr;
-        // 液晶屏控制IO初始化
+        // Initialize LCD control IO
         ESP_LOGD(TAG, "Install panel IO");
         esp_lcd_panel_io_spi_config_t io_config = {};
         io_config.cs_gpio_num = DISPLAY_CS_PIN;
@@ -128,7 +128,7 @@ private:
         io_config.lcd_param_bits = 8;
         ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(SPI2_HOST, &io_config, &panel_io));
 
-        // 初始化液晶屏驱动芯片ST7789
+        // Initialize ST7789 LCD driver IC
         ESP_LOGD(TAG, "Install LCD driver");
         esp_lcd_panel_dev_config_t panel_config = {};
         panel_config.reset_gpio_num = GPIO_NUM_NC;
@@ -150,7 +150,7 @@ private:
         void InitializeSt7796Display() {
         esp_lcd_panel_io_handle_t panel_io = nullptr;
         esp_lcd_panel_handle_t panel = nullptr;
-        // 液晶屏控制IO初始化
+        // Initialize LCD control IO
         ESP_LOGD(TAG, "Install panel IO");
         esp_lcd_panel_io_spi_config_t io_config = {};
         io_config.cs_gpio_num = DISPLAY_CS_PIN;
@@ -162,7 +162,7 @@ private:
         io_config.lcd_param_bits = 8;
         ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(SPI2_HOST, &io_config, &panel_io));
 
-        // 初始化液晶屏驱动芯片ST7789
+        // Initialize ST7789 LCD driver IC
         ESP_LOGD(TAG, "Install LCD driver");
         esp_lcd_panel_dev_config_t panel_config = {};
         panel_config.reset_gpio_num = GPIO_NUM_NC;

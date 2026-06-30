@@ -44,11 +44,11 @@ def main(samplerate, channels):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='UDP音频数据接收器，保存为WAV文件')
+    parser = argparse.ArgumentParser(description='UDP audio data receiver that saves to WAV file')
     parser.add_argument('--samplerate', '-s', type=int, default=16000, 
-                        help='采样率 (默认: 16000)')
+                        help='Sample rate (default: 16000)')
     parser.add_argument('--channels', '-c', type=int, default=2, 
-                        help='声道数 (默认: 2)')
+                        help='Number of channels (default: 2)')
     
     args = parser.parse_args()
     main(args.samplerate, args.channels)

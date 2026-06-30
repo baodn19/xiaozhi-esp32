@@ -20,10 +20,10 @@
 #define DEG2RAD(g) ((g) * M_PI) / 180
 #endif
 
-#define SERVO_MIN_PULSEWIDTH_US 500           // 最小脉宽（微秒）
-#define SERVO_MAX_PULSEWIDTH_US 2500          // 最大脉宽（微秒）
-#define SERVO_MIN_DEGREE -90                  // 最小角度
-#define SERVO_MAX_DEGREE 90                   // 最大角度
+#define SERVO_MIN_PULSEWIDTH_US 500           // Minimum pulse width (microseconds)
+#define SERVO_MAX_PULSEWIDTH_US 2500          // Maximum pulse width (microseconds)
+#define SERVO_MIN_DEGREE -90                  // Minimum angle
+#define SERVO_MAX_DEGREE 90                   // Maximum angle
 #define SERVO_TIMEBASE_RESOLUTION_HZ 1000000  // 1MHz, 1us per tick
 #define SERVO_TIMEBASE_PERIOD 20000           // 20000 ticks, 20ms
 

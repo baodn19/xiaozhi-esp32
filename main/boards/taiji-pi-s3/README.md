@@ -1,44 +1,45 @@
-# 由于原来的麦克风型号停产，2025年7月之后的太极派（JC3636W518）更换了麦克风，并且更换了屏幕玻璃，所以在产品标签上批次号大于2528的用户请选择I2S Type PDM,
+# The original microphone is discontinued. For Taiji Pi (JC3636W518) units built after July 2025, with updated mic and screen glass, if your batch number on the label is greater than 2528, select I2S Type PDM.
 
-# 新增双声道配置
+# Dual-Channel Configuration
 
-# 编译配置命令
+# Build Configuration
 
-**配置编译目标为 ESP32S3：**
+**Set target to ESP32-S3:**
 
 ```bash
 idf.py set-target esp32s3
 ```
 
-**打开 menuconfig：**
+**Open menuconfig:**
 
 ```bash
 idf.py menuconfig
 ```
 
-**选择板子：**
+**Select board:**
 
 ```
-Xiaozhi Assistant -> Board Type -> 太极小派esp32s3
+Xiaozhi Assistant -> Board Type -> Taiji Pi ESP32-S3
 
 Xiaozhi Assistant -> TAIJIPAI_S3_CONFIG -> taiji-pi-S3 I2S Type -> I2S Type PDM
 ```
 
-**如果需要选择双声道：**
+**For dual-channel:**
+
 ```
 
 Xiaozhi Assistant -> TAIJIPAI_S3_CONFIG -> Enabel use 2 slot
 ```
 
 
-**修改PSRAM配置：**
+**PSRAM configuration:**
 
 ```
 component config -> ESP PSRAM -> SPI RAM config -> Try to allocate memories of WiFi and LWIP in SPIRAM firstly. If failed, allocate internal memory
 
 ```
 
-**编译：**
+**Build:**
 
 ```bash
 idf.py build

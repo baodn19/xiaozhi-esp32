@@ -159,7 +159,7 @@ private:
     void InitializeGc9107Display(){
         esp_lcd_panel_io_handle_t panel_io = nullptr;
         esp_lcd_panel_handle_t panel = nullptr;
-        // 液晶屏控制IO初始化
+        // Initialize LCD control IO
         ESP_LOGD(TAG, "Install panel IO");
         esp_lcd_panel_io_spi_config_t io_config = {};
         io_config.cs_gpio_num = DISPLAY_CS_PIN;
@@ -171,7 +171,7 @@ private:
         io_config.lcd_param_bits = 8;
         ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(SPI2_HOST, &io_config, &panel_io));
 
-        // 初始化液晶屏驱动芯片GC9107
+        // Initialize LCD driver chip GC9107
         ESP_LOGD(TAG, "Install LCD driver");        
         gc9a01_vendor_config_t gc9107_vendor_config = {
             .init_cmds = gc9107_lcd_init_cmds,
@@ -204,7 +204,7 @@ public:
         InitializeGc9107Display();
         GetBacklight()->RestoreBrightness();
 
-        // 把 ESP32C3 的 VDD SPI 引脚作为普通 GPIO 口使用
+        // Use ESP32-C3 VDD SPI pin as regular GPIO
         esp_efuse_write_field_bit(ESP_EFUSE_VDD_SPI_AS_GPIO);
     }
 

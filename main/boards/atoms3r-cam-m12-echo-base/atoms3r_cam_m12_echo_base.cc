@@ -161,7 +161,7 @@ private:
     }
 public:
     AtomS3rCamM12EchoBaseBoard() {
-        EnableCameraPower(); // IO18 还会控制指示灯
+        EnableCameraPower(); // IO18 also controls the indicator LED
         InitializeCamera();
         InitializeI2c();
         I2cDetect();

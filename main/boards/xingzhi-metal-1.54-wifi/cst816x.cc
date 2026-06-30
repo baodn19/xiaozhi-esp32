@@ -6,7 +6,7 @@
 #include "wifi_board.h"
 #include "power_save_timer.h"
 #include "codecs/es8311_audio_codec.h"
-#include <algorithm>  // 用于std::max/std::min
+#include <algorithm>  // For std::max/std::min
 
 #define TAG "Cst816x"
 
@@ -134,7 +134,7 @@ void Cst816x::touchpad_daemon(void* arg) {
                                 return;
                             }
                             app.ToggleChatState();  
-                        } else if (current_event.x == 20) {     // 20,600 单击：音量+
+                        } else if (current_event.x == 20) {     // 20,600 single click: volume+
                             int current_vol = codec->output_volume();
                             int new_vol = current_vol + 10;
                             new_vol = (new_vol >= ES8311_VOL_MAX) ? ES8311_VOL_MAX : new_vol;
@@ -142,7 +142,7 @@ void Cst816x::touchpad_daemon(void* arg) {
                             codec->EnableOutput(true);
                             codec->SetOutputVolume(new_vol);
                             display->ShowNotification(Lang::Strings::VOLUME + std::to_string(new_vol));
-                        } else if (current_event.x == 60) {     // 60,600 单击：音量-
+                        } else if (current_event.x == 60) {     // 60,600 single click: volume-
                             int current_vol = codec->output_volume();
                             int new_vol = current_vol - 10;
                             new_vol = (new_vol <= ES8311_VOL_MIN) ? ES8311_VOL_MIN : new_vol;

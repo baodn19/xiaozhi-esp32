@@ -67,7 +67,7 @@ private:
     }
 
     void InitializePowerSaveTimer() {
-        //定时器，调整设备为modem-sleep模式和屏幕亮度
+        // Timer to switch device to modem-sleep and adjust screen brightness
         power_save_timer_ = new PowerSaveTimer(-1, 60, -1);
         power_save_timer_->OnEnterSleepMode([this]() {
             ESP_LOGI(TAG, "Enabling modem-sleep mode");
@@ -78,14 +78,14 @@ private:
         power_save_timer_->OnExitSleepMode([this]() {
             GetDisplay()->SetPowerSaveMode(false);
             GetBacklight()->RestoreBrightness();            
-            esp_wifi_set_ps(WIFI_PS_NONE);  // 关闭Wi-Fi省电，恢复正常
-            // esp_lcd_panel_disp_on_off(panel_, true); // 重新打开显示
+            esp_wifi_set_ps(WIFI_PS_NONE);  // Disable Wi-Fi power save; restore normal mode
+            // esp_lcd_panel_disp_on_off(panel_, true); // Turn display back on
         });
         power_save_timer_->OnShutdownRequest([this]() {
             ESP_LOGI(TAG, "Shutting down display");            
             GetBacklight()->SetBrightness(1);
-            // esp_lcd_panel_disp_on_off(panel_, false);   //关闭显示
-            // power_save_timer_->SetEnabled(false);   // 禁用定时器，防止重复
+            // esp_lcd_panel_disp_on_off(panel_, false);   // Turn display off
+            // power_save_timer_->SetEnabled(false);   // Disable timer to prevent repeat trigger
             
         });
         power_save_timer_->SetEnabled(true);
@@ -115,7 +115,7 @@ private:
 
     void InitializeSt7789Display() {
         
-        // 液晶屏控制IO初始化
+        // Initialize LCD panel IO
         ESP_LOGD(TAG, "Install panel IO");
         esp_lcd_panel_io_spi_config_t io_config = {};
         io_config.cs_gpio_num = DISPLAY_SPI_CS_PIN;
@@ -127,7 +127,7 @@ private:
         io_config.lcd_param_bits = 8;
         ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(SPI2_HOST, &io_config, &panel_io_));
 
-        // 初始化液晶屏驱动芯片ST7789
+        // Initialize ST7789 LCD driver
         ESP_LOGD(TAG, "Install LCD driver");
         esp_lcd_panel_dev_config_t panel_config = {};
         panel_config.reset_gpio_num = GPIO_NUM_NC;
@@ -157,7 +157,7 @@ public:
         
         GetBacklight()->RestoreBrightness();
 
-        // 把 ESP32C3 的 VDD SPI 引脚作为普通 GPIO 口使用
+        // Use ESP32-C3 VDD SPI pin as regular GPIO
         esp_efuse_write_field_bit(ESP_EFUSE_VDD_SPI_AS_GPIO);
     }
 

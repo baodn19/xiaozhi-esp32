@@ -67,9 +67,9 @@ private:
         power_save_timer_->OnShutdownRequest([this]() {
             ESP_LOGI(TAG, "Shutting down");
             //rtc_gpio_set_level(GPIO_NUM_21, 0);
-            // 启用保持功能，确保睡眠期间电平不变
+            // Enable hold so levels stay stable during sleep
             //rtc_gpio_hold_en(GPIO_NUM_21);
-            //esp_lcd_panel_disp_on_off(panel_, false); //关闭显示
+            //esp_lcd_panel_disp_on_off(panel_, false); // turn off display
             //esp_deep_sleep_start();
         });
         power_save_timer_->SetEnabled(true);
@@ -91,7 +91,7 @@ private:
     void InitializeLcdDisplay() {
         esp_lcd_panel_io_handle_t panel_io = nullptr;
         esp_lcd_panel_handle_t panel = nullptr;
-        // 液晶屏控制IO初始化
+        // Initialize LCD control IO
         ESP_LOGD(TAG, "Install panel IO");
         esp_lcd_panel_io_spi_config_t io_config = {};
         io_config.cs_gpio_num = DISPLAY_CS_PIN;
@@ -103,7 +103,7 @@ private:
         io_config.lcd_param_bits = 8;
         ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(SPI3_HOST, &io_config, &panel_io));
 
-        // 初始化液晶屏驱动芯片
+        // Initialize LCD driver chip
         ESP_LOGD(TAG, "Install LCD driver");
         esp_lcd_panel_dev_config_t panel_config = {};
         panel_config.reset_gpio_num = DISPLAY_RST_PIN;
@@ -178,7 +178,7 @@ private:
         });
     }
 
-    // 物联网初始化，添加对 AI 可见设备
+    // IoT init: add devices visible to AI
     void InitializeTools() {
         static LampController lamp(LAMP_GPIO);
     }

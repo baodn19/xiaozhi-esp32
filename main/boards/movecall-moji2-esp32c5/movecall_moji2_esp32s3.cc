@@ -266,7 +266,7 @@ private:
         ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_bus_cfg, &codec_i2c_bus_));
     }
 
-    // SPI初始化
+    // Initialize SPI
     void InitializeSpi() {
         ESP_LOGI(TAG, "Initialize SPI bus");
         const spi_bus_config_t bus_config = MOJI2_ST77916_PANEL_BUS_QSPI_CONFIG(DISPLAY_QSPI_SCLK_PIN,
@@ -278,7 +278,7 @@ private:
         ESP_ERROR_CHECK(spi_bus_initialize(DISPLAY_QSPI_HOST, &bus_config, SPI_DMA_CH_AUTO));
     }
 
-    // St77916 初始化
+    // Initialize ST77916
     void InitializeSt77916Display() {
         ESP_LOGI(TAG, "Init St77916 display");
         esp_lcd_panel_io_handle_t panel_io = nullptr;

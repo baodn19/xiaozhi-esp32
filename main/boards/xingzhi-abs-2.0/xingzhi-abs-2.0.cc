@@ -74,7 +74,7 @@ private:
     }
 
     void InitializePowerManager() {
-        power_manager_ = new PowerManager(POWER_USB_IN);//USB是否插入
+        power_manager_ = new PowerManager(POWER_USB_IN);// USB insert detect
         power_manager_->OnChargingStatusChanged([this](bool is_charging) {
             if (is_charging) {
                 power_save_timer_->SetEnabled(false);
@@ -180,7 +180,7 @@ private:
 
         esp_err_t err = spi_bus_initialize(SD_SPI_HOST, &bus_cnf, SPI_DMA_CH_AUTO);
         if (err != ESP_OK) {
-            ESP_LOGE(TAG, "SPI总线初始化失败: %s", esp_err_to_name(err));
+            ESP_LOGE(TAG, "SPI bus init failed: %s", esp_err_to_name(err));
             return;
         }
         
@@ -203,14 +203,14 @@ private:
         sdmmc_host_t host = SDSPI_HOST_DEFAULT();
         err = esp_vfs_fat_sdspi_mount(SD_MOUNT_POINT, &host, &slot_cnf, &mount_cnf, &card);
         if (err != ESP_OK) {
-            ESP_LOGE(TAG, "SD卡挂载失败: %s", esp_err_to_name(err));
+            ESP_LOGE(TAG, "SD card mount failed: %s", esp_err_to_name(err));
             is_sdcard_found = false;
             return;
         } else if (err == ESP_OK) {
-            ESP_LOGI(TAG, "SD卡挂载成功");
+            ESP_LOGI(TAG, "SD card mounted successfully");
             is_sdcard_found = true;
         }
-        // sdmmc_card_print_info(stdout, card); // 打印SD卡信息
+        // sdmmc_card_print_info(stdout, card); // Print SD card info
     }
 
     void InitializePhysicalButtons() {
@@ -241,9 +241,9 @@ private:
                 ESP_LOGI(TAG, "Button OnFiveClick");
                 this->TriggerVibrateEvent();
                 if (is_sdcard_found) {
-                    display_->SetChatMessage("system", "开机检测到SD挂载成功");
+                    display_->SetChatMessage("system", "Boot: SD card mounted successfully");
                 } else {
-                    display_->SetChatMessage("system", "开机检测到SD挂载失败");
+                    display_->SetChatMessage("system", "Boot: SD card mount failed");
                 }
             }, 5);
 
@@ -300,7 +300,7 @@ private:
     void InitializeVibrateTask() {
         vibrate_event_queue_ = xQueueCreate(10, sizeof(VibrateEvent_t));
         if (vibrate_event_queue_ == nullptr) {
-            ESP_LOGE(TAG, "创建振动事件队列失败");
+            ESP_LOGE(TAG, "Failed to create vibration event queue");
             return;
         }
 
@@ -314,9 +314,9 @@ private:
         );
 
         if (ret != pdPASS) {
-            ESP_LOGE(TAG, "创建振动任务失败");
+            ESP_LOGE(TAG, "Failed to create vibration task");
         } else {
-            ESP_LOGI(TAG, "振动任务初始化成功");
+            ESP_LOGI(TAG, "Vibration task initialized successfully");
         }
     }
 

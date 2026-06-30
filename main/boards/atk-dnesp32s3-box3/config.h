@@ -47,7 +47,7 @@ enum PowerSupply {
 #define LCD_DC_PIN GPIO_NUM_48
 #define LCD_CS_PIN GPIO_NUM_47
 
-/* IO扩展 */ 
+/* IO expander */ 
 #define AW9523B_ADDR                 0x59
 #define AW9523B_INT_GPIO GPIO_NUM_42
 #define XIO_KEY_K1 (IO_EXPANDER_PIN_NUM_0)
@@ -70,7 +70,7 @@ enum PowerSupply {
 #define DRV_IO_EXP_OUTPUT_MASK 0XFFFC
 #define DRV_IO_EXP_INPUT_MASK 0x0003
 
-/* 相机引脚配置 */
+/* Camera pin configuration */
 #define CAM_PIN_PWDN    GPIO_NUM_NC
 #define CAM_PIN_RESET   GPIO_NUM_NC
 #define CAM_PIN_VSYNC   GPIO_NUM_6

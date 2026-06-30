@@ -34,7 +34,7 @@ private:
     Cst816x *cst816d_;
 
     void InitializePowerManager() {
-        power_manager_ = new PowerManager(POWER_USB_IN);//USB是否插入
+        power_manager_ = new PowerManager(POWER_USB_IN);// USB insert detect
         power_manager_->OnChargingStatusChanged([this](bool is_charging) {
             if (is_charging) {
                 power_save_timer_->SetEnabled(false);

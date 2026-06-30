@@ -92,15 +92,15 @@ private:
 
     void InitializeButtons() {
         
-        // 配置 GPIO
+        // Configure GPIO
         gpio_config_t io_conf = {
-            .pin_bit_mask = 1ULL << BUILTIN_LED_GPIO,  // 设置需要配置的 GPIO 引脚
-            .mode = GPIO_MODE_OUTPUT,           // 设置为输出模式
-            .pull_up_en = GPIO_PULLUP_DISABLE,  // 禁用上拉
-            .pull_down_en = GPIO_PULLDOWN_DISABLE,  // 禁用下拉
-            .intr_type = GPIO_INTR_DISABLE      // 禁用中断
+            .pin_bit_mask = 1ULL << BUILTIN_LED_GPIO,  // GPIO pin to configure
+            .mode = GPIO_MODE_OUTPUT,           // Output mode
+            .pull_up_en = GPIO_PULLUP_DISABLE,  // Disable pull-up
+            .pull_down_en = GPIO_PULLDOWN_DISABLE,  // Disable pull-down
+            .intr_type = GPIO_INTR_DISABLE      // Disable interrupt
         };
-        gpio_config(&io_conf);  // 应用配置
+        gpio_config(&io_conf);  // Apply config
 
         boot_button_.OnClick([this]() {
             auto& app = Application::GetInstance();
@@ -113,6 +113,7 @@ private:
         });
 
         asr_button_.OnClick([this]() {
+            // Chinese wake phrase required by the built-in WakeNet model; do not translate
             std::string wake_word="你好小智";
             Application::GetInstance().WakeWordInvoke(wake_word);
         });
@@ -127,7 +128,7 @@ private:
         });
     }
 
-    // 物联网初始化，添加对 AI 可见设备
+    // IoT init: add devices visible to AI
     void InitializeTools() {
         static LampController lamp(LAMP_GPIO);
     }

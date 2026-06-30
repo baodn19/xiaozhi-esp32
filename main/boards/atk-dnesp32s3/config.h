@@ -40,7 +40,7 @@
 #define DISPLAY_BACKLIGHT_PIN GPIO_NUM_NC
 #define DISPLAY_BACKLIGHT_OUTPUT_INVERT true
 
-/* 相机引脚配置 */
+/* Camera pin configuration */
 #define CAM_PIN_PWDN    GPIO_NUM_NC
 #define CAM_PIN_RESET   GPIO_NUM_NC
 #define CAM_PIN_VSYNC   GPIO_NUM_47

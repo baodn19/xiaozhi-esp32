@@ -106,7 +106,7 @@ private:
                 ret = i2c_master_transmit_receive(dev_handle, &reg_addr_8bit, 1, data, 2, 200);
                 if (ret == ESP_OK && (data[0] != 0 || data[1] != 0)) {
                     detected_pid = (data[0] << 8) | data[1];
-                    ESP_LOGI(TAG, "检测到摄像头 (OV2640方式) PID=0x%04X (地址=0x%02X)",
+                    ESP_LOGI(TAG, "Camera detected (OV2640 method) PID=0x%04X (address=0x%02X)",
                              detected_pid, addr);
                     camera_found = true;
                     i2c_master_bus_rm_device(dev_handle);
@@ -124,7 +124,7 @@ private:
                     if (ret == ESP_OK) {
                         detected_pid = (pid_high << 8) | pid_low;
                         if (detected_pid != 0) {
-                            ESP_LOGI(TAG, "检测到摄像头 (OV3660方式) PID=0x%04X (地址=0x%02X)",
+                            ESP_LOGI(TAG, "Camera detected (OV3660 method) PID=0x%04X (address=0x%02X)",
                                      detected_pid, addr);
                             camera_found = true;
                             i2c_master_bus_rm_device(dev_handle);
@@ -143,16 +143,16 @@ private:
             ledc_stop(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL, 0);
             camera_type_ = OTTO_CAMERA_NONE;
         } else {
-            // 根据 PID 判断摄像头类型
+            // Determine camera type from PID
             if (detected_pid == OTTO_OV2640_PID_1 || detected_pid == OTTO_OV2640_PID_2) {
                 camera_type_ = OTTO_CAMERA_OV2640;
-                ESP_LOGI(TAG, "摄像头类型: OV2640 (PID=0x%04X)", detected_pid);
+                ESP_LOGI(TAG, "Camera type: OV2640 (PID=0x%04X)", detected_pid);
             } else if (detected_pid == OTTO_OV3660_PID) {
                 camera_type_ = OTTO_CAMERA_OV3660;
-                ESP_LOGI(TAG, "摄像头类型: OV3660 (PID=0x%04X)", detected_pid);
+                ESP_LOGI(TAG, "Camera type: OV3660 (PID=0x%04X)", detected_pid);
             } else {
                 camera_type_ = OTTO_CAMERA_UNKNOWN;
-                ESP_LOGW(TAG, "未知摄像头类型，PID=0x%04X", detected_pid);
+                ESP_LOGW(TAG, "Unknown camera type, PID=0x%04X", detected_pid);
             }
         }
         return camera_found;
@@ -232,7 +232,7 @@ private:
             ws_control_server_ = nullptr;
             return;
         }
-        // 将 MCP 响应同时广播回连接到 8080 端口的 WebSocket 客户端
+        // Also broadcast MCP responses to WebSocket clients on port 8080
         Application::GetInstance().RegisterMcpBroadcastCallback([this](const std::string& payload) {
             if (ws_control_server_) {
                 ws_control_server_->BroadcastMessage(payload);
@@ -253,10 +253,10 @@ private:
         }
 
         try {
-            // 释放检测阶段占用的 I2C 资源，避免与 esp_camera 初始化冲突。
+            // Release I2C resources used during detection to avoid conflict with esp_camera init.
             i2c_del_master_bus(i2c_bus_);
             i2c_bus_ = nullptr;
-            // 停止检测阶段输出的 XCLK，交由 esp_camera 自行接管。
+            // Stop XCLK output from detection phase; let esp_camera take over.
             ledc_stop(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL, 0);
 
             camera_config_t config = {};
@@ -289,18 +289,18 @@ private:
 
             camera_ = new Esp32Camera(config);
 
-            // 根据摄像头类型设置不同的翻转参数
+            // Set flip parameters by camera type
             switch (camera_type_) {
                 case OTTO_CAMERA_OV3660:
                     camera_->SetVFlip(true);
                     camera_->SetHMirror(true);
-                    ESP_LOGI(TAG, "OV3660: 设置 VFlip=true, HMirror=true");
+                    ESP_LOGI(TAG, "OV3660: set VFlip=true, HMirror=true");
                     break;
                 case OTTO_CAMERA_OV2640:
                 default:
                     camera_->SetVFlip(true);
                     camera_->SetHMirror(true);
-                    ESP_LOGI(TAG, "OV2640: 设置 VFlip=true, HMirror=true");
+                    ESP_LOGI(TAG, "OV2640: set VFlip=true, HMirror=true");
                     break;
             }
             return true;
@@ -334,18 +334,18 @@ public:
           has_camera_(false),
           camera_type_(OTTO_CAMERA_NONE) {
 #if OTTO_HARDWARE_VERSION == OTTO_VERSION_AUTO
-        // 自动检测硬件版本（同时检测摄像头类型）
+        // Auto-detect hardware version (and camera type)
         has_camera_ = DetectHardwareVersion();
-        ESP_LOGI(TAG, "自动检测硬件版本: %s", has_camera_ ? "摄像头版" : "无摄像头版");
+        ESP_LOGI(TAG, "Auto-detected hardware version: %s", has_camera_ ? "camera version" : "no-camera version");
 #elif OTTO_HARDWARE_VERSION == OTTO_VERSION_CAMERA
-        // 强制使用摄像头版本，但仍检测具体摄像头类型
+        // Force camera version but still detect camera type
         has_camera_ = DetectHardwareVersion();
         if (!has_camera_) {
-            // 检测失败时仍使用摄像头配置，但不知道具体类型
+            // On detect failure, use camera config with unknown type
             has_camera_ = true;
             camera_type_ = OTTO_CAMERA_UNKNOWN;
-            ESP_LOGW(TAG, "强制使用摄像头版本配置，但未能检测到摄像头类型");
-            // 初始化 I2C 总线用于摄像头
+            ESP_LOGW(TAG, "Forced camera version config but failed to detect camera type");
+            // Initialize I2C bus for camera
             i2c_master_bus_config_t i2c_bus_cfg = {
                 .i2c_port = I2C_NUM_0,
                 .sda_io_num = CAMERA_VERSION_CONFIG.i2c_sda_pin,
@@ -361,16 +361,16 @@ public:
             };
             i2c_new_master_bus(&i2c_bus_cfg, &i2c_bus_);
         } else {
-            ESP_LOGI(TAG, "强制使用摄像头版本配置");
+            ESP_LOGI(TAG, "Forced camera version config");
         }
 #elif OTTO_HARDWARE_VERSION == OTTO_VERSION_NO_CAMERA
-        // 强制使用无摄像头版本
+        // Force no-camera version
         has_camera_ = false;
         camera_type_ = OTTO_CAMERA_NONE;
-        ESP_LOGI(TAG, "强制使用无摄像头版本配置");
+        ESP_LOGI(TAG, "Forced no-camera version config");
 #else
 #error \
-    "OTTO_HARDWARE_VERSION 设置无效，请使用 OTTO_VERSION_AUTO, OTTO_VERSION_CAMERA 或 OTTO_VERSION_NO_CAMERA"
+    "OTTO_HARDWARE_VERSION is invalid; use OTTO_VERSION_AUTO, OTTO_VERSION_CAMERA, or OTTO_VERSION_NO_CAMERA"
 #endif
 
         if (has_camera_)

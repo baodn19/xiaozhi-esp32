@@ -52,7 +52,7 @@ CustomEpdDisplay::CustomEpdDisplay(esp_lcd_panel_io_handle_t panel_io, esp_lcd_p
 
     buffer = (uint8_t*)heap_caps_malloc(epd_spi_data.buffer_len, MALLOC_CAP_SPIRAM);
     assert(buffer);
-    display_ = lv_display_create(width, height); /* 以水平和垂直分辨率（像素）进行基本初始化 */
+    display_ = lv_display_create(width, height); /* Basic init with horizontal and vertical resolution (pixels) */
     lv_display_set_flush_cb(display_, lvgl_flush_cb);
     lv_display_set_user_data(display_, this);
 

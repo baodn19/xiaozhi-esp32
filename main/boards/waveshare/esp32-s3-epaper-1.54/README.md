@@ -1,6 +1,6 @@
-# 产品链接
+# Product links
 
-[微雪电子 ESP32-S3-ePaper-1.54](https://www.waveshare.net/shop/ESP32-S3-ePaper-1.54.htm)
+[Waveshare ESP32-S3-ePaper-1.54](https://www.waveshare.net/shop/ESP32-S3-ePaper-1.54.htm)
 
 ```bash
 esptool.py flash_id
@@ -8,46 +8,46 @@ V1: 4MB Flash, 2MB PSRAM
 V2: 8MB Flash, 8MB PSRAM
 ```
 
-# 编译配置命令
+# Build configuration
 
-**克隆工程**
+**Clone the project**
 
 ```bash
 git clone https://github.com/78/xiaozhi-esp32.git
 ```
 
-**进入工程**
+**Enter the project directory**
 
 ```bash
 cd xiaozhi-esp32
 ```
 
-**配置编译目标为 ESP32S3**
+**Set build target to ESP32S3**
 
 ```bash
 idf.py set-target esp32s3
 ```
 
-**打开 menuconfig**
+**Open menuconfig**
 
 ```bash
 idf.py menuconfig
 ```
 
-**选择板子**
+**Select board**
 
 ```bash
 Xiaozhi Assistant -> Board Type -> Waveshare ESP32-S3-ePaper-1.54_v2
 ```
 
-**编译**
+**Build**
 
 ```bash
 python ./scripts/release.py --name esp32-s3-epaper-1.54-v1 waveshare/esp32-s3-epaper-1.54
 python ./scripts/release.py --name esp32-s3-epaper-1.54-v2 waveshare/esp32-s3-epaper-1.54
 ```
 
-**下载并打开串口终端**
+**Flash and open serial monitor**
 
 ```bash
 idf.py flash monitor

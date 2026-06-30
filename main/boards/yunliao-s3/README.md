@@ -1,97 +1,97 @@
-# 小智云聊 S3
+# Xiaozhi Yunliao S3
 
-## 简介
+## Overview
 
-小智云聊 S3 是小智 AI 的魔改项目，是首个 2.8 寸护眼大屏+大字体+2000mah 大电池的量产成品，做了大量创新和优化。
+Xiaozhi Yunliao S3 is a customized Xiaozhi AI product—the first mass-produced unit with a 2.8-inch eye-care display, large fonts, and a 2000 mAh battery, with many innovations and optimizations.
 
-## 官方版
+## Official Edition
 
-官方版代码在小智 AI 主项目中维护，跟随主项目的一起版本更新，便于用户自行扩展和第三方固件扩展。支持语音唤醒、语音打断、OTA、4G 自由切换等功能。
+The official edition is maintained in the main Xiaozhi AI repo and tracks upstream releases. Supports wake word, barge-in, OTA, and free 4G/Wi-Fi switching.
 
-> ### 按键操作
+> ### Button Operations
 >
-> - **开机**: 关机状态，长按 1 秒后释放按键，自动开机。
-> - **关机**: 开机状态，长按 1 秒后释放按键，标题栏会显示'请稍候'，再等 2 秒自动关机。
-> - **唤醒/打断**: 正常通话环境下，单击按键。
-> - **切换 4G/Wifi**: 启动过程或者配网界面，1 秒钟内双击按键（需安装 4G 模块）。
-> - **切换语音(AEC)打断模式**: 正常启动后，在空闲无对话模式下，1 秒钟内双击按键，循环切换语音打断模式。
-> - **重新配网**: 开机状态，1 秒钟内三击按键，会自动重启并进入配网界面。
+> - **Power on**: From off, hold 1 second and release.
+> - **Power off**: From on, hold 1 second and release; title bar shows "Please wait", then shuts down after 2 seconds.
+> - **Wake / interrupt**: Single-click during normal conversation.
+> - **Switch 4G / Wi-Fi**: Double-click within 1 s during boot or provisioning (4G module required).
+> - **Toggle AEC barge-in**: After normal boot, double-click within 1 s while idle to cycle barge-in mode.
+> - **Re-provision Wi-Fi**: Triple-click within 1 s while powered on to reboot into provisioning.
 
-> ### 语音指令
+> ### Voice Commands
 >
-> - **打开/关闭语音(AEC)打断模式**: 在播放音乐时，需要关闭语音打断模式，否则可能会打断音乐播放。
-> - **切换 IPS 屏幕显示模式**: 新版小智云聊 S3 升级了 IPS 屏幕，需要切换屏幕显示模式后才能正常显示，可以来回切换。
+> - **Enable / disable AEC barge-in**: Turn off barge-in while playing music to avoid interrupting playback.
+> - **Switch IPS display mode**: New Yunliao S3 units use an upgraded IPS panel; toggle display mode until the image looks correct.
 
-## 魔改版
+## Fork Edition
 
-魔改版由于底层改动太大，代码单独维护，定期合并主项目代码。
+The fork edition has large low-level changes and is maintained separately, with periodic merges from upstream.
 
-> ### 为什么是魔改
+> ### Why a Fork
 >
-> - 首个实现微信二维码配网。
-> - 首个支持单手机配网。
-> - 首个支持扫二维码访问控制台。
-> - 首发支持繁体、日文、英文版界面。
-> - 首个全语音操控模式。
-> - 独家提供一键刷机脚本等多种刷机方式。
+> - First WeChat QR code provisioning.
+> - First single-phone provisioning.
+> - First QR code access to the console.
+> - First Traditional Chinese, Japanese, and English UI.
+> - First full voice-control mode.
+> - Exclusive one-click flash scripts and other flash methods.
 
-## 版本区别
+## Edition Comparison
 
-> | 特性           | 官方版 | 魔改版 |
-> | -------------- | ------ | ------ |
-> | 语音打断       | ✓      | ✓      |
-> | 4G 功能        | ✓      | ✓      |
-> | 自动更新固件   | ✓      | X      |
-> | 第三方固件支持 | ✓      | X      |
-> | 天气待机界面   | X      | ✓      |
-> | 闹钟提醒       | X      | ✓      |
-> | 网络音乐播放   | X      | ✓      |
-> | 微信扫码配网   | X      | ✓      |
-> | 单手机配网     | X      | ✓      |
-> | 扫码访问控制台 | X      | ✓      |
-> | 繁日英文界面   | X      | ✓      |
-> | 多语言支持     | 需自行编译      | ✓      |
-> | 外接蓝牙音箱/耳机   | ✓      | ✓      |
+> | Feature              | Official | Fork |
+> | -------------------- | -------- | ---- |
+> | Voice barge-in       | ✓        | ✓    |
+> | 4G                   | ✓        | ✓    |
+> | Auto firmware update | ✓        | X    |
+> | Third-party firmware | ✓        | X    |
+> | Weather standby UI   | X        | ✓    |
+> | Alarm reminders      | X        | ✓    |
+> | Online music         | X        | ✓    |
+> | WeChat QR provisioning | X      | ✓    |
+> | Single-phone provisioning | X   | ✓    |
+> | QR console access    | X        | ✓    |
+> | Traditional/Japanese/English UI | X | ✓ |
+> | Multi-language       | Build yourself | ✓ |
+> | External BT speaker/headset | ✓   | ✓    |
 
-# 编译配置命令
+# Build Configuration
 
-**克隆工程**
+**Clone the project**
 
 ```bash
 git clone https://github.com/78/xiaozhi-esp32.git
 ```
 
-**进入工程**
+**Enter the project**
 
 ```bash
 cd xiaozhi-esp32
 ```
 
-**配置编译目标为 ESP32S3**
+**Set target to ESP32-S3**
 
 ```bash
 idf.py set-target esp32s3
 ```
 
-**打开 menuconfig**
+**Open menuconfig**
 
 ```bash
 idf.py menuconfig
 ```
 
-**选择板子**
+**Select board**
 
 ```bash
-- `Xiaozhi Assistant` → `Board Type` → 选择 `小智云聊-S3` → 选择 `Enable Device-Side AEC`
+- `Xiaozhi Assistant` → `Board Type` → `Xiaozhi Yunliao-S3` → `Enable Device-Side AEC`
 ```
 
-**编译**
+**Build**
 
 ```ba
 idf.py build
 ```
 
-**下载并打开串口终端**
+**Flash and open serial monitor**
 
 ```bash
 idf.py build flash monitor

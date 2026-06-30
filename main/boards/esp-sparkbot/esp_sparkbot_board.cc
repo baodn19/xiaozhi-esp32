@@ -91,7 +91,7 @@ private:
         esp_lcd_panel_io_handle_t panel_io = nullptr;
         esp_lcd_panel_handle_t panel = nullptr;
 
-        // 液晶屏控制IO初始化
+        // Initialize LCD control IO
         ESP_LOGD(TAG, "Install panel IO");
         esp_lcd_panel_io_spi_config_t io_config = {};
         io_config.cs_gpio_num = DISPLAY_CS_GPIO;
@@ -103,7 +103,7 @@ private:
         io_config.lcd_param_bits = 8;
         ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(SPI3_HOST, &io_config, &panel_io));
 
-        // 初始化液晶屏驱动芯片
+        // Initialize LCD driver IC
         ESP_LOGD(TAG, "Install LCD driver");
 
         esp_lcd_panel_dev_config_t panel_config = {};
@@ -141,10 +141,10 @@ private:
             .xclk_io = SPARKBOT_CAMERA_XCLK,
         };
 
-        // 复用 I2C 总线
+        // Reuse I2C bus
         esp_video_init_sccb_config_t sccb_config = {
-            .init_sccb = false,  // 不初始化新的 SCCB，使用现有的 I2C 总线
-            .i2c_handle = i2c_bus_,  // 使用现有的 I2C 总线句柄
+            .init_sccb = false,  // Do not init new SCCB; use existing I2C bus
+            .i2c_handle = i2c_bus_,  // Use existing I2C bus handle
             .freq = 100000,  // 100kHz
         };
 
@@ -165,14 +165,14 @@ private:
         camera_ = new EspVideo(video_config);
 
         Settings settings("sparkbot", false);
-        // 考虑到部分复刻使用了不可动摄像头的设计，默认启用翻转
+        // Some replicas use a fixed camera; flip enabled by default
         bool camera_flipped = static_cast<bool>(settings.GetInt("camera-flipped", 1));
         camera_->SetHMirror(camera_flipped);
         camera_->SetVFlip(camera_flipped);
     }
 
     /*
-        ESP-SparkBot 的底座
+        ESP-SparkBot chassis
         https://gitee.com/esp-friends/esp_sparkbot/tree/master/example/tank/c2_tracked_chassis
     */
     void InitializeEchoUart() {
@@ -201,8 +201,8 @@ private:
 
     void InitializeTools() {
         auto& mcp_server = McpServer::GetInstance();
-        // 定义设备的属性
-        mcp_server.AddTool("self.chassis.get_light_mode", "获取灯光效果编号", PropertyList(), [this](const PropertyList& properties) -> ReturnValue {
+        // Define device properties
+        mcp_server.AddTool("self.chassis.get_light_mode", "Get light effect index", PropertyList(), [this](const PropertyList& properties) -> ReturnValue {
             if (light_mode_ < 2) {
                 return 1;
             } else {
@@ -210,33 +210,33 @@ private:
             }
         });
 
-        mcp_server.AddTool("self.chassis.go_forward", "前进", PropertyList(), [this](const PropertyList& properties) -> ReturnValue {
+        mcp_server.AddTool("self.chassis.go_forward", "Move forward", PropertyList(), [this](const PropertyList& properties) -> ReturnValue {
             SendUartMessage("x0.0 y1.0");
             return true;
         });
 
-        mcp_server.AddTool("self.chassis.go_back", "后退", PropertyList(), [this](const PropertyList& properties) -> ReturnValue {
+        mcp_server.AddTool("self.chassis.go_back", "Move backward", PropertyList(), [this](const PropertyList& properties) -> ReturnValue {
             SendUartMessage("x0.0 y-1.0");
             return true;
         });
 
-        mcp_server.AddTool("self.chassis.turn_left", "向左转", PropertyList(), [this](const PropertyList& properties) -> ReturnValue {
+        mcp_server.AddTool("self.chassis.turn_left", "Turn left", PropertyList(), [this](const PropertyList& properties) -> ReturnValue {
             SendUartMessage("x-1.0 y0.0");
             return true;
         });
 
-        mcp_server.AddTool("self.chassis.turn_right", "向右转", PropertyList(), [this](const PropertyList& properties) -> ReturnValue {
+        mcp_server.AddTool("self.chassis.turn_right", "Turn right", PropertyList(), [this](const PropertyList& properties) -> ReturnValue {
             SendUartMessage("x1.0 y0.0");
             return true;
         });
         
-        mcp_server.AddTool("self.chassis.dance", "跳舞", PropertyList(), [this](const PropertyList& properties) -> ReturnValue {
+        mcp_server.AddTool("self.chassis.dance", "Dance", PropertyList(), [this](const PropertyList& properties) -> ReturnValue {
             SendUartMessage("d1");
             light_mode_ = LIGHT_MODE_MAX;
             return true;
         });
 
-        mcp_server.AddTool("self.chassis.switch_light_mode", "打开灯光效果", PropertyList({
+        mcp_server.AddTool("self.chassis.switch_light_mode", "Switch light effect", PropertyList({
             Property("light_mode", kPropertyTypeInteger, 1, 6)
         }), [this](const PropertyList& properties) -> ReturnValue {
             char command_str[5] = {'w', 0, 0};
@@ -252,9 +252,9 @@ private:
             throw std::runtime_error("Invalid light mode");
         });
 
-        mcp_server.AddTool("self.camera.set_camera_flipped", "翻转摄像头图像方向", PropertyList(), [this](const PropertyList& properties) -> ReturnValue {
+        mcp_server.AddTool("self.camera.set_camera_flipped", "Flip camera image orientation", PropertyList(), [this](const PropertyList& properties) -> ReturnValue {
             Settings settings("sparkbot", true);
-            // 考虑到部分复刻使用了不可动摄像头的设计，默认启用翻转
+            // Some replicas use a fixed camera; flip enabled by default
             bool flipped = !static_cast<bool>(settings.GetInt("camera-flipped", 1));
             
             camera_->SetHMirror(flipped);

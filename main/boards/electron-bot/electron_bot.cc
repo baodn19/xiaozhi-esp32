@@ -20,7 +20,7 @@
 
 #define TAG "ElectronBot"
 
-// 控制器初始化函数声明
+// Controller init function declarations
 void InitializeElectronBotController();
 
 class ElectronBot : public WifiBoard {
@@ -42,7 +42,7 @@ private:
         ESP_ERROR_CHECK(spi_bus_initialize(SPI3_HOST, &buscfg, SPI_DMA_CH_AUTO));
     }
 
-    // GC9A01初始化
+    // GC9A01 initialization
     void InitializeGc9a01Display() {
         ESP_LOGI(TAG, "Init GC9A01 display");
 

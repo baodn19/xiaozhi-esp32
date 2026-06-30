@@ -6,9 +6,9 @@
 class LedStripControl {
 private:
     CircularStrip* led_strip_;
-    int brightness_level_;  // 亮度等级 (0-8)
+    int brightness_level_;  // Brightness level (0-8)
 
-    int LevelToBrightness(int level) const;  // 将等级转换为实际亮度值
+    int LevelToBrightness(int level) const;  // Convert level to brightness value
     StripColor RGBToColor(int red, int green, int blue);
 
 public:

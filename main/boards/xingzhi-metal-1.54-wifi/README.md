@@ -1,60 +1,60 @@
-# 无名科技星智 1.54 METAL (wifi)
+# Wuming Tech Xingzhi 1.54 METAL (Wi-Fi)
 
-## 简介
-无名科技星智 1.54 METAL (wifi) 是星智 1.54 开模版的升级款，配备 1.54 寸 LCD 屏幕与 CST816 触摸芯片。它用触摸交互替代物理按键，并将外壳升级为铝合金材质，同步优化了交互体验与产品质感、手感。
+## Overview
+Wuming Tech Xingzhi 1.54 METAL (Wi-Fi) is an upgraded version of the Xingzhi 1.54 molded design. It features a 1.54-inch LCD and a CST816 touch controller. Touch replaces physical buttons, the enclosure is aluminum, and both interaction and build quality are improved.
 
->### 按键操作
->- **开机**: 关机状态，长按电源键3秒后自动开机（旧版硬件长按电源键1s后自动开机）
->- **关机**: 开机状态，长按电源键5秒后自动关机（旧版硬件插入usb时不会自动关机）   
->- **唤醒/打断**: 正常通话环境下，单击中间触摸按键
->- **重新配网**: 开机后，1秒钟内单击中间触摸按键，会自动重启并进入配网界面
->- **增加音量**: 开机状态下，单击右侧触摸按键，音量增加。长按右侧触摸按键2s，音量递增。
->- **减小音量**: 开机状态下，单击左侧触摸按键，音量减小。长按左侧触摸按键2s，音量递减。
+>### Button / Touch Operations
+>- **Power on**: From off, hold the power button for 3 seconds (legacy hardware: 1 second)
+>- **Power off**: From on, hold the power button for 5 seconds (legacy hardware: no auto shutdown when USB is connected)
+>- **Wake / interrupt**: During normal conversation, tap the center touch zone
+>- **Re-provision Wi-Fi**: Within 1 second after boot, tap the center touch zone to reboot into provisioning
+>- **Volume up**: Tap the right touch zone to increase volume; hold 2 s for continuous increase
+>- **Volume down**: Tap the left touch zone to decrease volume; hold 2 s for continuous decrease
 
->### 休眠操作
->- **浅睡眠**: 开机后，维持待命状态60s后，进入浅睡眠（屏幕亮度调整到1%）
->- **深睡眠**: 开机后，维持待命状态300s后，进入深睡眠（自动关机）
->- **唤醒**: 浅睡眠状态下，单击中间触摸按键，唤醒设备（屏幕亮度回调）
+>### Sleep Operations
+>- **Light sleep**: After 60 s idle, enter light sleep (screen brightness ~1%)
+>- **Deep sleep**: After 300 s idle, enter deep sleep (auto power off)
+>- **Wake**: In light sleep, tap the center touch zone to wake (brightness restored)
 
-# 编译配置命令
+# Build Configuration
 
-**克隆工程**
+**Clone the project**
 
 ```bash
 git clone https://github.com/78/xiaozhi-esp32.git
 ```
 
-**进入工程**
+**Enter the project**
 
 ```bash
 cd xiaozhi-esp32
 ```
 
-**配置编译目标为 ESP32S3**
+**Set target to ESP32-S3**
 
 ```bash
 idf.py set-target esp32s3
 ```
 
-**打开 menuconfig**
+**Open menuconfig**
 
 ```bash
 idf.py menuconfig
 ```
 
-**选择板子**
+**Select board**
 
 ```bash
-- `Xiaozhi Assistant` → `Board Type` → 选择 `无名科技星智1.54 METAL(wifi)`
+- `Xiaozhi Assistant` → `Board Type` → `Wuming Tech Xingzhi 1.54 METAL (Wi-Fi)`
 ```
 
-**编译**
+**Build**
 
 ```ba
 idf.py build
 ```
 
-**下载并打开串口终端**
+**Flash and open serial monitor**
 
 ```bash
 idf.py build flash monitor

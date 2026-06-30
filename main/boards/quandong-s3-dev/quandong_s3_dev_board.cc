@@ -14,7 +14,7 @@
 
 #define TAG "QuandongS3DevBoard"
 
-// ILI9341 厂家自定义初始化序列
+// ILI9341 vendor-specific init sequence
 static const ili9341_lcd_init_cmd_t vendor_specific_init[] = {
     {0xCF, (uint8_t []){0x00, 0xC1, 0x30}, 3, 0},
     {0xED, (uint8_t []){0x64, 0x03, 0x12, 0x81}, 4, 0},
@@ -73,7 +73,7 @@ private:
         ESP_ERROR_CHECK(spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO));
     }
 
-    // 板上音频功放使能引脚，需置为低电平
+    // On-board audio PA enable pin; active low
     void InitializeAudioPaEnable() {
         gpio_config_t io_conf = {};
         io_conf.pin_bit_mask = (1ULL << AUDIO_PA_ENABLE_PIN);
@@ -86,7 +86,7 @@ private:
     }
 
     void InitializeButtons() {
-        // 与 bread-compact-wifi 一致：启动期间按下 BOOT 进入配网，否则切换对话状态
+        // Same as bread-compact-wifi: BOOT during boot enters Wi-Fi config, otherwise toggles chat
         boot_button_.OnClick([this]() {
             auto& app = Application::GetInstance();
             if (app.GetDeviceState() == kDeviceStateStarting) {

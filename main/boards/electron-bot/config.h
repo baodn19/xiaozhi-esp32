@@ -3,8 +3,8 @@
 
 #include <driver/gpio.h>
 
-#define Right_Pitch_Pin GPIO_NUM_5  // 旋转
-#define Right_Roll_Pin GPIO_NUM_4   // 推杆
+#define Right_Pitch_Pin GPIO_NUM_5  // Rotation
+#define Right_Roll_Pin GPIO_NUM_4   // Linear push
 #define Left_Pitch_Pin GPIO_NUM_7
 #define Left_Roll_Pin GPIO_NUM_15
 #define Body_Pin GPIO_NUM_6

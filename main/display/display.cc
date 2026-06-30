@@ -49,6 +49,15 @@ void Display::ClearChatMessages() {
     // Default empty implementation, override in subclasses if needed
 }
 
+void Display::SetLotusContent(const char* content) {
+    // Default no-op; implemented in LcdDisplay (default style)
+}
+
+void Display::SetLotusRecipeList(const std::vector<std::string>& rows) {
+    (void)rows;
+    // Default no-op; implemented in LcdDisplay (default style)
+}
+
 void Display::SetTheme(Theme* theme) {
     current_theme_ = theme;
     Settings settings("display", true);

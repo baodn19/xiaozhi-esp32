@@ -14,7 +14,7 @@
 * PMIC: M5PM1
     * Interface: I2C0@0x6E
 * LCD
-    * Power: M5PM1_G2 高电平使能
+    * Power: M5PM1_G2 active high
     * Resolution: 135x240
     * Driver: CO5300
     * Interface: SPI
@@ -24,7 +24,7 @@
         * RS   -- G45
     * BL -- G38
 * Audio
-    * Power: M5PM1_G2 高电平使能
+    * Power: M5PM1_G2 active high
     * ES8311@0x18
         * Control Interface: SYS_I2C
         * Data Interface: I2S0
@@ -43,21 +43,21 @@
     * TX -- G46
     * RX -- G42
 
-## 快速构建
+## Quick Build
 
-推荐使用 release 脚本生成完整固件包：
+Recommended: use the release script to generate a full firmware package:
 
 ```bash
 python scripts/release.py m5stack-stick-s3 --name m5stack-stick-s3
 ```
 
-生成的固件压缩包位于：
+The firmware archive is located at:
 
 ```text
 releases/v2.2.6_m5stack-stick-s3.zip
 ```
 
-`config.json` 中的关键构建配置：
+Key build settings in `config.json`:
 
 ```text
 CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
@@ -65,53 +65,53 @@ CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions/v2/8m.csv"
 CONFIG_SPIRAM=y
 ```
 
-## 手动配置
+## Manual Configuration
 
-配置编译目标：
+Set build target:
 
 ```bash
 idf.py set-target esp32s3
 ```
 
-打开配置菜单：
+Open configuration menu:
 
 ```bash
 idf.py menuconfig
 ```
 
-选择板卡：
+Select board:
 
 ```text
 Xiaozhi Assistant -> Board Type -> M5Stack StickS3
 ```
 
-配置 Flash 大小：
+Configure Flash size:
 
 ```text
 Serial flasher config -> Flash size -> 8 MB
 ```
 
-配置分区表：
+Configure partition table:
 
 ```text
 Partition Table -> Custom partition CSV file -> partitions/v2/8m.csv
 ```
 
-配置 PSRAM：
+Configure PSRAM:
 
 ```text
 Component config -> ESP PSRAM -> Support for external, SPI-connected RAM -> Select
 ```
 
-编译：
+Build:
 
 ```bash
 idf.py build
 ```
 
-## 合并固件
+## Merge Firmware
 
-手动构建后，可使用以下命令合并烧录固件：
+After a manual build, merge flash images with:
 
 ```bash
 esptool.py --chip esp32s3 merge_bin \
@@ -126,7 +126,7 @@ esptool.py --chip esp32s3 merge_bin \
     -o M5Stack-StickS3-XiaoZhi-v2.2.6_0x00.bin
 ```
 
-烧录合并后的固件：
+Flash the merged firmware:
 
 ```bash
 esptool.py -b 1500000 write_flash -z 0 M5Stack-StickS3-XiaoZhi-v2.2.6_0x00.bin

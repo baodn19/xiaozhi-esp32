@@ -48,14 +48,14 @@ class AudioCodec;
 class Display;
 class Board {
 private:
-    Board(const Board&) = delete; // 禁用拷贝构造函数
-    Board& operator=(const Board&) = delete; // 禁用赋值操作
+    Board(const Board&) = delete; // Disable copy constructor
+    Board& operator=(const Board&) = delete; // Disable assignment
 
 protected:
     Board();
     std::string GenerateUuid();
 
-    // 软件生成的设备唯一标识
+    // Software-generated device UUID
     std::string uuid_;
 
 public:

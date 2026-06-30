@@ -31,23 +31,23 @@ private:
     const int kLowBatteryLevel = 20;
 
     // power
-    bool pressed = false;                   // 是否按下电源键
-    int PowerControl_ticks_ = 0;            // 开机时长
-    int press_ticks_ = 0;                   // 按下时的tick
+    bool pressed = false;                   // Whether power button is pressed
+    int PowerControl_ticks_ = 0;            // Time since boot (ticks)
+    int press_ticks_ = 0;                   // Tick count when button was pressed
     bool is_first_boot = true;              // 
-    uint8_t PowerDec_level_ = 0;            // 电源键电平
-    const int power_off_ticks_ = 20;        // 按键按下X/5秒准备关机;
-    bool new_charging_status = false;       // 插入usb时无法软件关机
-    bool is_shutting_down_ = false;  // 标记是否进入关机流程
-    int shutdown_delay_ticks_ = 0;   // 关机延迟计数
-    uint8_t shutdown_ticks = 5;      // 5/5s后关机 预留的关机操作
+    uint8_t PowerDec_level_ = 0;            // Power button pin level
+    const int power_off_ticks_ = 20;        // Button held X ticks (~1s each) triggers shutdown prep
+    bool new_charging_status = false;       // Cannot software-shutdown while USB is connected
+    bool is_shutting_down_ = false;  // Whether shutdown sequence has started
+    int shutdown_delay_ticks_ = 0;   // Shutdown delay tick counter
+    uint8_t shutdown_ticks = 5;      // Shutdown after 5 ticks (~1s); reserved shutdown step
     bool shutdown_first_ = true;
 
-    // 软件关机逻辑
+    // Software shutdown logic
     void PowrSwitch() {
         PowerDec_level_ = gpio_get_level(Power_Dec);
 
-        // 确保开机后电源键松开再检测关机
+        // Wait for power button release after boot before detecting shutdown
         if (PowerDec_level_ == 1) {
             is_first_boot = false;
         }
@@ -101,13 +101,13 @@ private:
             return;
         }
 
-        // 如果电池电量数据不足，则读取电池电量数据
+        // Read battery ADC data when insufficient samples collected
         if (adc_values_.size() < kBatteryAdcDataCount) {
             ReadBatteryAdcData();
             return;
         }
 
-        // 如果电池电量数据充足，则每 kBatteryAdcInterval 个 tick 读取一次电池电量数据
+        // When enough samples exist, read battery ADC every kBatteryAdcInterval ticks
         ticks_++;
         if (ticks_ % kBatteryAdcInterval == 0) {
             ReadBatteryAdcData();
@@ -118,7 +118,7 @@ private:
         int adc_value;
         ESP_ERROR_CHECK(adc_oneshot_read(adc_handle_, POWER_BATTERY_ADC_CHANNEL, &adc_value));
 
-        // 将 ADC 值添加到队列中
+        // Append ADC value to the queue
         adc_values_.push_back(adc_value);
         if (adc_values_.size() > kBatteryAdcDataCount) {
             adc_values_.erase(adc_values_.begin());
@@ -129,7 +129,7 @@ private:
         }
         average_adc /= adc_values_.size();
 
-        // 定义电池电量区间
+        // Battery level lookup table
         const struct {
             uint16_t adc;
             uint8_t level;
@@ -142,15 +142,15 @@ private:
             {2430, 100}
         };
 
-        // 低于最低值时
+        // Below minimum ADC value
         if (average_adc < levels[0].adc) {
             battery_level_ = 0;
         }
-        // 高于最高值时
+        // Above maximum ADC value
         else if (average_adc >= levels[5].adc) {
 			battery_level_ = 100;
         } else {
-            // 线性插值计算中间值
+            // Linear interpolation for intermediate values
             for (int i = 0; i < 5; i++) {
                 if (average_adc >= levels[i].adc && average_adc < levels[i+1].adc) {
                     float ratio = static_cast<float>(average_adc - levels[i].adc) / (levels[i+1].adc - levels[i].adc);
@@ -176,7 +176,7 @@ private:
 
 public:
     PowerManager(gpio_num_t pin) : charging_pin_(pin) {
-        // 初始化电源键检测引脚
+        // Initialize power button detect pin
         gpio_config_t powerdecgpio_conf = {};
         powerdecgpio_conf.intr_type = GPIO_INTR_DISABLE;
         powerdecgpio_conf.mode = GPIO_MODE_INPUT;
@@ -185,7 +185,7 @@ public:
         powerdecgpio_conf.pull_up_en = GPIO_PULLUP_DISABLE;     
         gpio_config(&powerdecgpio_conf);
 
-        // 初始化电源控制引脚
+        // Initialize power control pin
         gpio_config_t powercontgpio_conf = {};
         powercontgpio_conf.intr_type = GPIO_INTR_DISABLE;
         powercontgpio_conf.mode = GPIO_MODE_OUTPUT;
@@ -196,7 +196,7 @@ public:
         gpio_set_level(Power_Control, 1);
         ESP_LOGI("powercontrol", "turnded on ...");
         
-        // 创建电源控制检查定时器
+        // Create power control check timer
         esp_timer_create_args_t power_timer_args = {
             .callback = [](void* arg) {
                 PowerManager* self = static_cast<PowerManager*>(arg);
@@ -209,7 +209,7 @@ public:
         };
         ESP_ERROR_CHECK(esp_timer_create(&power_timer_args, &power_timer_handle_));
         ESP_ERROR_CHECK(esp_timer_start_periodic(power_timer_handle_, 200000));
-        // 初始化充电引脚
+        // Initialize charging detect pin
         gpio_config_t io_conf = {};
         io_conf.intr_type = GPIO_INTR_DISABLE;
         io_conf.mode = GPIO_MODE_INPUT;
@@ -218,7 +218,7 @@ public:
         io_conf.pull_up_en = GPIO_PULLUP_DISABLE;     
         gpio_config(&io_conf);
 
-        // 创建电池电量检查定时器
+        // Create battery level check timer
         esp_timer_create_args_t timer_args = {
             .callback = [](void* arg) {
                 PowerManager* self = static_cast<PowerManager*>(arg);
@@ -242,7 +242,7 @@ public:
             .atten = ADC_ATTEN_DB_12,
             .bitwidth = ADC_BITWIDTH_12,
         };
-        ESP_ERROR_CHECK(adc_oneshot_config_channel(adc_handle_, POWER_BATTERY_ADC_CHANNEL, &chan_config)); // 电池电量
+        ESP_ERROR_CHECK(adc_oneshot_config_channel(adc_handle_, POWER_BATTERY_ADC_CHANNEL, &chan_config)); // Battery level
         ESP_ERROR_CHECK(adc_oneshot_config_channel(adc_handle_, POWER_USBIN_ADC_CHANNEL, &chan_config)); // usb
     }
 
@@ -261,7 +261,7 @@ public:
     }
 
     bool IsCharging() {
-        // 如果电量已经满了，则不再显示充电中
+        // Do not show charging when battery is full
         if (battery_level_ == 100) {
             return false;
         }
@@ -269,7 +269,7 @@ public:
     }
 
     bool IsDischarging() {
-        // 没有区分充电和放电，所以直接返回相反状态
+        // Charging/discharging not distinguished; return inverse of charging state
         return !is_charging_;
     }
 
@@ -294,12 +294,12 @@ public:
                 vTaskDelay(pdMS_TO_TICKS(100));
                 gpio_set_level(Power_Control, 0);
                 vTaskDelay(pdMS_TO_TICKS(100));
-                ESP_LOGI("PowerManager","触发开关机控制");
+                ESP_LOGI("PowerManager","Power switch control triggered");
             }
-            ESP_LOGI("PowerManager","关机失败，进入深睡眠");
+            ESP_LOGI("PowerManager","Shutdown failed, entering deep sleep");
             esp_deep_sleep_start();
         } else {
-            ESP_LOGI("PowerManager","检测到插入usb，无法关机"); 
+            ESP_LOGI("PowerManager","USB detected, cannot shut down"); 
         }
     }
 };

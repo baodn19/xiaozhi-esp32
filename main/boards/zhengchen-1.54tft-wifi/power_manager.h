@@ -11,7 +11,7 @@
 
 class PowerManager {
 private:
-    // 定时器句柄
+    // Timer handle
     esp_timer_handle_t timer_handle_;
     std::function<void(bool)> on_charging_status_changed_;
     std::function<void(bool)> on_low_battery_status_changed_;
@@ -27,7 +27,7 @@ private:
     const int kBatteryAdcInterval = 60;
     const int kBatteryAdcDataCount = 3;
     const int kLowBatteryLevel = 20;
-    const int kTemperatureReadInterval = 10; // 每 10 秒读取一次温度
+    const int kTemperatureReadInterval = 10; // Read temperature every 10 seconds
 
     adc_oneshot_unit_handle_t adc_handle_;
     temperature_sensor_handle_t temp_sensor_ = NULL;  
@@ -44,31 +44,31 @@ private:
             return;
         }
 
-        // 如果电池电量数据不足，则读取电池电量数据
+        // Read battery ADC data when insufficient samples collected
         if (adc_values_.size() < kBatteryAdcDataCount) {
             ReadBatteryAdcData();
             return;
         }
 
-        // 如果电池电量数据充足，则每 kBatteryAdcInterval 个 tick 读取一次电池电量数据
+        // When enough samples exist, read battery ADC every kBatteryAdcInterval ticks
         ticks_++;
         if (ticks_ % kBatteryAdcInterval == 0) {
             ReadBatteryAdcData();
         }
 
-        // 新增：周期性读取温度
+        // Periodically read temperature
         if (ticks_ % kTemperatureReadInterval == 0) {
             ReadTemperature();
         }
     }
 
     void ReadBatteryAdcData() {
-        // 读取 ADC 值
+        // Read ADC value
         int adc_value;
         ESP_ERROR_CHECK(adc_oneshot_read(adc_handle_, ADC_CHANNEL_7, &adc_value));
        
         
-        // 将 ADC 值添加到队列中
+        // Append ADC value to the queue
         adc_values_.push_back(adc_value);
         if (adc_values_.size() > kBatteryAdcDataCount) {
             adc_values_.erase(adc_values_.begin());
@@ -80,7 +80,7 @@ private:
         average_adc /= adc_values_.size();
 
        
-        // 定义电池电量区间
+        // Battery level lookup table
         const struct {
             uint16_t adc;
             uint8_t level;
@@ -92,15 +92,15 @@ private:
             {2488, 80},
             {2606, 100}
         };
-        // 低于最低值时
+        // Below minimum ADC value
         if (average_adc < levels[0].adc) {
             battery_level_ = 0;
         }
-        // 高于最高值时
+        // Above maximum ADC value
         else if (average_adc >= levels[5].adc) {
             battery_level_ = 100;
         } else {
-            // 线性插值计算中间值
+            // Linear interpolation for intermediate values
             for (int i = 0; i < 5; i++) {
                 if (average_adc >= levels[i].adc && average_adc < levels[i+1].adc) {
                     float ratio = static_cast<float>(average_adc - levels[i].adc) / (levels[i+1].adc - levels[i].adc);
@@ -109,7 +109,7 @@ private:
                 }
             }
         }
-        // 检查是否达到低电量阈值
+        // Check low battery threshold
         if (adc_values_.size() >= kBatteryAdcDataCount) {
             bool new_low_battery_status = battery_level_ <= kLowBatteryLevel;
             if (new_low_battery_status != is_low_battery_) {
@@ -127,7 +127,7 @@ private:
         float temperature = 0.0f;
         ESP_ERROR_CHECK(temperature_sensor_get_celsius(temp_sensor_, &temperature));
         
-        if (abs(temperature - current_temperature_) >= 3.5f) {  // 温度变化超过3.5°C才触发回调
+        if (abs(temperature - current_temperature_) >= 3.5f) {  // Trigger callback only when temperature changes by >= 3.5°C
             current_temperature_ = temperature;
             if (on_temperature_changed_) {
                 on_temperature_changed_(current_temperature_);
@@ -140,7 +140,7 @@ private:
 public:
     PowerManager(gpio_num_t pin) : charging_pin_(pin) {
         
-        // 初始化充电引脚
+        // Initialize charging detect pin
         gpio_config_t io_conf = {};
         io_conf.intr_type = GPIO_INTR_DISABLE;
         io_conf.mode = GPIO_MODE_INPUT;
@@ -149,7 +149,7 @@ public:
         io_conf.pull_up_en = GPIO_PULLUP_DISABLE;     
         gpio_config(&io_conf);
 
-        // 创建电池电量检查定时器
+        // Create battery level check timer
         esp_timer_create_args_t timer_args = {
             .callback = [](void* arg) {
                 PowerManager* self = static_cast<PowerManager*>(arg);
@@ -163,7 +163,7 @@ public:
         ESP_ERROR_CHECK(esp_timer_create(&timer_args, &timer_handle_));
         ESP_ERROR_CHECK(esp_timer_start_periodic(timer_handle_, 1000000));
 
-        // 初始化 ADC
+        // Initialize ADC
         adc_oneshot_unit_init_cfg_t init_config = {
             .unit_id = ADC_UNIT_1,
             .ulp_mode = ADC_ULP_MODE_DISABLE,
@@ -176,7 +176,7 @@ public:
         };
         ESP_ERROR_CHECK(adc_oneshot_config_channel(adc_handle_, ADC_CHANNEL_7, &chan_config));
 
-        // 初始化温度传感器
+        // Initialize temperature sensor
         temperature_sensor_config_t temp_config = {
             .range_min = 10,
             .range_max = 80,
@@ -204,7 +204,7 @@ public:
     }
 
     bool IsCharging() {
-        // 如果电量已经满了，则不再显示充电中
+        // Do not show charging when battery is full
         if (battery_level_ == 100) {
             return false;
         }
@@ -212,17 +212,17 @@ public:
     }
 
     bool IsDischarging() {
-        // 没有区分充电和放电，所以直接返回相反状态
+        // Charging/discharging not distinguished; return inverse of charging state
         return !is_charging_;
     }
 
-    // 获取电池电量
+    // Get battery level
     uint8_t GetBatteryLevel() {
-        // 返回电池电量
+        // Return battery level
         return battery_level_;
     }
 
-    float GetTemperature() const { return current_temperature_; }  // 获取当前温度
+    float GetTemperature() const { return current_temperature_; }  // Get current temperature
 
     void OnTemperatureChanged(std::function<void(float)> callback) { 
         on_temperature_changed_ = callback; 

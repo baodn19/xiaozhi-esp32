@@ -1,7 +1,7 @@
 
 #pragma once
 
-//关于开发板和屏幕的资料参考
+// Board and display documentation
 //https://docs.espressif.com/projects/esp-dev-kits/en/latest/esp32s3/esp32-s3-lcd-ev-board/user_guide.html
 
 #define GC9503V_LCD_H_RES 800

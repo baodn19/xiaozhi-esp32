@@ -27,7 +27,7 @@ idf.py menuconfig
 ```
 
 **Navigate to the following path to select your board:**
-> **Xiaozhi Assistant** -> **Board Type** -> **Movecall Moji2.0 小智AI衍生版**
+> **Xiaozhi Assistant** -> **Board Type** -> **Movecall Moji2.0 (Xiaozhi AI Edition)**
 
 *Note: After selecting, press **S** to save (then Enter to confirm) and press **Q** to exit.*
 

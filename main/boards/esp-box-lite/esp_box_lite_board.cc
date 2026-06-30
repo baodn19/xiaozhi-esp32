@@ -105,7 +105,7 @@ private:
     }
 
     void InitializeButtons() {
-        /* Initialize ADC  esp-box lite的前三个按钮采用是的adc按钮，而非gpio */
+        /* Initialize ADC: ESP-BOX Lite first three buttons use ADC, not GPIO */
         button_adc_config_t adc_cfg = {};
         adc_cfg.adc_channel = ADC_CHANNEL_0; // ADC1 channel 0 is GPIO1
 #if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 0, 0)        
@@ -154,7 +154,7 @@ private:
         esp_lcd_panel_io_handle_t panel_io = nullptr;
         esp_lcd_panel_handle_t panel = nullptr;
 
-        // 液晶屏控制IO初始化
+        // Initialize LCD control IO
         ESP_LOGD(TAG, "Install panel IO");
         esp_lcd_panel_io_spi_config_t io_config = {};
         io_config.cs_gpio_num = GPIO_NUM_5;
@@ -166,7 +166,7 @@ private:
         io_config.lcd_param_bits = 8;
         ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(SPI3_HOST, &io_config, &panel_io));
 
-        // 初始化液晶屏驱动芯片
+        // Initialize LCD driver IC
         ESP_LOGD(TAG, "Install LCD driver");
         const ili9341_vendor_config_t vendor_config = {
             .init_cmds = &vendor_specific_init[0],
