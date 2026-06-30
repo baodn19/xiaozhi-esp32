@@ -15,6 +15,7 @@
 #include <src/misc/cache/lv_cache.h>
 
 #include "board.h"
+#include "lotusai_utils.h"
 
 #define TAG "LcdDisplay"
 
@@ -850,21 +851,36 @@ void LcdDisplay::SetupUI() {
      * Must be created BEFORE preview_image_ so the QR overlay is drawn on top of it.
      * Y offset matches LOTUSAI_CONTENT_Y_OFFSET (lotusai_utils.h). */
     lotusai_panel_ = lv_obj_create(screen);
-    lv_obj_set_size(lotusai_panel_, LV_HOR_RES, height_ - 80);
-    lv_obj_set_pos(lotusai_panel_, 0, 80);
+    lv_obj_set_size(lotusai_panel_, LV_HOR_RES, height_ - LOTUSAI_CONTENT_Y_OFFSET);
+    lv_obj_set_pos(lotusai_panel_, 0, LOTUSAI_CONTENT_Y_OFFSET);
     lv_obj_set_style_radius(lotusai_panel_, 0, 0);
     lv_obj_set_style_bg_opa(lotusai_panel_, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(lotusai_panel_, 0, 0);
-    lv_obj_set_style_pad_all(lotusai_panel_, lvgl_theme->spacing(4), 0);
+    lv_obj_set_style_pad_all(lotusai_panel_, 0, 0);
     lv_obj_set_scrollbar_mode(lotusai_panel_, LV_SCROLLBAR_MODE_OFF);
 
-    lotusai_content_label_ = lv_label_create(lotusai_panel_);
-    lv_label_set_text(lotusai_content_label_, "");
-    lv_obj_set_width(lotusai_content_label_, LV_HOR_RES - lvgl_theme->spacing(8));
-    lv_label_set_long_mode(lotusai_content_label_, LV_LABEL_LONG_WRAP);
-    lv_obj_set_style_text_color(lotusai_content_label_, lvgl_theme->text_color(), 0);
-    lv_obj_set_style_text_align(lotusai_content_label_, LV_TEXT_ALIGN_LEFT, 0);
-    lv_obj_align(lotusai_content_label_, LV_ALIGN_TOP_LEFT, 0, 0);
+    lotusai_rows_container_ = lv_obj_create(lotusai_panel_);
+    lv_obj_set_size(lotusai_rows_container_, LV_HOR_RES, height_ - LOTUSAI_CONTENT_Y_OFFSET);
+    lv_obj_set_pos(lotusai_rows_container_, 0, 0);
+    lv_obj_set_style_radius(lotusai_rows_container_, 0, 0);
+    lv_obj_set_style_bg_opa(lotusai_rows_container_, LV_OPA_TRANSP, 0);
+    lv_obj_set_style_border_width(lotusai_rows_container_, 0, 0);
+    lv_obj_set_style_pad_all(lotusai_rows_container_, 0, 0);
+    lv_obj_set_flex_flow(lotusai_rows_container_, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_align(lotusai_rows_container_, LV_FLEX_ALIGN_START,
+                          LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
+    lv_obj_set_scrollbar_mode(lotusai_rows_container_, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_add_flag(lotusai_rows_container_, LV_OBJ_FLAG_HIDDEN);
+
+    lotusai_status_label_ = lv_label_create(lotusai_panel_);
+    lv_label_set_text(lotusai_status_label_, "");
+    lv_obj_set_width(lotusai_status_label_, LV_HOR_RES - lvgl_theme->spacing(8));
+    lv_label_set_long_mode(lotusai_status_label_, LV_LABEL_LONG_DOT);
+    lv_obj_set_style_text_color(lotusai_status_label_, lvgl_theme->text_color(), 0);
+    lv_obj_set_style_text_align(lotusai_status_label_, LV_TEXT_ALIGN_LEFT, 0);
+    lv_obj_align(lotusai_status_label_, LV_ALIGN_TOP_LEFT, lvgl_theme->spacing(4), lvgl_theme->spacing(4));
+    lv_obj_add_flag(lotusai_status_label_, LV_OBJ_FLAG_HIDDEN);
+
     lv_obj_add_flag(lotusai_panel_, LV_OBJ_FLAG_HIDDEN);
 
     /* Middle layer: preview_image_ - centered display */
@@ -1067,8 +1083,10 @@ void LcdDisplay::SetChatMessage(const char* role, const char* content) {
     if (bottom_bar_ != nullptr) {
         if (content == nullptr || content[0] == '\0') {
             lv_obj_add_flag(bottom_bar_, LV_OBJ_FLAG_HIDDEN);
-        } else if (!hide_subtitle_) {
+        } else if (!hide_subtitle_ && !lotusai_recipe_list_active_) {
             lv_obj_remove_flag(bottom_bar_, LV_OBJ_FLAG_HIDDEN);
+        } else {
+            lv_obj_add_flag(bottom_bar_, LV_OBJ_FLAG_HIDDEN);
         }
     }
 #if CONFIG_USE_MULTILINE_CHAT_MESSAGE
@@ -1089,24 +1107,131 @@ void LcdDisplay::ClearChatMessages() {
     if (bottom_bar_ != nullptr) {
         lv_obj_add_flag(bottom_bar_, LV_OBJ_FLAG_HIDDEN);
     }
-    if (lotusai_content_label_ != nullptr) {
-        lv_label_set_text(lotusai_content_label_, "");
+    if (lotusai_status_label_ != nullptr) {
+        lv_label_set_text(lotusai_status_label_, "");
+        lv_obj_add_flag(lotusai_status_label_, LV_OBJ_FLAG_HIDDEN);
+    }
+    ClearLotusRecipeRows();
+    lotusai_recipe_list_active_ = false;
+    if (lotusai_rows_container_ != nullptr) {
+        lv_obj_add_flag(lotusai_rows_container_, LV_OBJ_FLAG_HIDDEN);
     }
     if (lotusai_panel_ != nullptr) {
         lv_obj_add_flag(lotusai_panel_, LV_OBJ_FLAG_HIDDEN);
     }
+    RestoreLotusChrome();
 }
 #endif
 
-void LcdDisplay::SetLotusContent(const char* content) {
-    if (lotusai_panel_ == nullptr || lotusai_content_label_ == nullptr) return;
-    DisplayLockGuard lock(this);
-    lv_label_set_text(lotusai_content_label_, content);
-    if (content == nullptr || content[0] == '\0') {
-        lv_obj_add_flag(lotusai_panel_, LV_OBJ_FLAG_HIDDEN);
-    } else {
-        lv_obj_remove_flag(lotusai_panel_, LV_OBJ_FLAG_HIDDEN);
+void LcdDisplay::ClearLotusRecipeRows() {
+    if (lotusai_rows_container_ == nullptr) return;
+    while (lv_obj_get_child_cnt(lotusai_rows_container_) > 0) {
+        lv_obj_del(lv_obj_get_child(lotusai_rows_container_, 0));
     }
+}
+
+void LcdDisplay::RestoreLotusChrome() {
+    if (preview_image_ == nullptr ||
+        lv_obj_has_flag(preview_image_, LV_OBJ_FLAG_HIDDEN)) {
+        if (emoji_box_ != nullptr) {
+            lv_obj_remove_flag(emoji_box_, LV_OBJ_FLAG_HIDDEN);
+        }
+    }
+    if (bottom_bar_ != nullptr && !hide_subtitle_) {
+        const char* text = (chat_message_label_ != nullptr)
+                               ? lv_label_get_text(chat_message_label_) : nullptr;
+        if (text != nullptr && text[0] != '\0') {
+            lv_obj_remove_flag(bottom_bar_, LV_OBJ_FLAG_HIDDEN);
+        }
+    }
+}
+
+void LcdDisplay::SetLotusRecipeList(const std::vector<std::string>& rows) {
+    if (lotusai_panel_ == nullptr || lotusai_rows_container_ == nullptr) return;
+    DisplayLockGuard lock(this);
+    LvglTheme* lvgl_theme = static_cast<LvglTheme*>(current_theme_);
+    auto text_font = lvgl_theme->text_font()->font();
+
+    ClearLotusRecipeRows();
+    if (lotusai_status_label_ != nullptr) {
+        lv_label_set_text(lotusai_status_label_, "");
+        lv_obj_add_flag(lotusai_status_label_, LV_OBJ_FLAG_HIDDEN);
+    }
+
+    if (rows.empty()) {
+        lotusai_recipe_list_active_ = false;
+        lv_obj_add_flag(lotusai_rows_container_, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(lotusai_panel_, LV_OBJ_FLAG_HIDDEN);
+        RestoreLotusChrome();
+        return;
+    }
+
+    lotusai_recipe_list_active_ = true;
+    if (chat_message_label_ != nullptr) {
+        lv_label_set_text(chat_message_label_, "");
+    }
+
+    const int area_h = height_ - LOTUSAI_CONTENT_Y_OFFSET;
+    const int row_h = area_h / static_cast<int>(rows.size());
+    const int label_w = LV_HOR_RES - lvgl_theme->spacing(8);
+
+    for (const auto& row_text : rows) {
+        lv_obj_t* row = lv_obj_create(lotusai_rows_container_);
+        lv_obj_set_size(row, LV_HOR_RES, row_h);
+        lv_obj_set_style_radius(row, 0, 0);
+        lv_obj_set_style_bg_opa(row, LV_OPA_TRANSP, 0);
+        lv_obj_set_style_border_width(row, 0, 0);
+        lv_obj_set_style_border_side(row, LV_BORDER_SIDE_BOTTOM, 0);
+        lv_obj_set_style_border_width(row, 1, 0);
+        lv_obj_set_style_border_color(row, lvgl_theme->border_color(), 0);
+        lv_obj_set_style_pad_left(row, lvgl_theme->spacing(4), 0);
+        lv_obj_set_style_pad_right(row, lvgl_theme->spacing(4), 0);
+        lv_obj_set_scrollbar_mode(row, LV_SCROLLBAR_MODE_OFF);
+
+        lv_obj_t* label = lv_label_create(row);
+        lv_label_set_text(label, row_text.c_str());
+        lv_obj_set_width(label, label_w);
+        lv_label_set_long_mode(label, LV_LABEL_LONG_DOT);
+        lv_obj_set_style_text_font(label, text_font, 0);
+        lv_obj_set_style_text_color(label, lvgl_theme->text_color(), 0);
+        lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_LEFT, 0);
+        lv_obj_align(label, LV_ALIGN_LEFT_MID, 0, 0);
+    }
+
+    lv_obj_remove_flag(lotusai_rows_container_, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_remove_flag(lotusai_panel_, LV_OBJ_FLAG_HIDDEN);
+
+    if (emoji_box_ != nullptr) {
+        lv_obj_add_flag(emoji_box_, LV_OBJ_FLAG_HIDDEN);
+    }
+    if (bottom_bar_ != nullptr) {
+        lv_obj_add_flag(bottom_bar_, LV_OBJ_FLAG_HIDDEN);
+    }
+}
+
+void LcdDisplay::SetLotusContent(const char* content) {
+    if (lotusai_panel_ == nullptr || lotusai_status_label_ == nullptr) return;
+    DisplayLockGuard lock(this);
+
+    ClearLotusRecipeRows();
+    if (lotusai_rows_container_ != nullptr) {
+        lv_obj_add_flag(lotusai_rows_container_, LV_OBJ_FLAG_HIDDEN);
+    }
+
+    if (content == nullptr || content[0] == '\0') {
+        lotusai_recipe_list_active_ = false;
+        lv_label_set_text(lotusai_status_label_, "");
+        lv_obj_add_flag(lotusai_status_label_, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(lotusai_panel_, LV_OBJ_FLAG_HIDDEN);
+        RestoreLotusChrome();
+        return;
+    }
+
+    lotusai_recipe_list_active_ = false;
+
+    lv_label_set_text(lotusai_status_label_, content);
+    lv_obj_remove_flag(lotusai_status_label_, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_remove_flag(lotusai_panel_, LV_OBJ_FLAG_HIDDEN);
 }
 
 void LcdDisplay::SetEmotion(const char* emotion) {

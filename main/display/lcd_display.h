@@ -36,7 +36,12 @@ protected:
     std::unique_ptr<LvglImage> preview_image_cached_ = nullptr;
     bool hide_subtitle_ = false;  // Control whether to hide chat messages/subtitles
     lv_obj_t* lotusai_panel_ = nullptr;
-    lv_obj_t* lotusai_content_label_ = nullptr;
+    lv_obj_t* lotusai_rows_container_ = nullptr;
+    lv_obj_t* lotusai_status_label_ = nullptr;
+    bool lotusai_recipe_list_active_ = false;
+
+    void ClearLotusRecipeRows();
+    void RestoreLotusChrome();
 
     void InitializeLcdThemes();
     virtual bool Lock(int timeout_ms = 0) override;
@@ -52,6 +57,7 @@ public:
     virtual void SetChatMessage(const char* role, const char* content) override;
     virtual void ClearChatMessages() override;
     virtual void SetLotusContent(const char* content) override;
+    virtual void SetLotusRecipeList(const std::vector<std::string>& rows) override;
     virtual void SetPreviewImage(std::unique_ptr<LvglImage> image) override;
     virtual void SetupUI() override;
     // Add theme switching function

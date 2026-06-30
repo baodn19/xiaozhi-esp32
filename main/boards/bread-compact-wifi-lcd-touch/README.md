@@ -9,28 +9,30 @@ It extends the stock `bread-compact-wifi-lcd` profile by:
 - Enabling MISO on the SPI3 bus so the XPT2046 can return data.
 - Initialising the XPT2046 touch controller and wiring it to LVGL.
 - Registering the `LotusAiController` MCP tools (`lotusai.recommend` and
-  `lotusai.select`) for voice + tap recipe selection.
+`lotusai.select`) for voice + tap recipe selection.
 - Omitting the demo `LampController` (not present on this hardware).
 
 ---
 
 ## Physical wiring
 
-| Module pin | Signal              | ESP32-S3 GPIO | Macro                    |
-|-----------|---------------------|---------------|--------------------------|
-| 1         | VCC (3.3 V)         | 3V3           | —                        |
-| 2         | GND                 | GND           | —                        |
-| 3         | CS (display)        | GPIO 41       | `DISPLAY_CS_PIN`         |
-| 4         | RESET               | GPIO 45       | `DISPLAY_RST_PIN`        |
-| 5         | DC / RS             | GPIO 18       | `DISPLAY_DC_PIN`         |
-| 6         | SDI / MOSI          | GPIO 17       | `DISPLAY_MOSI_PIN`       |
-| 7         | SCK                 | GPIO 21       | `DISPLAY_CLK_PIN`        |
-| 8         | LED (backlight)     | GPIO 42       | `DISPLAY_BACKLIGHT_PIN`  |
-| 9 / 13    | SDO / T_DO (MISO)   | GPIO 38       | `TOUCH_MISO_PIN`         |
-| 10        | T_CLK               | GPIO 21       | shared with `DISPLAY_CLK_PIN` |
-| 11        | T_CS                | GPIO 47       | `TOUCH_CS_PIN`           |
-| 12        | T_DIN               | GPIO 17       | shared with `DISPLAY_MOSI_PIN` |
-| 14        | T_IRQ               | GPIO 2        | `TOUCH_IRQ_PIN`          |
+
+| Module pin | Signal            | ESP32-S3 GPIO | Macro                          |
+| ---------- | ----------------- | ------------- | ------------------------------ |
+| 1          | VCC (3.3 V)       | 3V3           | —                              |
+| 2          | GND               | GND           | —                              |
+| 3          | CS (display)      | GPIO 41       | `DISPLAY_CS_PIN`               |
+| 4          | RESET             | GPIO 45       | `DISPLAY_RST_PIN`              |
+| 5          | DC / RS           | GPIO 18       | `DISPLAY_DC_PIN`               |
+| 6          | SDI / MOSI        | GPIO 17       | `DISPLAY_MOSI_PIN`             |
+| 7          | SCK               | GPIO 21       | `DISPLAY_CLK_PIN`              |
+| 8          | LED (backlight)   | GPIO 42       | `DISPLAY_BACKLIGHT_PIN`        |
+| 9 / 13     | SDO / T_DO (MISO) | GPIO 38       | `TOUCH_MISO_PIN`               |
+| 10         | T_CLK             | GPIO 21       | shared with `DISPLAY_CLK_PIN`  |
+| 11         | T_CS              | GPIO 47       | `TOUCH_CS_PIN`                 |
+| 12         | T_DIN             | GPIO 17       | shared with `DISPLAY_MOSI_PIN` |
+| 14         | T_IRQ             | GPIO 2        | `TOUCH_IRQ_PIN`                |
+
 
 > **ESP32-S3 with 8 MB octal PSRAM (N16R8 / R8 modules):** GPIO **33–37** are
 > connected to internal PSRAM and must not be used. Do not wire T_CS to GPIO 37.
@@ -48,7 +50,7 @@ It extends the stock `bread-compact-wifi-lcd` profile by:
 ## NanaBot custom wake word
 
 NanaBot uses a custom MultiNet6 pack in `main/assets/nanabot/assets.bin`. See
-[`main/assets/nanabot/README.md`](../../assets/nanabot/README.md) for flashing and tuning.
+`[main/assets/nanabot/README.md](../../assets/nanabot/README.md)` for flashing and tuning.
 
 **Pronunciation:** The model expects three separate syllables, not one blended word.
 Say **"NAH — NAH — BOT"** with ~0.5 s pauses between words. Do **not** say
@@ -83,10 +85,12 @@ idf.py -p /dev/ttyUSB0 flash monitor
 
 ## LotusAI MCP tools
 
-| Tool name           | Trigger          | What it does                                              |
-|---------------------|------------------|-----------------------------------------------------------|
-| `lotusai.recommend` | Voice (XiaoZhi)  | POST `/api/xiaozhi/recommend`, display recipe list, return `spoken_menu` for TTS |
-| `lotusai.select`    | Voice or tap     | POST `/api/xiaozhi/select`, decode `qr_base64` PNG, show QR on screen, return `spoken_confirm` for TTS |
+
+| Tool name           | Trigger         | What it does                                                                                           |
+| ------------------- | --------------- | ------------------------------------------------------------------------------------------------------ |
+| `lotusai.recommend` | Voice (XiaoZhi) | POST `/api/xiaozhi/recommend`, display recipe list, return `spoken_menu` for TTS                       |
+| `lotusai.select`    | Voice or tap    | POST `/api/xiaozhi/select`, decode `qr_base64` PNG, show QR on screen, return `spoken_confirm` for TTS |
+
 
 Touch selection works by dividing the display height equally between the
 returned recipe items. Tap the row of the recipe you want, and the QR code
@@ -100,28 +104,16 @@ Paste the following into the XiaoZhi console as the device system prompt
 (or include it in the `custom_instructions` field of the hello message):
 
 ```
-You are a healthy-recipe assistant for LotusAI.
+You are NanaBot, LotusAI's healthy-recipe assistant. "NanaBot" is your name, not the user's.
 
-Before searching: When the user asks for recipe ideas, first summarize what you
-understood — ingredients, health conditions, allergies, ingredients they want to
-avoid (dislikes, not allergies), available cooking tools, plant-based preference,
-meal, age group, cuisine, and how many options they want (top_k, 3–12). Speak
-that summary aloud and ask: "Is that correct? Should I search for recipes?" Do
-NOT call lotusai.recommend until the user confirms (e.g. "yes", "correct",
-"go ahead") or corrects any detail. If they correct you, repeat the updated
-summary and ask again.
+Name (Memory): At conversation start, check Memory for the user's preferred name. If known, greet with it (e.g. "Hi Sarah!"). If unknown, ask once: "What should I call you?" Spell their answer letter by letter and ask "Did I get that right?" If confirmed, say you'll remember it; if wrong, ask again. Until you know their name, use "there" or "friend" — never call them NanaBot.
 
-After confirmation: Call lotusai.recommend with the confirmed fields. Pass
-allergies as allergens (comma-separated, e.g. "peanuts,dairy"), ingredients to
-avoid as excluded_ingredients (comma-separated, e.g. "cilantro,mushrooms") —
-distinct from allergens, cooking equipment as cooking_tools (e.g.
-"stove,microwave"), and plant_based: true if they want plant-based only. If the
-user asked for a specific number of options (e.g. "six recipes"), pass that as
-top_k (3–12). If they did not specify a count, omit top_k so the device uses
-its default.
+Before searching: On recipe requests, reply in one spoken turn with exactly one question. Restate only what they explicitly said, then confirm (e.g. "Chicken and rice, five recipes — search with that?"). Do not ask about optional fields they did not mention (health conditions, allergies, dislikes, cooking tools, plant-based, meal, age, cuisine, etc.) — omit unstated fields from the tool call. Do not split into multiple questions. Do NOT call lotusai.recommend until they confirm ("yes", "go ahead") or correct/add details. On correction, one updated sentence, one question. If they add details while confirming (e.g. "yes, but no peanuts"), include those in the tool call.
 
-Selection: When they pick an option (by number, name, or tap), call
-lotusai.select with that option number.
+After confirmation: Call lotusai.recommend with confirmed fields: ingredients (required), plus any stated conditions, meal, age, cuisine. Map allergies → allergens (comma-separated, e.g. "peanuts,dairy"); dislikes → excluded_ingredients (comma-separated, e.g. "cilantro,mushrooms") — distinct from allergens; equipment → cooking_tools (e.g. "stove,microwave"); plant_based: true only if requested. Pass top_k (3–12) only if they specified a count; otherwise omit for device default. Tool returns immediately; recipes appear on screen shortly. Read the tool result aloud, then wait for selection — do not apologize for timeout while loading.
 
-Never describe recipes yourself — always call the tools.
+Selection: When they pick by number, name, or tap, call lotusai.select with that option number.
+
+Never describe recipes yourself — always use the tools.
 ```
+

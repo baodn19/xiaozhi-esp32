@@ -11,6 +11,9 @@
 #include <cJSON.h>
 #include <mbedtls/base64.h>
 #include <esp_heap_caps.h>
+#include <esp_timer.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
 
 #include <memory>
 #include <string>
@@ -28,6 +31,13 @@ private:
     std::vector<std::string> pdf_keys_;
     std::vector<std::string> recipe_titles_;
     std::vector<std::string> recipe_cuisines_;
+    bool recommend_in_flight_ = false;
+
+    struct RecommendTaskArgs {
+        LotusAiController* controller;
+        std::string url;
+        std::string body;
+    };
 
     static std::string HttpPost(const std::string& url, const std::string& body) {
         auto& board = Board::GetInstance();
@@ -72,9 +82,9 @@ private:
         return buf;
     }
 
-    static void ShowRecipeMenu(const std::string& formatted) {
+    static void ShowRecipeMenu(const std::vector<std::string>& rows) {
         auto* display = Board::GetInstance().GetDisplay();
-        if (display) display->SetLotusContent(formatted.c_str());
+        if (display) display->SetLotusRecipeList(rows);
     }
 
     static void ShowQrCode(const std::string& qr_base64, const std::string& title) {
@@ -109,31 +119,51 @@ private:
         if (lvgl_disp) lvgl_disp->SetPreviewImage(nullptr);
     }
 
-    std::string DoRecommend(const PropertyList& props) {
-        auto built = LotusAiBuildRecommendRequestBody(props, CONFIG_LOTUSAI_TOP_K);
-        if (!built.error.empty()) return built.error;
+    static void RecommendTask(void* arg) {
+        auto* task = static_cast<RecommendTaskArgs*>(arg);
+        LotusAiController* controller = task->controller;
+        std::string url = std::move(task->url);
+        std::string body = std::move(task->body);
+        delete task;
 
-        std::string url = std::string(CONFIG_LOTUSAI_BASE_URL) + "/api/xiaozhi/recommend";
-        std::string resp = HttpPost(url, built.body);
+        int64_t t0 = esp_timer_get_time();
+        std::string resp = HttpPost(url, body);
+        int elapsed_ms = static_cast<int>((esp_timer_get_time() - t0) / 1000);
+        ESP_LOGI(LOTUSAI_TAG, "recommend HTTP %d ms", elapsed_ms);
+
+        Application::GetInstance().Schedule([controller, resp = std::move(resp)]() {
+            controller->FinishRecommend(std::move(resp));
+        });
+        vTaskDelete(nullptr);
+    }
+
+    void FinishRecommend(std::string resp) {
+        recommend_in_flight_ = false;
+        auto* display = Board::GetInstance().GetDisplay();
+
         if (resp.empty()) {
-            return "Sorry, I could not reach LotusAI. Please check your connection and try again.";
+            ShowRecipeMenu({});
+            if (display) {
+                display->ShowNotification("Could not reach LotusAI", 5000);
+            }
+            return;
         }
 
         cJSON* json = cJSON_Parse(resp.c_str());
         if (!json) {
             ESP_LOGE(LOTUSAI_TAG, "Failed to parse recommend response");
-            return "Sorry, I received an unexpected response from LotusAI.";
+            ShowRecipeMenu({});
+            if (display) {
+                display->ShowNotification("Unexpected response from LotusAI", 5000);
+            }
+            return;
         }
-
-        std::string spoken_menu;
-        auto* spoken = cJSON_GetObjectItem(json, "spoken_menu");
-        if (cJSON_IsString(spoken)) spoken_menu = spoken->valuestring;
 
         pdf_keys_.clear();
         recipe_titles_.clear();
         recipe_cuisines_.clear();
 
-        std::string formatted;
+        std::vector<std::string> recipe_rows;
         auto* recipes = cJSON_GetObjectItem(json, "recipes");
         if (cJSON_IsArray(recipes)) {
             int n = cJSON_GetArraySize(recipes);
@@ -151,15 +181,59 @@ private:
                 recipe_titles_.push_back(title);
                 recipe_cuisines_.push_back(cuisine);
 
-                formatted += std::to_string(i + 1) + ". " + title;
-                if (!cuisine.empty()) formatted += " (" + cuisine + ")";
-                formatted += "\n";
+                std::string row = std::to_string(i + 1) + ". " + title;
+                if (!cuisine.empty()) row += " (" + cuisine + ")";
+                recipe_rows.push_back(row);
             }
         }
         cJSON_Delete(json);
 
-        ShowRecipeMenu(formatted);
-        return spoken_menu.empty() ? "Here are your recipes." : spoken_menu;
+        if (recipe_rows.empty()) {
+            ShowRecipeMenu({});
+            if (display) {
+                display->ShowNotification("No recipes found", 5000);
+            }
+            return;
+        }
+
+        ShowRecipeMenu(recipe_rows);
+        if (display) {
+            display->ShowNotification("Recipes ready — tap or say a number", 5000);
+        }
+    }
+
+    std::string DoRecommend(const PropertyList& props) {
+        auto built = LotusAiBuildRecommendRequestBody(props, CONFIG_LOTUSAI_TOP_K);
+        if (!built.error.empty()) return built.error;
+
+        if (recommend_in_flight_) {
+            return "A recipe search is already in progress. Please wait for the list on your screen.";
+        }
+
+        auto* display = Board::GetInstance().GetDisplay();
+        if (display) {
+            display->ShowNotification("Searching recipes...", 15000);
+        }
+
+        pdf_keys_.clear();
+        recipe_titles_.clear();
+        recipe_cuisines_.clear();
+        ShowRecipeMenu({std::string("Searching...")});
+
+        std::string url = std::string(CONFIG_LOTUSAI_BASE_URL) + "/api/xiaozhi/recommend";
+        auto* task = new RecommendTaskArgs{this, url, built.body};
+        recommend_in_flight_ = true;
+
+        constexpr int kStackWords = 8192;
+        if (xTaskCreate(RecommendTask, "lotusai_rec", kStackWords, task, 5, nullptr) != pdPASS) {
+            delete task;
+            recommend_in_flight_ = false;
+            ShowRecipeMenu({});
+            return "Sorry, I could not start the recipe search. Please try again.";
+        }
+
+        return "I'm searching LotusAI now. The numbered recipe list will appear on your "
+               "screen in a few seconds — tap a row or tell me the option number when ready.";
     }
 
 public:
@@ -174,7 +248,9 @@ public:
             "wants to avoid (excluded_ingredients, comma-separated, e.g. cilantro,mushrooms) "
             "— distinct from allergens, available cooking equipment (cooking_tools), "
             "and whether the user wants plant-based options only (plant_based). "
-            "Call this whenever the user asks for recipe suggestions.",
+            "Call this whenever the user asks for recipe suggestions. "
+            "This tool returns immediately; the numbered recipe list appears on the device "
+            "screen a few seconds later. Do not assume failure if results are not spoken aloud.",
             PropertyList({
                 Property("ingredients",           kPropertyTypeString),
                 Property("conditions",            kPropertyTypeString, std::string{}),
