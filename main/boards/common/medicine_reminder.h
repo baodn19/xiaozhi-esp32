@@ -40,55 +40,12 @@ private:
         auto* self = static_cast<MedicineReminderController*>(pvParameters);
         struct tm timeinfo;
         int last_minute = -1;
-
-        while (true) {
-            time_t now;
-            time(&now);
-            localtime_r(&now, &timeinfo);
-
-            if (timeinfo.tm_year > (2020 - 1900) &&
-                timeinfo.tm_min != last_minute) {
-
-                last_minute = timeinfo.tm_min;
-
-                xSemaphoreTake(self->schedule_mutex_, portMAX_DELAY);
-
-                if (!self->active_alert_med_.empty()) {
-                    self->active_alert_med_.clear();
-                }
-
-                int current_day_bit = 1 << timeinfo.tm_wday;
-
-                for (const auto& med : self->schedule_) {
-                    if (med.active &&
-                        med.hour == timeinfo.tm_hour &&
-                        med.minute == timeinfo.tm_min &&
-                        (med.days_bitmask & current_day_bit)) {
-
-                        std::string med_name = med.name;
-                        xSemaphoreGive(self->schedule_mutex_);
-                        self->TriggerAlarm(med_name);
-                        goto done;
-                    }
-                }
-
-                xSemaphoreGive(self->schedule_mutex_);
-            }
-
-done:
-            vTaskDelay(pdMS_TO_TICKS(5000));
-        }
-    }
-
-    /* Second option for looping (nagging) notification until they take their medicine:
-    static void TimeMonitorTask(void* pvParameters) {
-        auto* self = static_cast<MedicineReminderController*>(pvParameters);
-        struct tm timeinfo;
-        int last_minute = -1;
         
-        // Track the last time we nagged the user (in ticks or seconds)
+        // Track nagging metrics safely inside the loop scope
         TickType_t last_nag_tick = 0; 
-        const TickType_t nag_interval = pdMS_TO_TICKS(60000); // Nag every 60 seconds
+        const TickType_t nag_interval = pdMS_TO_TICKS(60000); // Nag every 60 seconds (1 minute)
+        bool is_alerting = false; 
+        int nag_count = 0; // <--- Track how many times we've nagged
 
         while (true) {
             time_t now;
@@ -109,12 +66,14 @@ done:
                         (med.days_bitmask & current_day_bit)) {
 
                         std::string med_name = med.name;
-                        // Set this as the active alert needing verification
                         self->active_alert_med_ = med_name; 
                         xSemaphoreGive(self->schedule_mutex_);
                         
                         self->TriggerAlarm(med_name);
-                        last_nag_tick = xTaskGetTickCount(); // Reset nag timer
+                        
+                        last_nag_tick = xTaskGetTickCount(); 
+                        is_alerting = true;
+                        nag_count = 1; // Count the initial trigger
                         goto loop_delay;
                     }
                 }
@@ -124,26 +83,59 @@ done:
             // --- PART 2: Check for PENDING unconfirmed alarms (Nagging) ---
             xSemaphoreTake(self->schedule_mutex_, portMAX_DELAY);
             if (!self->active_alert_med_.empty()) {
+                if (!is_alerting) {
+                    last_nag_tick = xTaskGetTickCount();
+                    is_alerting = true;
+                    nag_count = 1;
+                }
+
                 TickType_t current_tick = xTaskGetTickCount();
                 
-                // If enough time has passed since the last announcement, nag them again
                 if ((current_tick - last_nag_tick) >= nag_interval) {
+                    // Check if we've reached the 50 max nag limit
+                    if (nag_count >= 50) {
+                        ESP_LOGW(MED_TAG, "Max nag count (50) reached. Stopping alarm for safety.");
+                        self->active_alert_med_.clear(); // Stop nagging
+                        is_alerting = false;
+                        xSemaphoreGive(self->schedule_mutex_);
+                        goto loop_delay;
+                    }
+
                     std::string pending_med = self->active_alert_med_;
                     xSemaphoreGive(self->schedule_mutex_);
                     
-                    ESP_LOGI(MED_TAG, "Nagging user for unconfirmed medicine: %s", pending_med.c_str());
+                    nag_count++; // Increment our nag count
+                    ESP_LOGI(MED_TAG, "Nagging user (#%d/50) for unconfirmed medicine: %s", nag_count, pending_med.c_str());
                     self->TriggerAlarm(pending_med);
                     last_nag_tick = current_tick;
                     goto loop_delay;
                 }
+            } else {
+                is_alerting = false;
+                nag_count = 0;
             }
             xSemaphoreGive(self->schedule_mutex_);
 
-loop_delay:
+    loop_delay:
             vTaskDelay(pdMS_TO_TICKS(5000));
         }
     }
-    */
+
+    // A helper task to play the sound repeatedly for 20 seconds without freezing the system
+    static void AlarmSoundTask(void* pvParameters) {
+        auto& app = Application::GetInstance();
+        TickType_t start_time = xTaskGetTickCount();
+        const TickType_t duration = pdMS_TO_TICKS(20000); // 20 seconds
+
+        while ((xTaskGetTickCount() - start_time) < duration) {
+            // Play sound (assuming it plays asynchronously and takes, say, 2 seconds)
+            app.PlaySound(Lang::Sounds::OGG_SUCCESS); 
+            
+            // Wait a bit before triggering the sound snippet again so it doesn't overlap harshly
+            vTaskDelay(pdMS_TO_TICKS(2000)); 
+        }
+        vTaskDelete(NULL); // Self-terminate when 20 seconds are up
+    }
 
     void TriggerAlarm(const std::string& med_name) {
         // Define a local tag specifically for this module's logs
@@ -162,7 +154,7 @@ loop_delay:
         }
 
         // Local notification sound
-        app.PlaySound(Lang::Sounds::OGG_SUCCESS);
+        xTaskCreate(AlarmSoundTask, "AlarmSoundTask", 2048, NULL, 5, NULL);
 
         std::string reminder = "Time to take " + med_name;
 
@@ -382,9 +374,9 @@ public:
                 xSemaphoreGive(schedule_mutex_);
 
                 auto* display = Board::GetInstance().GetDisplay();
-                if (display)
-                    display->SetChatMessage("assistant",
-                                            "Alarm cleared.");
+                if (display) {
+                    display->SetChatMessage("assistant", "Alarm cleared.");
+                }
 
                 return "Medication logged.";
             });
