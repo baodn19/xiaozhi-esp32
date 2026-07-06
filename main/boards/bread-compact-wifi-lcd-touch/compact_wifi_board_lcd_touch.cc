@@ -189,11 +189,9 @@ private:
         g_lotusai = &lotusai;
 
         static MedicineReminderController medicine_reminder;
-        // Open the dedicated UART bus channel at the SenseCraft native speed (921600)
-        Serial1.begin(921600, SERIAL_8N1, BOARD_GROVE_RX_PIN, BOARD_GROVE_TX_PIN);
-
-        // Pass the live serial reference into your controller instance wrapper
-        fall_detector_ = std::make_unique<FallDetectionController>(&Serial1);
+        // Fall Detection: Initialize as static to ensure it lives for the app's lifetime
+        static FallDetectionController fall_detector(UART_NUM_1, 11, 12);
+        fall_detector_ = &fall_detector;
     }
 
 public:

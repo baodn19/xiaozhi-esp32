@@ -3,184 +3,104 @@
 #include "mcp_server.h"
 #include "board.h"
 #include "application.h"
-#include "display/lvgl_display/lvgl_display.h"
 #include "assets/lang_config.h"
-
-#include <sscma_client.h> // Native ESP-IDF SenseCraft NPU client
-#include <driver/uart.h>  // Native ESP-IDF UART drivers
+#include <driver/uart.h>
 #include <esp_log.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/semphr.h>
 #include <string>
 
-#define FALL_DET_TAG "FallDetection"
-#define FALL_DET_ALERT_COOLDOWN_MS 5000
-
-#define SENSECRAFT_CLASS_STANDING 0
-#define SENSECRAFT_CLASS_FALL     1
-#define SENSECRAFT_CLASS_SITTING  2
+#define FALL_TAG "FallDetection"
+#define UART_BUF_SIZE (256)
+#define TARGET_FALLEN_ID 2
 
 class FallDetectionController {
 private:
-    SscmaClient grove_ai_; // Swapped to native ESP-IDF client class
-    int confidence_threshold_; 
-    bool alert_active_;
-    uint32_t last_alert_time_;
+    uart_port_t uart_num_;
+    bool alert_active_ = false;
     SemaphoreHandle_t state_mutex_ = nullptr;
-    
+
     static void AlarmSoundTask(void* pvParameters) {
-        auto* self = static_cast<FallDetectionController*>(pvParameters);
         auto& app = Application::GetInstance();
-        
-        ESP_LOGW(FALL_DET_TAG, "Alarm thread locked. Freezing voice assistant interactions.");
+        TickType_t start_time = xTaskGetTickCount();
+        const TickType_t duration = pdMS_TO_TICKS(20000); // 20 seconds
 
-        while (self->IsAlertActive()) {
-            if (app.GetDeviceState() == kDeviceStateSpeaking ||
-                app.GetDeviceState() == kDeviceStateListening) {
-                app.AbortSpeaking(kAbortReasonWakeWordDetected);
-            }
-
+        while ((xTaskGetTickCount() - start_time) < duration) {
             app.PlaySound(Lang::Sounds::OGG_LOW_BATTERY); 
-            vTaskDelay(pdMS_TO_TICKS(1500)); 
+            vTaskDelay(pdMS_TO_TICKS(2000)); 
         }
-
-        ESP_LOGI(FALL_DET_TAG, "Alarm cleared. Restoring speech states.");
         vTaskDelete(NULL);
     }
-    
-    void TriggerFallAlert() {
-        uint32_t trigger_time = esp_log_timestamp();
 
+    void TriggerFallAlert() {
         xSemaphoreTake(state_mutex_, portMAX_DELAY);
+        if (alert_active_) {
+            xSemaphoreGive(state_mutex_);
+            return;
+        }
         alert_active_ = true;
-        last_alert_time_ = trigger_time;
         xSemaphoreGive(state_mutex_);
-        
+
         auto& app = Application::GetInstance();
-        
-        if (app.GetDeviceState() == kDeviceStateSpeaking ||
-            app.GetDeviceState() == kDeviceStateListening) {
+        if (app.GetDeviceState() == kDeviceStateSpeaking || app.GetDeviceState() == kDeviceStateListening) {
             app.AbortSpeaking(kAbortReasonWakeWordDetected);
         }
 
-        xTaskCreate(AlarmSoundTask, "FallAlarmSoundTask", 3072, this, 5, NULL);
-        
-        ESP_LOGW(FALL_DET_TAG, "🚨 CRITICAL FALL DETECTED via SenseCraft NPU inference!");
-        
+        ESP_LOGW(FALL_TAG, "🚨 CRITICAL FALL DETECTED!");
+        xTaskCreate(AlarmSoundTask, "FallAlarmSoundTask", 3072, NULL, 5, NULL);
+
         auto* display = Board::GetInstance().GetDisplay();
-        if (display) {
-            display->SetChatMessage("system", "🚨 EMERGENCY: Fall detected! Speech frozen.");
-        }
+        if (display) display->SetChatMessage("system", "🚨 EMERGENCY: Fall detected!");
+
+        app.SendMcpMessage("{\"event\":\"fall_detection\",\"status\":\"panic\",\"message\":\"Critical fall detected\"}");
+
+        // Auto-reset after a delay
+        vTaskDelay(pdMS_TO_TICKS(15000));
         
-        std::string payload = 
-            "{"
-            "\"event\":\"fall_detection\","
-            "\"status\":\"panic\","
-            "\"message\":\"CRITICAL: Fall detected by vision system. Device interface locked.\""
-            "}";
-            
-        app.SendMcpMessage(payload);
+        xSemaphoreTake(state_mutex_, portMAX_DELAY);
+        alert_active_ = false;
+        xSemaphoreGive(state_mutex_);
     }
-    
+
     static void DetectionTask(void* pvParameters) {
         auto* self = static_cast<FallDetectionController*>(pvParameters);
-        
+        uint8_t* data = (uint8_t*)malloc(UART_BUF_SIZE);
+
         for (;;) {
-            // Native client polling syntax
-            if (self->grove_ai_.beginInference() == ESP_OK) { 
-                
-                xSemaphoreTake(self->state_mutex_, portMAX_DELAY);
-                int target_thresh = self->confidence_threshold_;
-                bool is_alert_active = self->alert_active_;
-                uint32_t last_alert = self->last_alert_time_;
-                xSemaphoreGive(self->state_mutex_);
-
-                // Native API variant reading bounding boxes
-                auto boxes = self->grove_ai_.getBoxes();
-                for (size_t i = 0; i < boxes.size(); i++) {
-                    int class_id   = boxes[i].target; 
-                    int confidence = boxes[i].score;  
-
-                    if (class_id == SENSECRAFT_CLASS_FALL && confidence >= target_thresh) {
-                        if (!is_alert_active && (esp_log_timestamp() - last_alert > FALL_DET_ALERT_COOLDOWN_MS)) {
-                            self->TriggerFallAlert();
-                            break; 
-                        }
-                    }
+            int len = uart_read_bytes(self->uart_num_, data, UART_BUF_SIZE - 1, pdMS_TO_TICKS(100));
+            if (len > 0) {
+                data[len] = '\0';
+                // Replace with your specific JSON parsing or byte-check logic
+                if (strstr((char*)data, "\"id\":2") != NULL) {
+                    self->TriggerFallAlert();
                 }
             }
-            vTaskDelay(pdMS_TO_TICKS(100)); 
+            vTaskDelay(pdMS_TO_TICKS(50));
         }
+        free(data);
     }
 
 public:
-    // Accepts an ESP-IDF native UART port number (e.g. UART_NUM_1 or UART_NUM_2)
-    FallDetectionController(uart_port_t uart_bus) 
-        : confidence_threshold_(70), 
-          alert_active_(false),
-          last_alert_time_(0) {
-        
+    FallDetectionController(uart_port_t uart_bus, int tx, int rx) : uart_num_(uart_bus) {
         state_mutex_ = xSemaphoreCreateMutex();
-        
-        // Native initialization hook directly targeting the hardware port
-        grove_ai_.init(uart_bus);
-        
-        McpServer::GetInstance().AddTool(
-            "self.fall_detection.set_sensitivity",
-            "Adjust target fall detection confidence limits (1-100, lower matches rough postures easily).",
-            PropertyList({
-                Property("sensitivity", kPropertyTypeInteger, 70, 1, 100),
-            }),
-            [this](const PropertyList& props) -> ReturnValue {
-                xSemaphoreTake(state_mutex_, portMAX_DELAY);
-                confidence_threshold_ = props["sensitivity"].value<int>();
-                int current_val = confidence_threshold_;
-                xSemaphoreGive(state_mutex_);
-                
-                ESP_LOGI(FALL_DET_TAG, "SenseCraft classification matching threshold pushed to: %d%%", current_val);
-                return "Confidence threshold successfully changed.";
-            }
-        );
-        
-        McpServer::GetInstance().AddTool(
-            "self.fall_detection.clear_alert",
-            "Clear active hardware panic triggers and restore speech mechanics.",
-            PropertyList({}),
-            [this](const PropertyList&) -> ReturnValue {
-                xSemaphoreTake(state_mutex_, portMAX_DELAY);
-                alert_active_ = false;
-                xSemaphoreGive(state_mutex_);
-                
-                auto* display = Board::GetInstance().GetDisplay();
-                if (display) {
-                    display->SetChatMessage("system", "Fall alert cleared.");
-                }
-                return "Alert state cleared.";
-            }
-        );
-        
-        xTaskCreatePinnedToCore(
-            DetectionTask,
-            "GroveFallDetTask",
-            4096,
-            this,
-            1,
-            nullptr,
-            1
-        );
-        
-        ESP_LOGI(FALL_DET_TAG, "SenseCraft Vision NPU integration active (Native).");
+
+        uart_config_t uart_config = {
+            .baud_rate = 115200,
+            .data_bits = UART_DATA_8_BITS,
+            .parity = UART_PARITY_DISABLE,
+            .stop_bits = UART_STOP_BITS_1,
+            .flow_ctrl = UART_HW_FLOWCTRL_DISABLE
+        };
+        uart_param_config(uart_num_, &uart_config);
+        uart_set_pin(uart_num_, tx, rx, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+        uart_driver_install(uart_num_, UART_BUF_SIZE * 2, 0, 0, NULL, 0);
+
+        xTaskCreatePinnedToCore(DetectionTask, "FallDetTask", 4096, this, 1, nullptr, 1);
+        ESP_LOGI(FALL_TAG, "Fall Detection Initialized via UART.");
     }
-    
+
     ~FallDetectionController() {
         if (state_mutex_) vSemaphoreDelete(state_mutex_);
-    }
-    
-    bool IsAlertActive() { 
-        xSemaphoreTake(state_mutex_, portMAX_DELAY);
-        bool active = alert_active_;
-        xSemaphoreGive(state_mutex_);
-        return active; 
     }
 };
