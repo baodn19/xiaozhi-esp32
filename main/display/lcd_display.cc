@@ -837,6 +837,7 @@ void LcdDisplay::SetupUI() {
     lv_obj_set_style_pad_all(emoji_box_, 0, 0);
     lv_obj_set_style_border_width(emoji_box_, 0, 0);
     lv_obj_align(emoji_box_, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_add_flag(emoji_box_, LV_OBJ_FLAG_HIDDEN); // Hidden by default
 
     emoji_label_ = lv_label_create(emoji_box_);
     lv_obj_set_style_text_font(emoji_label_, large_icon_font, 0);
@@ -1040,7 +1041,6 @@ void LcdDisplay::SetPreviewImage(std::unique_ptr<LvglImage> image) {
 
     if (image == nullptr) {
         esp_timer_stop(preview_timer_);
-        lv_obj_remove_flag(emoji_box_, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(preview_image_, LV_OBJ_FLAG_HIDDEN);
         preview_image_cached_.reset();
         if (gif_controller_) {
@@ -1133,9 +1133,6 @@ void LcdDisplay::ClearLotusRecipeRows() {
 void LcdDisplay::RestoreLotusChrome() {
     if (preview_image_ == nullptr ||
         lv_obj_has_flag(preview_image_, LV_OBJ_FLAG_HIDDEN)) {
-        if (emoji_box_ != nullptr) {
-            lv_obj_remove_flag(emoji_box_, LV_OBJ_FLAG_HIDDEN);
-        }
     }
     if (bottom_bar_ != nullptr && !hide_subtitle_) {
         const char* text = (chat_message_label_ != nullptr)
