@@ -867,7 +867,7 @@ void LcdDisplay::SetupUI() {
     lv_obj_set_style_bg_opa(lotusai_rows_container_, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(lotusai_rows_container_, 0, 0);
     lv_obj_set_style_pad_all(lotusai_rows_container_, 0, 0);
-    lv_obj_set_flex_flow(lotusai_rows_container_, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_flow(lotusai_rows_container_, LV_FLEX_FLOW_COLUMN); // Allow recipes to stack vertically
     lv_obj_set_flex_align(lotusai_rows_container_, LV_FLEX_ALIGN_START,
                           LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
     lv_obj_set_scrollbar_mode(lotusai_rows_container_, LV_SCROLLBAR_MODE_OFF);

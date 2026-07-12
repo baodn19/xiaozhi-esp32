@@ -13,7 +13,7 @@
 #define CONFIG_LOTUSAI_TOP_K 3
 #endif
 
-#define LOTUSAI_CONTENT_Y_OFFSET 80
+#define LOTUSAI_CONTENT_Y_OFFSET 80 // For Wifi icon and status label
 
 struct LotusAiRecommendBodyResult {
     std::string body;
