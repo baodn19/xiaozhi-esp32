@@ -92,6 +92,10 @@ inline LotusAiRecommendBodyResult LotusAiBuildRecommendRequestBody(
     return out;
 }
 
+inline int LotusAiRecipeRowHeight(int line_height, int vpad = 8, int border = 1) {
+    return 2 * line_height + vpad + border;
+}
+
 inline int LotusAiOptionIndexFromPoint(int y, int display_height, int recipe_count,
                                        int content_y_offset = LOTUSAI_CONTENT_Y_OFFSET) {
     if (recipe_count == 0) return -1;

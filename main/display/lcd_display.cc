@@ -870,7 +870,9 @@ void LcdDisplay::SetupUI() {
     lv_obj_set_flex_flow(lotusai_rows_container_, LV_FLEX_FLOW_COLUMN); // Allow recipes to stack vertically
     lv_obj_set_flex_align(lotusai_rows_container_, LV_FLEX_ALIGN_START,
                           LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
-    lv_obj_set_scrollbar_mode(lotusai_rows_container_, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_set_scroll_dir(lotusai_rows_container_, LV_DIR_VER);
+    lv_obj_set_scrollbar_mode(lotusai_rows_container_, LV_SCROLLBAR_MODE_ACTIVE);
+    lv_obj_set_style_pad_row(lotusai_rows_container_, 2, 0);
     lv_obj_add_flag(lotusai_rows_container_, LV_OBJ_FLAG_HIDDEN);
 
     lotusai_status_label_ = lv_label_create(lotusai_panel_);
@@ -1168,9 +1170,9 @@ void LcdDisplay::SetLotusRecipeList(const std::vector<std::string>& rows) {
         lv_label_set_text(chat_message_label_, "");
     }
 
-    const int area_h = height_ - LOTUSAI_CONTENT_Y_OFFSET;
-    const int row_h = area_h / static_cast<int>(rows.size());
     const int label_w = LV_HOR_RES - lvgl_theme->spacing(8);
+    const int pad_side = lvgl_theme->spacing(2);
+    const int row_h = LotusAiRecipeRowHeight(text_font->line_height, pad_side * 2);
 
     for (const auto& row_text : rows) {
         lv_obj_t* row = lv_obj_create(lotusai_rows_container_);
@@ -1183,12 +1185,15 @@ void LcdDisplay::SetLotusRecipeList(const std::vector<std::string>& rows) {
         lv_obj_set_style_border_color(row, lvgl_theme->border_color(), 0);
         lv_obj_set_style_pad_left(row, lvgl_theme->spacing(4), 0);
         lv_obj_set_style_pad_right(row, lvgl_theme->spacing(4), 0);
+        lv_obj_set_style_pad_top(row, pad_side, 0);
+        lv_obj_set_style_pad_bottom(row, pad_side, 0);
         lv_obj_set_scrollbar_mode(row, LV_SCROLLBAR_MODE_OFF);
 
         lv_obj_t* label = lv_label_create(row);
         lv_label_set_text(label, row_text.c_str());
         lv_obj_set_width(label, label_w);
-        lv_label_set_long_mode(label, LV_LABEL_LONG_DOT);
+        lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
+        lv_obj_set_height(label, 2 * text_font->line_height);
         lv_obj_set_style_text_font(label, text_font, 0);
         lv_obj_set_style_text_color(label, lvgl_theme->text_color(), 0);
         lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_LEFT, 0);
