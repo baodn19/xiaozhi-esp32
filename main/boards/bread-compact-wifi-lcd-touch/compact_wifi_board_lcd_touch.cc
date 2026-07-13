@@ -88,6 +88,7 @@ class CompactWifiBoardLcdTouch : public WifiBoard {
 private:
     Button boot_button_;
     LcdDisplay* display_ = nullptr;
+    FallDetectionController* fall_detector_ = nullptr;
 
     void InitializeSpi() {
         spi_bus_config_t buscfg = {};
@@ -189,6 +190,7 @@ private:
         g_lotusai = &lotusai;
 
         static MedicineReminderController medicine_reminder;
+
         // Fall Detection: Initialize as static to ensure it lives for the app's lifetime
         static FallDetectionController fall_detector(UART_NUM_1, 11, 12);
         fall_detector_ = &fall_detector;

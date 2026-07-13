@@ -13,7 +13,7 @@
 
 #define FALL_TAG "FallDetection"
 #define UART_BUF_SIZE (256)
-#define TARGET_FALLEN_ID 2
+#define TARGET_FALLEN_ID 3
 
 class FallDetectionController {
 private:
