@@ -1,0 +1,174 @@
+#include "esp_tcp.h"
+
+#include <esp_log.h>
+#include <unistd.h>
+#include <cstring>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <errno.h>
+
+static const char *TAG = "EspTcp";
+
+EspTcp::EspTcp() {
+    event_group_ = xEventGroupCreate();
+}
+
+EspTcp::~EspTcp() {
+    Disconnect();
+
+    if (event_group_ != nullptr) {
+        vEventGroupDelete(event_group_);
+        event_group_ = nullptr;
+    }
+}
+
+bool EspTcp::Connect(const std::string& host, int port) {
+    // 确保先断开已有连接
+    if (connected_) {
+        Disconnect();
+    }
+
+    struct sockaddr_in server_addr;
+    bzero(&server_addr, sizeof(server_addr));
+    server_addr.sin_family = AF_INET;
+    server_addr.sin_port = htons(port);
+    // host is domain
+    struct hostent *server = gethostbyname(host.c_str());
+    if (server == NULL) {
+        last_error_ = h_errno;
+        ESP_LOGE(TAG, "Failed to get host by name");
+        return false;
+    }
+    memcpy(&server_addr.sin_addr, server->h_addr, server->h_length);
+
+    tcp_fd_ = socket(AF_INET, SOCK_STREAM, 0);
+    if (tcp_fd_ < 0) {
+        last_error_ = errno;
+        ESP_LOGE(TAG, "Failed to create socket");
+        return false;
+    }
+
+    int ret = connect(tcp_fd_, (struct sockaddr*)&server_addr, sizeof(server_addr));
+    if (ret < 0) {
+        last_error_ = errno;
+        ESP_LOGE(TAG, "Failed to connect to %s:%d, code=0x%x", host.c_str(), port, last_error_);
+        close(tcp_fd_);
+        tcp_fd_ = -1;
+        return false;
+    }
+
+    connected_ = true;
+    task_started_ = true;
+    callback_invoked_ = false;
+
+    xEventGroupClearBits(event_group_, ESP_TCP_EVENT_RECEIVE_TASK_EXIT);
+    xTaskCreate([](void* arg) {
+        EspTcp* tcp = (EspTcp*)arg;
+        tcp->ReceiveTask();
+        xEventGroupSetBits(tcp->event_group_, ESP_TCP_EVENT_RECEIVE_TASK_EXIT);
+        vTaskDelete(NULL);
+    }, "tcp_receive", 4096, this, 1, &receive_task_handle_);
+    return true;
+}
+
+void EspTcp::Disconnect() {
+    // 主动断开：无论 connected_ 是否已经被接收任务置为 false（被动断开
+    // 可能正在并发进行），都必须调用 DoDisconnect(true) 以确保等待接收
+    // 任务彻底退出后才返回，否则调用者销毁本对象后，接收任务线程仍可能
+    // 访问已释放的内存（use-after-free），导致 mutex/EventGroup 崩溃。
+    DoDisconnect(true);
+}
+
+void EspTcp::DoDisconnect(bool wait_for_task) {
+    // 只有第一个把 connected_ 从 true 变为 false 的线程才负责关闭 fd，
+    // 避免主动断开与被动断开并发时重复 close() 同一个（可能已被复用的）fd。
+    bool should_close = false;
+    {
+        std::lock_guard<std::mutex> lock(disconnect_mutex_);
+        if (connected_) {
+            connected_ = false;
+            should_close = true;
+        }
+    }
+
+    if (should_close && tcp_fd_ != -1) {
+        close(tcp_fd_);
+        tcp_fd_ = -1;
+    }
+
+    // 只有主动断开时才需要等待接收任务退出。
+    // 注意：即使 connected_ 已经被接收任务（被动断开）置为 false，
+    // 只要曾经启动过接收任务，仍然必须等待，以保证接收任务完全退出后
+    // 本对象才可能被销毁。
+    if (wait_for_task && task_started_) {
+        auto bits = xEventGroupWaitBits(event_group_, ESP_TCP_EVENT_RECEIVE_TASK_EXIT, pdFALSE, pdFALSE, pdMS_TO_TICKS(10000));
+        if (!(bits & ESP_TCP_EVENT_RECEIVE_TASK_EXIT)) {
+            ESP_LOGE(TAG, "Failed to wait for receive task exit");
+        }
+    }
+
+    // 断开连接时触发断开回调，且只触发一次：主动断开和被动断开可能几乎
+    // 同时发生，若不加保护会对同一个 disconnect_callback_（例如
+    // HttpClient::OnTcpDisconnected）重复调用。
+    bool should_invoke = false;
+    {
+        std::lock_guard<std::mutex> lock(disconnect_mutex_);
+        if (!callback_invoked_) {
+            callback_invoked_ = true;
+            should_invoke = true;
+        }
+    }
+    if (should_invoke && disconnect_callback_) {
+        disconnect_callback_();
+    }
+}
+
+int EspTcp::Send(const std::string& data) {
+    if (!connected_) {
+        ESP_LOGE(TAG, "Not connected");
+        return -1;
+    }
+
+    size_t total_sent = 0;
+    size_t data_size = data.size();
+    const char* data_ptr = data.data();
+
+    while (total_sent < data_size) {
+        int ret = send(tcp_fd_, data_ptr + total_sent, data_size - total_sent, 0);
+
+        if (ret <= 0) {
+            ESP_LOGE(TAG, "Send failed: ret=%d, errno=%d", ret, errno);
+            return ret;
+        }
+
+        total_sent += ret;
+    }
+
+    return total_sent;
+}
+
+void EspTcp::ReceiveTask() {
+    std::string data;
+    while (connected_) {
+        data.resize(1500);
+        int ret = recv(tcp_fd_, data.data(), data.size(), 0);
+        if (ret <= 0) {
+            if (ret < 0) {
+                ESP_LOGE(TAG, "TCP receive failed: %d", ret);
+            }
+            // 被动断开，不需要等待接收任务退出（当前就是接收任务）
+            DoDisconnect(false);
+            break;
+        }
+
+        if (stream_callback_) {
+            data.resize(ret);
+            stream_callback_(data);
+        }
+    }
+}
+
+int EspTcp::GetLastError() {
+    return last_error_;
+}
