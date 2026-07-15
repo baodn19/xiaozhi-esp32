@@ -126,4 +126,12 @@
 #define TOUCH_CS_PIN    GPIO_NUM_47   // T_CS  (module pin 11) — was GPIO37, conflicts with PSRAM
 #define TOUCH_IRQ_PIN   GPIO_NUM_2    // T_IRQ (module pin 14)
 
+// Touch panel's independent axis convention — determined empirically by
+// physically tapping known screen edges (top/bottom/left/right) and
+// checking logged x/y; do NOT assume it matches DISPLAY_MIRROR_X/Y, which
+// only controls the LCD panel's pixel scanout register.
+#define TOUCH_MIRROR_X  false
+#define TOUCH_MIRROR_Y  true
+#define TOUCH_SWAP_XY   false
+
 #endif // _BOARD_CONFIG_H_

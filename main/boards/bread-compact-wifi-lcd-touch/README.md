@@ -63,6 +63,19 @@ It extends the stock `bread-compact-wifi-lcd` profile by:
 > delete `sdkconfig` and regenerate from a checkout missing the defaults
 > above), re-enable it and rebuild.
 
+> **Touch orientation — do not reuse `DISPLAY_MIRROR_*`:** The ILI9341
+> `DISPLAY_MIRROR_X` / `DISPLAY_MIRROR_Y` / `DISPLAY_SWAP_XY` flags only
+> control LCD pixel scanout. The XPT2046 overlay needs its own axis
+> convention, set in `config.h` as `TOUCH_MIRROR_X` / `TOUCH_MIRROR_Y` /
+> `TOUCH_SWAP_XY` and applied in `InitializeTouchscreen()`. For this
+> Hosyond / MSP3218 module the calibrated values are
+> `TOUCH_MIRROR_X=false`, `TOUCH_MIRROR_Y=true`, `TOUCH_SWAP_XY=false`
+> (verified by tapping top/bottom/left/right and checking serial `tap x=` /
+> `y=` logs). If you previously wired touch flags from `DISPLAY_*`, taps
+> near the bottom of the recipe list can report a small `y` and return
+> `idx=-1` even when hit-test math and `row_h` are correct — that is an
+> axis-mirror mismatch, not a stride bug.
+
 ---
 
 ## NanaBot custom wake word
@@ -110,9 +123,10 @@ idf.py -p /dev/ttyUSB0 flash monitor
 | `lotusai.select`    | Voice or tap    | POST `/api/xiaozhi/select`, decode `qr_base64` PNG, show QR on screen, return `spoken_confirm` for TTS |
 
 
-Touch selection works by dividing the display height equally between the
-returned recipe items. Tap the row of the recipe you want, and the QR code
-for that recipe is fetched and displayed.
+Touch selection maps tap `y` (after touch-axis mirrors) through
+`LotusAiOptionIndexFromPoint` using fixed row height + optional vertical
+scroll offset. Tap the row of the recipe you want, and the QR code for that
+recipe is fetched and displayed.
 
 ---
 

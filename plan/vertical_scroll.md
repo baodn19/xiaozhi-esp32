@@ -142,4 +142,23 @@ int LcdDisplay::GetLotusRecipeScrollY() const {
 - **Kconfig — `CONFIG_XPT2046_INTERRUPT_MODE` must be enabled:** the XPT2046 driver (`managed_components/atanisoft__esp_lcd_touch_xpt2046`) only leaves PENIRQ able to re-assert on a fresh touch if this option is on ("Full Power Mode" in `menuconfig` under `Component config → XPT2046 → Enable Interrupt (PENIRQ) output"`). With it **off** (the driver default), the *first* tap after boot/reset works, but every subsequent tap silently fails to register — the poll loop in `compact_wifi_board_lcd_touch.cc` sees `T_IRQ` stuck high forever, even while pressing the screen. This is a firmware config issue, not a wiring issue — do not chase it as a hardware fault. It's already
 enabled by default for this board via `CONFIG_XPT2046_INTERRUPT_MODE=y` in `sdkconfig.defaults` / `sdkconfig.defaults.esp32s3`; if you hand-edit `sdkconfig` or run `idf.py menuconfig` and it gets toggled off (or you delete `sdkconfig` and regenerate from a checkout missing the defaults above), re-enable it and rebuild. (allow individual taps)
 
+- **Decouple touch orientation from LCD panel mirrors:** Do **not** derive `esp_lcd_touch_config_t.flags.{swap_xy,mirror_x,mirror_y}` from `DISPLAY_SWAP_XY` / `DISPLAY_MIRROR_X` / `DISPLAY_MIRROR_Y`. Those macros only set the ILI9341 `MADCTL` pixel-scanout orientation; the XPT2046 overlay's ADC→axis wiring is independent. Empirically (tap top/bottom/left/right and read `tap x=… y=…` logs), this module needed `TOUCH_MIRROR_X=false`, `TOUCH_MIRROR_Y=true`, `TOUCH_SWAP_XY=false`. With the old wiring (`DISPLAY_MIRROR_X=true`, `DISPLAY_MIRROR_Y=false`), both axes were inverted relative to LVGL/screen space — a tap near the bottom (e.g. recipe row 5) reported `y≈50` and hit-test returned `idx=-1` via `y < LOTUSAI_CONTENT_Y_OFFSET` (80), even though stride/`row_h`/`scroll_y` math was fine.
++ In `config.h`, define dedicated macros next to the touch GPIO pins:
+```cpp
+// Touch panel's independent axis convention — determined empirically by
+// physically tapping known screen edges (top/bottom/left/right) and
+// checking logged x/y; do NOT assume it matches DISPLAY_MIRROR_X/Y, which
+// only controls the LCD panel's pixel scanout register.
+#define TOUCH_MIRROR_X  false
+#define TOUCH_MIRROR_Y  true
+#define TOUCH_SWAP_XY   false
+```
++ In `InitializeTouchscreen()` (`compact_wifi_board_lcd_touch.cc`):
+```cpp
+touch_cfg.flags.swap_xy  = TOUCH_SWAP_XY  ? 1u : 0u;
+touch_cfg.flags.mirror_x = TOUCH_MIRROR_X ? 1u : 0u;
+touch_cfg.flags.mirror_y = TOUCH_MIRROR_Y ? 1u : 0u;
+```
++ Verify after flash: top → small `y`, bottom → large `y`; left → small `x`, right → large `x`. Then row taps should resolve positive `idx` when `row_h > 0`.
+
 ### Checkpoint 3: drag-aware poll callback

@@ -170,9 +170,9 @@ private:
         touch_cfg.rst_gpio_num   = GPIO_NUM_NC;
         touch_cfg.int_gpio_num   = TOUCH_IRQ_PIN;
         touch_cfg.levels.interrupt = 0;  // active low
-        touch_cfg.flags.swap_xy  = DISPLAY_SWAP_XY ? 1u : 0u;
-        touch_cfg.flags.mirror_x = DISPLAY_MIRROR_X ? 1u : 0u;
-        touch_cfg.flags.mirror_y = DISPLAY_MIRROR_Y ? 1u : 0u;
+        touch_cfg.flags.swap_xy  = TOUCH_SWAP_XY  ? 1u : 0u;
+        touch_cfg.flags.mirror_x = TOUCH_MIRROR_X ? 1u : 0u;
+        touch_cfg.flags.mirror_y = TOUCH_MIRROR_Y ? 1u : 0u;
 
         ESP_ERROR_CHECK(esp_lcd_touch_new_spi_xpt2046(touch_io, &touch_cfg, &s_touch_handle));
 
