@@ -85,5 +85,10 @@ CONFIG_LCD_ILI9341_240X320=y
 CONFIG_USE_DEFAULT_MESSAGE_STYLE=y
 CONFIG_PREVIEW_IMAGE_DURATION_MS=300000
 
+# XPT2046 touch: enable PENIRQ output (Full Power Mode) so the interrupt pin
+# re-asserts after every SPI read. Without this, PENIRQ only fires once after
+# boot/reset and taps stop registering on subsequent presses.
+CONFIG_XPT2046_INTERRUPT_MODE=y
+
 # LotusAI backend
 CONFIG_LOTUSAI_BASE_URL="http://10.253.106.97:8006"

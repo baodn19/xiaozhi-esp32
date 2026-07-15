@@ -29,3 +29,8 @@ CONFIG_USB_HOST_CONTROL_TRANSFER_MAX_SIZE=1536
 
 # LVGL Graphics
 CONFIG_LV_USE_SNAPSHOT=y
+
+# XPT2046 touch: enable PENIRQ output (Full Power Mode) so the interrupt pin
+# re-asserts after every SPI read. Without this, PENIRQ only fires once after
+# boot/reset and taps stop registering on subsequent presses.
+CONFIG_XPT2046_INTERRUPT_MODE=y
