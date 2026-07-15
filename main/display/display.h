@@ -39,6 +39,8 @@ public:
     virtual void ClearChatMessages();
     virtual void SetLotusContent(const char* content);
     virtual void SetLotusRecipeList(const std::vector<std::string>& rows);
+    virtual int GetLotusRecipeRowHeight() const { return 0; }
+    virtual int GetLotusRecipeScrollY() const { return 0; }
     virtual void SetTheme(Theme* theme);
     virtual Theme* GetTheme() { return current_theme_; }
     virtual void UpdateStatusBar(bool update_all = false);

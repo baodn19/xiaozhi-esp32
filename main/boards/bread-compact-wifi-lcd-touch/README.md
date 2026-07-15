@@ -42,8 +42,26 @@ It extends the stock `bread-compact-wifi-lcd` profile by:
 >
 > **Wiring tip:** Join module pin 6 (SDI/MOSI) and pin 12 (T_DIN) at the
 > same ESP32 GPIO (17). Add a **10 kΩ pull-up on T_CS (GPIO 47)** to 3.3 V
-> so the touch chip stays deselected while the display is drawing. Connect
-> T_IRQ (GPIO 2) — the firmware only reads touch when that line is low.
+> so the touch chip stays deselected while the display is drawing. Also add a
+> **10 kΩ pull-up on T_IRQ (GPIO 2)** to 3.3 V — same topology as T_CS
+> (`T_IRQ — wire — GPIO 2 — 10 kΩ — 3.3 V`). PENIRQ is open-drain-ish and the
+> firmware only reads touch when that line is low; without the pull-up GPIO 2
+> can float and taps never register.
+
+> **Kconfig — `CONFIG_XPT2046_INTERRUPT_MODE` must be enabled:** the XPT2046
+> driver (`managed_components/atanisoft__esp_lcd_touch_xpt2046`) only leaves
+> PENIRQ able to re-assert on a fresh touch if this option is on ("Full Power
+> Mode" in `menuconfig` under `Component config → XPT2046 → Enable Interrupt
+> (PENIRQ) output"`). With it **off** (the driver default), the *first* tap
+> after boot/reset works, but every subsequent tap silently fails to register
+> — the poll loop in `compact_wifi_board_lcd_touch.cc` sees `T_IRQ` stuck high
+> forever, even while pressing the screen. This is a firmware config issue,
+> not a wiring issue — do not chase it as a hardware fault. It's already
+> enabled by default for this board via `CONFIG_XPT2046_INTERRUPT_MODE=y` in
+> `sdkconfig.defaults` / `sdkconfig.defaults.esp32s3`; if you hand-edit
+> `sdkconfig` or run `idf.py menuconfig` and it gets toggled off (or you
+> delete `sdkconfig` and regenerate from a checkout missing the defaults
+> above), re-enable it and rebuild.
 
 ---
 

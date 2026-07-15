@@ -872,7 +872,10 @@ void LcdDisplay::SetupUI() {
                           LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
     lv_obj_set_scroll_dir(lotusai_rows_container_, LV_DIR_VER);
     lv_obj_set_scrollbar_mode(lotusai_rows_container_, LV_SCROLLBAR_MODE_ACTIVE);
-    lv_obj_set_style_pad_row(lotusai_rows_container_, 2, 0);
+    lv_obj_set_style_pad_row(lotusai_rows_container_, LOTUSAI_ROW_PAD_Y, 0);
+    lv_obj_add_event_cb(lotusai_rows_container_, &LcdDisplay::OnLotusRowsScroll,
+                         LV_EVENT_SCROLL, this);
+    lotusai_scroll_y_ = 0;
     lv_obj_add_flag(lotusai_rows_container_, LV_OBJ_FLAG_HIDDEN);
 
     lotusai_status_label_ = lv_label_create(lotusai_panel_);
@@ -1132,6 +1135,24 @@ void LcdDisplay::ClearLotusRecipeRows() {
     }
 }
 
+void LcdDisplay::OnLotusRowsScroll(lv_event_t* e) {
+    auto* self = static_cast<LcdDisplay*>(lv_event_get_user_data(e));
+    if (self == nullptr) return;
+    lv_obj_t* target = static_cast<lv_obj_t*>(lv_event_get_target(e));
+    self->lotusai_scroll_y_ = lv_obj_get_scroll_y(target);
+}
+
+// Must only be called while already holding a DisplayLockGuard (called from
+// SetLotusRecipeList, which locks on entry).
+void LcdDisplay::ResetLotusRecipeHitTestCache() {
+    lotusai_recipe_row_h_.store(0);
+    if (lotusai_rows_container_ != nullptr) {
+        // LV_ANIM_OFF => synchronous; fires LV_EVENT_SCROLL (if offset != 0),
+        // which zeroes lotusai_scroll_y_ via OnLotusRowsScroll.
+        lv_obj_scroll_to_y(lotusai_rows_container_, 0, LV_ANIM_OFF);
+    }
+}
+
 void LcdDisplay::RestoreLotusChrome() {
     if (preview_image_ == nullptr ||
         lv_obj_has_flag(preview_image_, LV_OBJ_FLAG_HIDDEN)) {
@@ -1159,6 +1180,7 @@ void LcdDisplay::SetLotusRecipeList(const std::vector<std::string>& rows) {
 
     if (rows.empty()) {
         lotusai_recipe_list_active_ = false;
+        ResetLotusRecipeHitTestCache();
         lv_obj_add_flag(lotusai_rows_container_, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(lotusai_panel_, LV_OBJ_FLAG_HIDDEN);
         RestoreLotusChrome();
@@ -1173,6 +1195,9 @@ void LcdDisplay::SetLotusRecipeList(const std::vector<std::string>& rows) {
     const int label_w = LV_HOR_RES - lvgl_theme->spacing(8);
     const int pad_side = lvgl_theme->spacing(2);
     const int row_h = LotusAiRecipeRowHeight(text_font->line_height, pad_side * 2);
+
+    ResetLotusRecipeHitTestCache();
+    lotusai_recipe_row_h_.store(row_h);
 
     for (const auto& row_text : rows) {
         lv_obj_t* row = lv_obj_create(lotusai_rows_container_);

@@ -14,6 +14,7 @@
 #endif
 
 #define LOTUSAI_CONTENT_Y_OFFSET 80 // For Wifi icon and status label
+#define LOTUSAI_ROW_PAD_Y 2 // Must match lv_obj_set_style_pad_row on lotusai_rows_container_
 
 struct LotusAiRecommendBodyResult {
     std::string body;
@@ -96,14 +97,24 @@ inline int LotusAiRecipeRowHeight(int line_height, int vpad = 8, int border = 1)
     return 2 * line_height + vpad + border;
 }
 
-inline int LotusAiOptionIndexFromPoint(int y, int display_height, int recipe_count,
-                                       int content_y_offset = LOTUSAI_CONTENT_Y_OFFSET) {
-    if (recipe_count == 0) return -1;
-    if (y < content_y_offset) return -1;
-    int row_h = (display_height - content_y_offset) / recipe_count;
-    if (row_h <= 0) return -1;
-    int idx = (y - content_y_offset) / row_h;
+struct LotusAiHitTestGeometry {
+    int row_h;
+    int scroll_y = 0;
+    int pad_row = LOTUSAI_ROW_PAD_Y;
+    int content_y_offset = LOTUSAI_CONTENT_Y_OFFSET;
+    int display_height;
+};
+
+inline int LotusAiOptionIndexFromPoint(int y, int recipe_count,
+                                       const LotusAiHitTestGeometry& geometry) {
+    if (recipe_count <= 0 || geometry.row_h <= 0) return -1;
+    if (y < geometry.content_y_offset || y >= geometry.display_height) return -1;
+    const int local_y = (y - geometry.content_y_offset) + geometry.scroll_y;
+    if (local_y < 0) return -1;
+    const int stride = geometry.row_h + geometry.pad_row;
+    const int idx = local_y / stride;
     if (idx < 0 || idx >= recipe_count) return -1;
+    if ((local_y % stride) >= geometry.row_h) return -1;  // pad_row gap
     return idx;
 }
 

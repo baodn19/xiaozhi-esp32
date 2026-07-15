@@ -40,9 +40,19 @@ static bool s_was_touched = false;
 static void TouchPollCallback(void* /*arg*/) {
     if (!g_lotusai || !s_touch_handle) return;
 
+    // TEMP DEBUG: unconditional heartbeat so we can see the raw IRQ pin level
+    // even when nothing is pressed. ~1x/sec at the 200ms poll period.
+    // Remove once tap selection is confirmed working.
+    static int s_debug_tick = 0;
+    int irq_level = gpio_get_level(TOUCH_IRQ_PIN);
+    if (++s_debug_tick >= 5) {
+        s_debug_tick = 0;
+        ESP_LOGI(TAG, "touch heartbeat: irq_level=%d", irq_level);
+    }
+
     // PENIRQ is active-low: skip SPI when the panel is not touched to avoid
     // bus contention with the ILI9341 on the shared MOSI/SCK lines.
-    if (gpio_get_level(TOUCH_IRQ_PIN) != 0) {
+    if (irq_level != 0) {
         s_was_touched = false;
         return;
     }
@@ -58,12 +68,21 @@ static void TouchPollCallback(void* /*arg*/) {
     bool touched = esp_lcd_touch_get_coordinates(
         s_touch_handle, x, y, strength, &count, 1);
 
+    // TEMP DEBUG: fires whenever IRQ is asserted, even if the SPI read didn't
+    // resolve a valid point (helps distinguish gate 2 vs gate 3 failures).
+    ESP_LOGI(TAG, "touch irq low: touched=%d count=%d x=%d y=%d",
+             touched, count, x[0], y[0]);
+
     if (touched && count > 0) {
         if (!s_was_touched) {
             s_was_touched = true;
             int cx = static_cast<int>(x[0]);
             int cy = static_cast<int>(y[0]);
             int option_idx = g_lotusai->OptionFromPoint(cx, cy);
+            ESP_LOGI(TAG, "tap x=%d y=%d idx=%d row_h=%d scroll_y=%d",
+                     cx, cy, option_idx,
+                     display->GetLotusRecipeRowHeight(),
+                     display->GetLotusRecipeScrollY());
             if (option_idx >= 0) {
                 // Schedule on the main application task to avoid concurrency issues
                 Application::GetInstance().Schedule([option_idx]() {
@@ -192,9 +211,9 @@ public:
         boot_button_(BOOT_BUTTON_GPIO) {
         InitializeSpi();
         InitializeLcdDisplay();
-        InitializeTouchscreen();
         InitializeButtons();
         InitializeTools();
+        InitializeTouchscreen();
         if (DISPLAY_BACKLIGHT_PIN != GPIO_NUM_NC) {
             GetBacklight()->RestoreBrightness();
         }

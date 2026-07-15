@@ -346,6 +346,9 @@ public:
         int count = static_cast<int>(pdf_keys_.size());
         auto* display = Board::GetInstance().GetDisplay();
         int display_h = display ? display->height() : 320;
-        return LotusAiOptionIndexFromPoint(y, display_h, count);
+        int row_h = display ? display->GetLotusRecipeRowHeight() : 0;
+        int scroll_y = display ? display->GetLotusRecipeScrollY() : 0;
+        LotusAiHitTestGeometry hit_geometry{.row_h = row_h, .scroll_y = scroll_y, .display_height = display_h};
+        return LotusAiOptionIndexFromPoint(y, count, hit_geometry);
     }
 };
