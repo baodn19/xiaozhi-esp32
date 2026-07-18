@@ -1225,6 +1225,20 @@ void LcdDisplay::SetLotusRecipeList(const std::vector<std::string>& rows) {
         lv_obj_align(label, LV_ALIGN_LEFT_MID, 0, 0);
     }
 
+    // TEMP DEBUG: compare computed row_h vs LVGL post-layout geometry (strip later).
+    lv_obj_update_layout(lotusai_rows_container_);
+    for (uint32_t i = 0; i < lv_obj_get_child_cnt(lotusai_rows_container_); i++) {
+        lv_obj_t* row = lv_obj_get_child(lotusai_rows_container_, i);
+        lv_area_t coords;
+        lv_obj_get_coords(row, &coords);
+        ESP_LOGI(TAG, "row %d: rel_y=%d h=%d abs_y1=%d abs_y2=%d",
+                 (int)i, (int)lv_obj_get_y(row), (int)lv_obj_get_height(row),
+                 coords.y1, coords.y2);
+    }
+    ESP_LOGI(TAG, "computed row_h=%d panel abs_y=%d container abs_y=%d",
+             row_h, (int)lv_obj_get_y(lotusai_panel_),
+             (int)lv_obj_get_y(lotusai_rows_container_));
+
     lv_obj_remove_flag(lotusai_rows_container_, LV_OBJ_FLAG_HIDDEN);
     lv_obj_remove_flag(lotusai_panel_, LV_OBJ_FLAG_HIDDEN);
 
