@@ -27,7 +27,7 @@
 
 #define TAG "CompactWifiBoardLCDTouch"
 
-// Global pointer so the touch poll callback can reach the controller.
+// Global pointer so the touch poll callback can reach the LotusAiController.
 static LotusAiController* g_lotusai = nullptr;
 // Touch state handle and debounce flag used in the polling timer callback.
 static esp_lcd_touch_handle_t s_touch_handle = nullptr;
@@ -57,27 +57,27 @@ static void TouchPollCallback(void* /*arg*/) {
         return;
     }
 
-    auto* display = Board::GetInstance().GetDisplay();
+    auto* display = Board::GetInstance().GetDisplay(); // Pointer to the display object (ILI9341)
     if (!display) return;
 
     DisplayLockGuard lock(display);
-    esp_lcd_touch_read_data(s_touch_handle);
+    esp_lcd_touch_read_data(s_touch_handle); // esp_lcd_touch_read_data defined in esp_lcd_touch.h
 
-    uint16_t x[1] = {}, y[1] = {}, strength[1] = {};
-    uint8_t count = 0;
-    bool touched = esp_lcd_touch_get_coordinates(
-        s_touch_handle, x, y, strength, &count, 1);
+    esp_lcd_touch_point_data_t point[1] = {}; // Array of touch points (esp_lcd_touch.h)
+    uint8_t count = 0; // Number of touch points
+    esp_err_t err = esp_lcd_touch_get_data(s_touch_handle, point, &count, 1);
+    bool touched = (err == ESP_OK && count > 0);
 
     // TEMP DEBUG: fires whenever IRQ is asserted, even if the SPI read didn't
     // resolve a valid point (helps distinguish gate 2 vs gate 3 failures).
     ESP_LOGI(TAG, "touch irq low: touched=%d count=%d x=%d y=%d",
-             touched, count, x[0], y[0]);
+             touched, count, point[0].x, point[0].y);
 
-    if (touched && count > 0) {
+    if (touched) {
         if (!s_was_touched) {
             s_was_touched = true;
-            int cx = static_cast<int>(x[0]);
-            int cy = static_cast<int>(y[0]);
+            int cx = static_cast<int>(point[0].x);
+            int cy = static_cast<int>(point[0].y);
             int option_idx = g_lotusai->OptionFromPoint(cx, cy);
             ESP_LOGI(TAG, "tap x=%d y=%d idx=%d row_h=%d scroll_y=%d",
                      cx, cy, option_idx,
@@ -165,7 +165,7 @@ private:
         ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(SPI3_HOST, &touch_io_cfg, &touch_io));
 
         esp_lcd_touch_config_t touch_cfg = {};
-        touch_cfg.x_max          = DISPLAY_WIDTH - 1;
+        touch_cfg.x_max          = DISPLAY_WIDTH - 1; // Index is 0-based, so -1 is the last pixel.
         touch_cfg.y_max          = DISPLAY_HEIGHT - 1;
         touch_cfg.rst_gpio_num   = GPIO_NUM_NC;
         touch_cfg.int_gpio_num   = TOUCH_IRQ_PIN;
