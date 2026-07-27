@@ -82,6 +82,7 @@ public:
     virtual void SetPowerSaveLevel(PowerSaveLevel level) = 0;
     virtual std::string GetBoardJson() = 0;
     virtual std::string GetDeviceStatusJson() = 0;
+    virtual void SendEyeCommand(uint8_t cmd) {} 
 };
 
 #define DECLARE_BOARD(BOARD_CLASS_NAME) \

@@ -54,7 +54,7 @@ private:
 
         // ---- ADD THE EYE COMMAND TRANSITION HERE ----
         // 1. Fetch your custom board using the global Board instance
-        auto* board = static_cast<CompactWifiBoardLcdTouch*>(&Board::GetInstance());
+        auto* board = static_cast<Board*>(&Board::GetInstance());
         if (board) {
             board->SendEyeCommand(0x04); // 0x04 = WARNING / FALL DETECTED
         }

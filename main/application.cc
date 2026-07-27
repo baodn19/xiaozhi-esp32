@@ -60,7 +60,7 @@ bool Application::SetDeviceState(DeviceState state) {
     
     // 2. If the state machine accepted the state change, send the eye command
     if (success) {
-        auto* board = static_cast<CompactWifiBoardLcdTouch*>(&Board::GetInstance());
+        auto* board = static_cast<Board*>(&Board::GetInstance());
         if (board) {
             if (state == kDeviceStateListening) {
                 board->SendEyeCommand(0x01); // 0x01 = LOOKING / LISTENING
