@@ -90,6 +90,10 @@ private:
     LcdDisplay* display_ = nullptr;
     FallDetectionController* fall_detector_ = nullptr;
 
+    // Eye module
+    i2c_master_bus_handle_t eye_i2c_bus_ = nullptr;
+    i2c_master_dev_handle_t eye_i2c_dev_ = nullptr;
+
     void InitializeSpi() {
         spi_bus_config_t buscfg = {};
         buscfg.mosi_io_num   = DISPLAY_MOSI_PIN;
@@ -196,16 +200,53 @@ private:
         fall_detector_ = &fall_detector;
     }
 
+    void InitializeI2cMaster() {
+        i2c_master_bus_config_t bus_config = {};
+        bus_config.clk_source = I2C_CLK_SRC_DEFAULT;
+        bus_config.i2c_port = I2C_NUM_0;
+        bus_config.scl_io_num = I2C_MASTER_SCL_PIN; // GPIO 9
+        bus_config.sda_io_num = I2C_MASTER_SDA_PIN; // GPIO 8
+        bus_config.glitch_ignore_cnt = 7;
+        bus_config.flags.enable_internal_pullup = true;
+
+        ESP_ERROR_CHECK(i2c_new_master_bus(&bus_config, &eye_i2c_bus_));
+
+        i2c_device_config_t dev_config = {};
+        dev_config.dev_addr_length = I2C_ADDR_BIT_LEN_7;
+        dev_config.device_address = 0x22; // Must match Animated Eye slave address
+        dev_config.scl_speed_hz = I2C_MASTER_FREQ_HZ;
+
+        ESP_ERROR_CHECK(i2c_master_bus_add_device(eye_i2c_bus_, &dev_config, &eye_i2c_dev_));
+        ESP_LOGI(TAG, "I2C Master initialized (SDA: %d, SCL: %d) for Eye Module 0x22", 
+                I2C_MASTER_SDA_PIN, I2C_MASTER_SCL_PIN);
+    }
+
 public:
     CompactWifiBoardLcdTouch() :
         boot_button_(BOOT_BUTTON_GPIO) {
         InitializeSpi();
         InitializeLcdDisplay();
         InitializeTouchscreen();
+        InitializeI2cMaster(); // for eyes module
         InitializeButtons();
         InitializeTools();
         if (DISPLAY_BACKLIGHT_PIN != GPIO_NUM_NC) {
             GetBacklight()->RestoreBrightness();
+        }
+    }
+
+    // Helper method to update eye animations over I2C
+    // Command Bytes: 0x01=LOOKING, 0x02=SLEEPING, 0x03=HAPPY, 0x04=WARNING
+    void SendEyeCommand(uint8_t cmd) {
+        if (!eye_i2c_dev_) {
+            ESP_LOGE(TAG, "I2C Eye Device not initialized!");
+            return;
+        }
+        esp_err_t ret = i2c_master_transmit(eye_i2c_dev_, &cmd, 1, 100);
+        if (ret != ESP_OK) {
+            ESP_LOGE(TAG, "Failed to send command 0x%02X to Eye Board: %s", cmd, esp_err_to_name(ret));
+        } else {
+            ESP_LOGI(TAG, "Sent command 0x%02X to Eye Board", cmd);
         }
     }
 

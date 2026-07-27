@@ -51,6 +51,15 @@ private:
         }
 
         ESP_LOGW(FALL_TAG, "🚨 CRITICAL FALL DETECTED based on Bounding Box ratio!");
+
+        // ---- ADD THE EYE COMMAND TRANSITION HERE ----
+        // 1. Fetch your custom board using the global Board instance
+        auto* board = static_cast<CompactWifiBoardLcdTouch*>(&Board::GetInstance());
+        if (board) {
+            board->SendEyeCommand(0x04); // 0x04 = WARNING / FALL DETECTED
+        }
+        // ----------------------------------------------
+
         xTaskCreate(AlarmSoundTask, "FallAlarmSoundTask", 3072, NULL, 5, NULL);
 
         auto* display = Board::GetInstance().GetDisplay();

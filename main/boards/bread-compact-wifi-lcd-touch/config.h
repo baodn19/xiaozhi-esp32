@@ -131,4 +131,9 @@
 #define BOARD_GROVE_TX_PIN   GPIO_NUM_11  // Connect to Grove TX
 #define BOARD_GROVE_RX_PIN   GPIO_NUM_12  // Connect to Grove RX
 
+// --- I2C Master Pins (Animated Eye Module) ---
+#define I2C_MASTER_SDA_PIN   GPIO_NUM_8
+#define I2C_MASTER_SCL_PIN   GPIO_NUM_9
+#define I2C_MASTER_FREQ_HZ   100000      // 100 kHz Standard Mode
+
 #endif // _BOARD_CONFIG_H_

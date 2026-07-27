@@ -55,7 +55,24 @@ Application::~Application() {
 }
 
 bool Application::SetDeviceState(DeviceState state) {
-    return state_machine_.TransitionTo(state);
+    // 1. Fire the transition
+    bool success = state_machine_.TransitionTo(state);
+    
+    // 2. If the state machine accepted the state change, send the eye command
+    if (success) {
+        auto* board = static_cast<CompactWifiBoardLcdTouch*>(&Board::GetInstance());
+        if (board) {
+            if (state == kDeviceStateListening) {
+                board->SendEyeCommand(0x01); // 0x01 = LOOKING / LISTENING
+            } else if (state == kDeviceStateSpeaking) {
+                board->SendEyeCommand(0x02); // 0x02 = SPEAKING / MOUTH ANIMATION
+            } else if (state == kDeviceStateIdle) {
+                board->SendEyeCommand(0x00); // 0x00 = IDLE / BLINKING
+            }
+        }
+    }
+    
+    return success;
 }
 
 void Application::Initialize() {
