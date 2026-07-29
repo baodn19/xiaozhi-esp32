@@ -118,7 +118,6 @@
 #define DISPLAY_SPI_MODE 0
 #endif
 
-
 // --- Touch controller (XPT2046) on shared SPI3 bus ---
 // T_CLK and T_DIN share DISPLAY_CLK_PIN (GPIO21) and DISPLAY_MOSI_PIN (GPIO17)
 // NOTE: GPIO33-37 are wired to octal PSRAM on ESP32-S3R8 modules — do NOT use them.
@@ -133,5 +132,27 @@
 #define TOUCH_MIRROR_X  false
 #define TOUCH_MIRROR_Y  true
 #define TOUCH_SWAP_XY   false
+
+// -------------------------------------------------------------------
+// Grove Vision AI V2 NPU Serial Configuration
+// -------------------------------------------------------------------
+#define BOARD_GROVE_TX_PIN   GPIO_NUM_11  // Connect to Grove TX
+#define BOARD_GROVE_RX_PIN   GPIO_NUM_12  // Connect to Grove RX
+
+// -------------------------------------------------------------------
+// DualEye Board Serial TX Configuration
+// -------------------------------------------------------------------
+#define EYE_UART_PORT      UART_NUM_2
+#define EYE_UART_TX_PIN    GPIO_NUM_10
+#define EYE_UART_RX_PIN    UART_PIN_NO_CHANGE // RX not needed
+#define EYE_UART_BAUD_RATE 115200
+
+// Protocol Command Mapping
+typedef enum {
+    CMD_EYE_LOOKING  = 0x01,
+    CMD_EYE_SLEEPING = 0x02,
+    CMD_EYE_HAPPY    = 0x03,
+    CMD_EYE_WARNING  = 0x04
+} eye_cmd_t;
 
 #endif // _BOARD_CONFIG_H_

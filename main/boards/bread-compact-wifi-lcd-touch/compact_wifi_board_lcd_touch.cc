@@ -9,11 +9,12 @@
 #include "mcp_server.h"
 #include "lotusai_controller.h"
 #include "led/single_led.h"
+#include "medicine_reminder.h"
+#include "fall_detection.h"
 
 #include <esp_log.h>
 #include <esp_timer.h>
 #include <driver/gpio.h>
-#include <driver/i2c_master.h>
 #include <esp_lcd_panel_vendor.h>
 #include <esp_lcd_panel_io.h>
 #include <esp_lcd_panel_ops.h>
@@ -105,6 +106,23 @@ class CompactWifiBoardLcdTouch : public WifiBoard {
 private:
     Button boot_button_;
     LcdDisplay* display_ = nullptr;
+    FallDetectionController* fall_detector_ = nullptr;
+
+    void InitializeEyeUart() {
+        uart_config_t uart_config = {
+            .baud_rate = EYE_UART_BAUD_RATE,
+            .data_bits = UART_DATA_8_BITS,
+            .parity    = UART_PARITY_DISABLE,
+            .stop_bits = UART_STOP_BITS_1,
+            .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+            .source_clk = UART_SCLK_DEFAULT,
+        };
+        ESP_ERROR_CHECK(uart_param_config(EYE_UART_PORT, &uart_config));
+        ESP_ERROR_CHECK(uart_set_pin(EYE_UART_PORT, EYE_UART_TX_PIN, EYE_UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+        ESP_ERROR_CHECK(uart_driver_install(EYE_UART_PORT, 256, 0, 0, NULL, 0));
+        
+        ESP_LOGI(TAG, "DualEye UART initialized on TX GPIO %d", EYE_UART_TX_PIN);
+    }
 
     void InitializeSpi() {
         spi_bus_config_t buscfg = {};
@@ -204,11 +222,18 @@ private:
     void InitializeTools() {
         static LotusAiController lotusai;
         g_lotusai = &lotusai;
+
+        static MedicineReminderController medicine_reminder;
+
+        // Fall Detection: Initialize as static to ensure it lives for the app's lifetime
+        static FallDetectionController fall_detector(UART_NUM_1, 11, 12);
+        fall_detector_ = &fall_detector;
     }
 
 public:
     CompactWifiBoardLcdTouch() :
         boot_button_(BOOT_BUTTON_GPIO) {
+        InitializeEyeUart(); // Init serial TX to DualEye
         InitializeSpi();
         InitializeLcdDisplay();
         InitializeButtons();
@@ -217,6 +242,12 @@ public:
         if (DISPLAY_BACKLIGHT_PIN != GPIO_NUM_NC) {
             GetBacklight()->RestoreBrightness();
         }
+    }
+
+    // Called by Application::SetDeviceState via Board::GetInstance().SendEyeCommand()
+    virtual void SendEyeCommand(uint8_t cmd) override {
+        uart_write_bytes(EYE_UART_PORT, reinterpret_cast<const char*>(&cmd), 1);
+        ESP_LOGI(TAG, "Sent Eye Command: 0x%02X", cmd);
     }
 
     virtual Led* GetLed() override {
