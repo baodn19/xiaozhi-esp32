@@ -15,7 +15,6 @@
 #include <esp_log.h>
 #include <esp_timer.h>
 #include <driver/gpio.h>
-#include <driver/i2c_master.h>
 #include <esp_lcd_panel_vendor.h>
 #include <esp_lcd_panel_io.h>
 #include <esp_lcd_panel_ops.h>
@@ -90,9 +89,21 @@ private:
     LcdDisplay* display_ = nullptr;
     FallDetectionController* fall_detector_ = nullptr;
 
-    // Eye module
-    i2c_master_bus_handle_t eye_i2c_bus_ = nullptr;
-    i2c_master_dev_handle_t eye_i2c_dev_ = nullptr;
+    void InitializeEyeUart() {
+        uart_config_t uart_config = {
+            .baud_rate = EYE_UART_BAUD_RATE,
+            .data_bits = UART_DATA_8_BITS,
+            .parity    = UART_PARITY_DISABLE,
+            .stop_bits = UART_STOP_BITS_1,
+            .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+            .source_clk = UART_SCLK_DEFAULT,
+        };
+        ESP_ERROR_CHECK(uart_param_config(EYE_UART_PORT, &uart_config));
+        ESP_ERROR_CHECK(uart_set_pin(EYE_UART_PORT, EYE_UART_TX_PIN, EYE_UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+        ESP_ERROR_CHECK(uart_driver_install(EYE_UART_PORT, 256, 0, 0, NULL, 0));
+        
+        ESP_LOGI(TAG, "DualEye UART initialized on TX GPIO %d", EYE_UART_TX_PIN);
+    }
 
     void InitializeSpi() {
         spi_bus_config_t buscfg = {};
@@ -200,34 +211,13 @@ private:
         fall_detector_ = &fall_detector;
     }
 
-    void InitializeI2cMaster() {
-        i2c_master_bus_config_t bus_config = {};
-        bus_config.clk_source = I2C_CLK_SRC_DEFAULT;
-        bus_config.i2c_port = I2C_NUM_0;
-        bus_config.scl_io_num = I2C_MASTER_SCL_PIN; // GPIO 9
-        bus_config.sda_io_num = I2C_MASTER_SDA_PIN; // GPIO 8
-        bus_config.glitch_ignore_cnt = 7;
-        bus_config.flags.enable_internal_pullup = true;
-
-        ESP_ERROR_CHECK(i2c_new_master_bus(&bus_config, &eye_i2c_bus_));
-
-        i2c_device_config_t dev_config = {};
-        dev_config.dev_addr_length = I2C_ADDR_BIT_LEN_7;
-        dev_config.device_address = 0x22; // Must match Animated Eye slave address
-        dev_config.scl_speed_hz = I2C_MASTER_FREQ_HZ;
-
-        ESP_ERROR_CHECK(i2c_master_bus_add_device(eye_i2c_bus_, &dev_config, &eye_i2c_dev_));
-        ESP_LOGI(TAG, "I2C Master initialized (SDA: %d, SCL: %d) for Eye Module 0x22", 
-                I2C_MASTER_SDA_PIN, I2C_MASTER_SCL_PIN);
-    }
-
 public:
     CompactWifiBoardLcdTouch() :
         boot_button_(BOOT_BUTTON_GPIO) {
+        InitializeEyeUart(); // Init serial TX to DualEye
         InitializeSpi();
         InitializeLcdDisplay();
         InitializeTouchscreen();
-        InitializeI2cMaster(); // for eyes module
         InitializeButtons();
         InitializeTools();
         if (DISPLAY_BACKLIGHT_PIN != GPIO_NUM_NC) {
@@ -235,19 +225,10 @@ public:
         }
     }
 
-    // Helper method to update eye animations over I2C
-    // Command Bytes: 0x01=LOOKING, 0x02=SLEEPING, 0x03=HAPPY, 0x04=WARNING
-    void SendEyeCommand(uint8_t cmd) {
-        if (!eye_i2c_dev_) {
-            ESP_LOGE(TAG, "I2C Eye Device not initialized!");
-            return;
-        }
-        esp_err_t ret = i2c_master_transmit(eye_i2c_dev_, &cmd, 1, 100);
-        if (ret != ESP_OK) {
-            ESP_LOGE(TAG, "Failed to send command 0x%02X to Eye Board: %s", cmd, esp_err_to_name(ret));
-        } else {
-            ESP_LOGI(TAG, "Sent command 0x%02X to Eye Board", cmd);
-        }
+    // Called by Application::SetDeviceState via Board::GetInstance().SendEyeCommand()
+    virtual void SendEyeCommand(uint8_t cmd) override {
+        uart_write_bytes(EYE_UART_PORT, reinterpret_cast<const char*>(&cmd), 1);
+        ESP_LOGI(TAG, "Sent Eye Command: 0x%02X", cmd);
     }
 
     virtual Led* GetLed() override {

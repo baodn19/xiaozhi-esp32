@@ -131,9 +131,20 @@
 #define BOARD_GROVE_TX_PIN   GPIO_NUM_11  // Connect to Grove TX
 #define BOARD_GROVE_RX_PIN   GPIO_NUM_12  // Connect to Grove RX
 
-// --- I2C Master Pins (Animated Eye Module) ---
-#define I2C_MASTER_SDA_PIN   GPIO_NUM_8
-#define I2C_MASTER_SCL_PIN   GPIO_NUM_9
-#define I2C_MASTER_FREQ_HZ   100000      // 100 kHz Standard Mode
+// -------------------------------------------------------------------
+// DualEye Board Serial TX Configuration
+// -------------------------------------------------------------------
+#define EYE_UART_PORT      UART_NUM_2
+#define EYE_UART_TX_PIN    GPIO_NUM_10
+#define EYE_UART_RX_PIN    UART_PIN_NO_CHANGE // RX not needed
+#define EYE_UART_BAUD_RATE 115200
+
+// Protocol Command Mapping
+typedef enum {
+    CMD_EYE_LOOKING  = 0x01,
+    CMD_EYE_SLEEPING = 0x02,
+    CMD_EYE_HAPPY    = 0x03,
+    CMD_EYE_WARNING  = 0x04
+} eye_cmd_t;
 
 #endif // _BOARD_CONFIG_H_
