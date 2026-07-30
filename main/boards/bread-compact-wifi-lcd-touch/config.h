@@ -136,8 +136,8 @@
 // -------------------------------------------------------------------
 // Grove Vision AI V2 NPU Serial Configuration
 // -------------------------------------------------------------------
-#define BOARD_GROVE_TX_PIN   GPIO_NUM_11  // Connect to Grove TX
-#define BOARD_GROVE_RX_PIN   GPIO_NUM_12  // Connect to Grove RX
+#define BOARD_GROVE_TX_PIN   GPIO_NUM_11  // Connect to Grove RX
+#define BOARD_GROVE_RX_PIN   GPIO_NUM_12  // Connect to Grove TX
 
 // -------------------------------------------------------------------
 // DualEye Board Serial TX Configuration
