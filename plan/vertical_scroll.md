@@ -51,6 +51,7 @@ lv_obj_set_height(label, 2 * text_font->line_height);
 - *Use lv_obj_set_style_pad_row(lotusai_rows_container_, 2, 0) for the 2px gap*
 
 ### Checkpoint 2: scroll-aware hit-test
+#### Pre-commit:
 - *Rewrite math logic to fit dynamic row height*:
 ```
 // Conceptual CP2 shape — replace area_h / recipe_count
@@ -160,5 +161,8 @@ touch_cfg.flags.mirror_x = TOUCH_MIRROR_X ? 1u : 0u;
 touch_cfg.flags.mirror_y = TOUCH_MIRROR_Y ? 1u : 0u;
 ```
 + Verify after flash: top → small `y`, bottom → large `y`; left → small `x`, right → large `x`. Then row taps should resolve positive `idx` when `row_h > 0`.
+
+#### Post-commit
+- 
 
 ### Checkpoint 3: drag-aware poll callback

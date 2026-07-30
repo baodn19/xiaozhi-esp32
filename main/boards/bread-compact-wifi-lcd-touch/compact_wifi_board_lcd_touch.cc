@@ -61,7 +61,7 @@ static void TouchPollCallback(void* /*arg*/) {
     if (!display) return;
 
     DisplayLockGuard lock(display);
-    esp_lcd_touch_read_data(s_touch_handle); // esp_lcd_touch_read_data defined in esp_lcd_touch.h
+    esp_lcd_touch_read_data(s_touch_handle); // read data from touch controller and store it in the touch handle (esp_lcd_touch.h)
 
     esp_lcd_touch_point_data_t point[1] = {}; // Array of touch points (esp_lcd_touch.h)
     uint8_t count = 0; // Number of touch points
@@ -76,9 +76,9 @@ static void TouchPollCallback(void* /*arg*/) {
     if (touched) {
         if (!s_was_touched) {
             s_was_touched = true;
-            int cx = static_cast<int>(point[0].x);
+            int cx = static_cast<int>(point[0].x); // convert uint16_t to int
             int cy = static_cast<int>(point[0].y);
-            int option_idx = g_lotusai->OptionFromPoint(cx, cy);
+            int option_idx = g_lotusai->OptionFromPoint(cx, cy); // corresponding row index based on the touch point (lotusai_controller.h)
             ESP_LOGI(TAG, "tap x=%d y=%d idx=%d row_h=%d scroll_y=%d",
                      cx, cy, option_idx,
                      display->GetLotusRecipeRowHeight(),
