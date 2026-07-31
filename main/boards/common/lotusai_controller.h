@@ -44,6 +44,7 @@ private:
         auto http = board.GetNetwork()->CreateHttp(0);
         http->SetHeader("Content-Type", "application/json");
         http->SetContent(std::string(body));
+        http->SetTimeout(180000);  // 300s — enough for ~103s recommend
         if (!http->Open("POST", url)) {
             ESP_LOGE(LOTUSAI_TAG, "Failed to open %s", url.c_str());
             return "";
