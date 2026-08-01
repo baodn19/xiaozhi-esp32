@@ -204,16 +204,19 @@ private:
     }
 
     std::string DoRecommend(const PropertyList& props) {
-        auto built = LotusAiBuildRecommendRequestBody(props, CONFIG_LOTUSAI_TOP_K);
-        if (!built.error.empty()) return built.error;
+        LotusAiRecommendBodyResult built = LotusAiBuildRecommendRequestBody(props, CONFIG_LOTUSAI_TOP_K);
+        if (!built.error.empty()) return built.error; // Check for error from parsing recipe request properties
 
+        // Log the recommend body
+        // ESP_LOGI(LOTUSAI_TAG, "recommend body: %s", built.body.c_str()); 
+        
         if (recommend_in_flight_) {
             return "A recipe search is already in progress. Please wait for the list on your screen.";
         }
 
-        auto* display = Board::GetInstance().GetDisplay();
+        Display* display = Board::GetInstance().GetDisplay();
         if (display) {
-            display->ShowNotification("Searching recipes...", 15000);
+            display->ShowNotification("Searching recipes...", 15000); // Notification for 15 seconds
         }
 
         pdf_keys_.clear();
@@ -239,7 +242,7 @@ private:
 
 public:
     LotusAiController() {
-        auto& mcp = McpServer::GetInstance();
+        McpServer& mcp = McpServer::GetInstance();
 
         mcp.AddTool(
             "lotusai.recommend",
@@ -255,7 +258,7 @@ public:
             PropertyList({
                 Property("ingredients",           kPropertyTypeString),
                 Property("conditions",            kPropertyTypeString, std::string{}),
-                Property("meal",                  kPropertyTypeString, std::string{}),
+                Property("meal",                  kPropertyTypeString, std::string{}), // breakfast, lunch, dinner, snack, dessert
                 Property("age",                   kPropertyTypeString, std::string{}),
                 Property("cuisine",               kPropertyTypeString, std::string{}),
                 Property("top_k",                 kPropertyTypeInteger, CONFIG_LOTUSAI_TOP_K, 3, 12),
