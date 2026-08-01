@@ -89,7 +89,7 @@ private:
     }
 
     static void ShowQrCode(const std::string& qr_base64, const std::string& title) {
-        auto* display = Board::GetInstance().GetDisplay();
+        Display* display = Board::GetInstance().GetDisplay();
         if (!display) return;
 
         display->SetLotusContent(("QR: " + title).c_str());
@@ -204,7 +204,7 @@ private:
     }
 
     std::string DoRecommend(const PropertyList& props) {
-        LotusAiRecommendBodyResult built = LotusAiBuildRecommendRequestBody(props, CONFIG_LOTUSAI_TOP_K);
+        LotusAiRecommendBodyResult built = LotusAiBuildRecommendRequestBody(props);
         if (!built.error.empty()) return built.error; // Check for error from parsing recipe request properties
 
         // Log the recommend body

@@ -16,6 +16,13 @@
 #define LOTUSAI_CONTENT_Y_OFFSET 80 // For Wifi icon and status label
 #define LOTUSAI_ROW_PAD_Y 2 // Must match lv_obj_set_style_pad_row on lotusai_rows_container_
 
+/*
+    Struct: LotusAiRecommendBodyResult
+    Description: Result of building the request body for the Lotus AI API
+    Members:
+        body: The request body as a JSON string
+        error: An error message if the request body could not be built
+*/
 struct LotusAiRecommendBodyResult {
     std::string body;
     std::string error;
@@ -46,6 +53,14 @@ inline LotusAiStringArray LotusAiSplitCsv(const std::string& csv) {
     return result;
 }
 
+/*
+    Function: LotusAiAddStringArray
+    Description: Add a string array (vector of strings) to a JSON object
+    Parameters:
+        root: The JSON object to add the string array to
+        key: The key to add the string array to (e.g. "ingredients", "conditions", "cooking_tools", "allergens", "excluded_ingredients")
+        items: The string array to add
+*/
 inline void LotusAiAddStringArray(cJSON* root, const char* key,
                                   const LotusAiStringArray& items) {
     cJSON* arr = cJSON_CreateArray();
@@ -54,8 +69,15 @@ inline void LotusAiAddStringArray(cJSON* root, const char* key,
     cJSON_AddItemToObject(root, key, arr);
 }
 
+/*
+    Function: LotusAiBuildRecommendRequestBody
+    Description: Build the request body for the Lotus AI API
+    Parameters:
+        props: The properties to build the request body from
+        default_top_k: The default number of recipes to return
+*/
 inline LotusAiRecommendBodyResult LotusAiBuildRecommendRequestBody(
-        const PropertyList& props, int default_top_k = CONFIG_LOTUSAI_TOP_K) {
+        const PropertyList& props) {
     LotusAiRecommendBodyResult out;
     cJSON* root = cJSON_CreateObject();
 
