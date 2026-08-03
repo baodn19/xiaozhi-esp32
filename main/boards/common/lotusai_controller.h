@@ -92,6 +92,7 @@ private:
         Display* display = Board::GetInstance().GetDisplay();
         if (!display) return;
 
+        // Set the recipe name in the Lotus AI panel
         display->SetLotusContent(("QR: " + title).c_str());
 
         size_t png_len = 0;

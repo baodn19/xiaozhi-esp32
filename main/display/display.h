@@ -68,17 +68,36 @@ protected:
 
 class DisplayLockGuard {
 public:
-    DisplayLockGuard(Display *display) : display_(display) {
+    /*
+        Constructor: lock the display
+        Member variables:
+        - display_: pointer to the display
+        - locked_: boolean to track if the display is locked
+    */
+    DisplayLockGuard(Display *display) : display_(display), locked_(false) {
         if (!display_->Lock(30000)) {
             ESP_LOGE("Display", "Failed to lock display");
+        } else {
+            locked_ = true;
         }
     }
+
+    /*
+        Method: IsLocked
+        Returns: boolean to track if the display is locked
+    */
+    bool IsLocked() const { return locked_; }
+    
+    /*
+        Destructor: unlock the display
+    */
     ~DisplayLockGuard() {
-        display_->Unlock();
+        if (locked_) display_->Unlock();
     }
 
 private:
     Display *display_;
+    bool locked_;
 };
 
 class NoDisplay : public Display {
