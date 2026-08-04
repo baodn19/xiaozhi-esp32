@@ -700,7 +700,7 @@ void LcdDisplay::SetChatMessage(const char* role, const char* content) {
 }
 
 // Wechat mode only
-void LcdDisplay::SetPreviewImage(std::unique_ptr<LvglImage> image) {
+void LcdDisplay::SetPreviewImage(std::unique_ptr<LvglImage> image, bool bottom) {
     DisplayLockGuard lock(this);
     if (content_ == nullptr) {
         return;
@@ -1042,7 +1042,7 @@ void LcdDisplay::SetupUI() {
 }
 
 // Non-Wechat mode only
-void LcdDisplay::SetPreviewImage(std::unique_ptr<LvglImage> image) {
+void LcdDisplay::SetPreviewImage(std::unique_ptr<LvglImage> image, bool bottom) {
     DisplayLockGuard lock(this);
 
     // check if the display is locked
@@ -1072,6 +1072,13 @@ void LcdDisplay::SetPreviewImage(std::unique_ptr<LvglImage> image) {
     if (img_dsc->header.w > 0 && img_dsc->header.h > 0) {
         // zoom factor 0.5
         lv_image_set_scale(preview_image_, 128 * width_ / img_dsc->header.w);
+    }
+
+    // align the preview image to the bottom of the screen if bottom is true
+    if (bottom) {
+        lv_obj_align(preview_image_, LV_ALIGN_BOTTOM_MID, 0, -8);
+    } else {
+        lv_obj_align(preview_image_, LV_ALIGN_CENTER, 0, 0);
     }
 
     // Hide emoji_box_

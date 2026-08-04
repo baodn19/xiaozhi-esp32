@@ -106,7 +106,7 @@ private:
         }
         try {
             auto image = std::make_unique<LvglAllocatedImage>(png_data, png_len);
-            lvgl_disp->SetPreviewImage(std::move(image));
+            lvgl_disp->SetPreviewImage(std::move(image), true);
         } catch (const std::exception& e) {
             ESP_LOGE(LOTUSAI_TAG, "QR image error: %s", e.what());
             heap_caps_free(png_data);
