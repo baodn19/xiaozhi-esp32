@@ -27,13 +27,13 @@ It extends the stock `bread-compact-wifi-lcd` profile by:
 | 4          | RESET             | GPIO 8        | `DISPLAY_RST_PIN`              |
 | 5          | DC / RS           | GPIO 18       | `DISPLAY_DC_PIN`               |
 | 6          | SDI / MOSI        | GPIO 17       | `DISPLAY_MOSI_PIN`             |
-| 7          | SCK               | GPIO 20       | `DISPLAY_CLK_PIN`              |
+| 7          | SCK               | GPIO 14       | `DISPLAY_CLK_PIN`              |
 | 8          | LED (backlight)   | GPIO 48       | `DISPLAY_BACKLIGHT_PIN`        |
 | 9 / 13     | SDO / T_DO (MISO) | GPIO 47       | `TOUCH_MISO_PIN`               |
-| 10         | T_CLK             | GPIO 20       | shared with `DISPLAY_CLK_PIN`  |
+| 10         | T_CLK             | GPIO 14       | shared with `DISPLAY_CLK_PIN`  |
 | 11         | T_CS              | GPIO 21       | `TOUCH_CS_PIN`                 |
 | 12         | T_DIN             | GPIO 17       | shared with `DISPLAY_MOSI_PIN` |
-| 14         | T_IRQ             | GPIO 19       | `TOUCH_IRQ_PIN`                |
+| 14         | T_IRQ             | GPIO 13       | `TOUCH_IRQ_PIN`                |
 
 
 ### Speaker amplifier (I2S)
@@ -73,6 +73,11 @@ It extends the stock `bread-compact-wifi-lcd` profile by:
 | RX          | GPIO 10       | `EYE_UART_TX_PIN` |
 
 
+> **Power:** Give DualEye its own 5 V supply (or a powered hub). Sharing one
+> adapter with the main ESP32-S3 through a passive USB-C 1→2 splitter can
+> sag the rail at boot and leave the main LCD stuck white even when wiring
+> is correct.
+
 > **ESP32-S3 with 8 MB octal PSRAM (N16R8 / R8 modules):** GPIO **33–37** are
 > connected to internal PSRAM and must not be used. Do not wire T_CS to GPIO 37.
 
@@ -81,12 +86,13 @@ It extends the stock `bread-compact-wifi-lcd` profile by:
 >
 > **Wiring tip:** Join module pin 6 (SDI/MOSI) and pin 12 (T_DIN) at the
 > same ESP32 GPIO (17). Join module pin 7 (SCK) and pin 10 (T_CLK) at
-> GPIO 20. Add a **10 kΩ pull-up on T_CS (GPIO 21)** to 3.3 V so the touch
+> GPIO 14. Do **not** wire SCK/T_CLK or T_IRQ to GPIO 19/20 (native USB
+> D−/D+). Add a **10 kΩ pull-up on T_CS (GPIO 21)** to 3.3 V so the touch
 > chip stays deselected while the display is drawing. Also add a **10 kΩ
-> pull-up on T_IRQ (GPIO 19)** to 3.3 V — same topology as T_CS
-> (`T_IRQ — wire — GPIO 19 — 10 kΩ — 3.3 V`). PENIRQ is open-drain-ish and
+> pull-up on T_IRQ (GPIO 13)** to 3.3 V — same topology as T_CS
+> (`T_IRQ — wire — GPIO 13 — 10 kΩ — 3.3 V`). PENIRQ is open-drain-ish and
 > the firmware only reads touch when that line is low; without the pull-up
-> GPIO 19 can float and taps never register.
+> GPIO 13 can float and taps never register.
 
 > **Kconfig — `CONFIG_XPT2046_INTERRUPT_MODE` must be enabled:** the XPT2046
 > driver (`managed_components/atanisoft__esp_lcd_touch_xpt2046`) only leaves
