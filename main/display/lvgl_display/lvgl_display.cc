@@ -218,7 +218,7 @@ void LvglDisplay::UpdateStatusBar(bool update_all) {
     esp_pm_lock_release(pm_lock_);
 }
 
-void LvglDisplay::SetPreviewImage(std::unique_ptr<LvglImage> image) {
+void LvglDisplay::SetPreviewImage(std::unique_ptr<LvglImage> image, bool bottom) {
 }
 
 void LvglDisplay::SetPowerSaveMode(bool on) {

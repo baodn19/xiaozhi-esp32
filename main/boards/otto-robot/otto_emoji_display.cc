@@ -104,7 +104,7 @@ void OttoEmojiDisplay::SetStatus(const char* status) {
     lv_label_set_text(status_label_, status);
 }
 
-void OttoEmojiDisplay::SetPreviewImage(std::unique_ptr<LvglImage> image) {
+void OttoEmojiDisplay::SetPreviewImage(std::unique_ptr<LvglImage> image, bool bottom) {
     DisplayLockGuard lock(this);
     if (preview_image_ == nullptr) {
         ESP_LOGE(TAG, "Preview image is not initialized");

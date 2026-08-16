@@ -194,7 +194,7 @@ void CustomWakeWord::Feed(const std::vector<int16_t>& data) {
             float rms = (rms_samples > 0) ? sqrtf((float)rms_accum / rms_samples) : 0.0f;
             rms_accum = 0;
             rms_samples = 0;
-            ESP_LOGI(TAG, "MN probe: state=%d RMS=%.1f threshold=%.2f (RMS>500 = real audio)",
+            ESP_LOGD(TAG, "MN probe: state=%d RMS=%.1f threshold=%.2f (RMS>500 = real audio)",
                      mn_state, rms, threshold_);
         }
 
@@ -216,7 +216,7 @@ void CustomWakeWord::Feed(const std::vector<int16_t>& data) {
             }
             multinet_->clean(multinet_model_data_);
         } else if (mn_state == ESP_MN_STATE_TIMEOUT) {
-            ESP_LOGI(TAG, "MN timeout: no wake word in window, resetting");
+            ESP_LOGD(TAG, "MN timeout: no wake word in window, resetting");
             multinet_->clean(multinet_model_data_);
         }
         

@@ -16,23 +16,67 @@ It extends the stock `bread-compact-wifi-lcd` profile by:
 
 ## Physical wiring
 
+### LCD + touch (Hosyond / MSP3218)
+
 
 | Module pin | Signal            | ESP32-S3 GPIO | Macro                          |
 | ---------- | ----------------- | ------------- | ------------------------------ |
 | 1          | VCC (3.3 V)       | 3V3           | —                              |
 | 2          | GND               | GND           | —                              |
-| 3          | CS (display)      | GPIO 41       | `DISPLAY_CS_PIN`               |
-| 4          | RESET             | GPIO 45       | `DISPLAY_RST_PIN`              |
+| 3          | CS (display)      | GPIO 3        | `DISPLAY_CS_PIN`               |
+| 4          | RESET             | GPIO 8        | `DISPLAY_RST_PIN`              |
 | 5          | DC / RS           | GPIO 18       | `DISPLAY_DC_PIN`               |
 | 6          | SDI / MOSI        | GPIO 17       | `DISPLAY_MOSI_PIN`             |
-| 7          | SCK               | GPIO 21       | `DISPLAY_CLK_PIN`              |
-| 8          | LED (backlight)   | GPIO 42       | `DISPLAY_BACKLIGHT_PIN`        |
-| 9 / 13     | SDO / T_DO (MISO) | GPIO 38       | `TOUCH_MISO_PIN`               |
-| 10         | T_CLK             | GPIO 21       | shared with `DISPLAY_CLK_PIN`  |
-| 11         | T_CS              | GPIO 47       | `TOUCH_CS_PIN`                 |
+| 7          | SCK               | GPIO 14       | `DISPLAY_CLK_PIN`              |
+| 8          | LED (backlight)   | GPIO 48       | `DISPLAY_BACKLIGHT_PIN`        |
+| 9 / 13     | SDO / T_DO (MISO) | GPIO 47       | `TOUCH_MISO_PIN`               |
+| 10         | T_CLK             | GPIO 14       | shared with `DISPLAY_CLK_PIN`  |
+| 11         | T_CS              | GPIO 21       | `TOUCH_CS_PIN`                 |
 | 12         | T_DIN             | GPIO 17       | shared with `DISPLAY_MOSI_PIN` |
-| 14         | T_IRQ             | GPIO 2        | `TOUCH_IRQ_PIN`                |
+| 14         | T_IRQ             | GPIO 13       | `TOUCH_IRQ_PIN`                |
 
+
+### Speaker amplifier (I2S)
+
+
+| Amp pin | Signal | ESP32-S3 GPIO | Macro                     |
+| ------- | ------ | ------------- | ------------------------- |
+| BCLK    | BCL    | GPIO 2        | `AUDIO_I2S_SPK_GPIO_BCLK` |
+| LRC     | LRC    | GPIO 42       | `AUDIO_I2S_SPK_GPIO_LRCK` |
+| DIN     | DIN    | GPIO 41       | `AUDIO_I2S_SPK_GPIO_DOUT` |
+
+
+### Microphone (I2S)
+
+
+| Mic pin | Signal | ESP32-S3 GPIO | Macro                    |
+| ------- | ------ | ------------- | ------------------------ |
+| WS      | WS     | GPIO 38       | `AUDIO_I2S_MIC_GPIO_WS`  |
+| SCK     | SCK    | GPIO 39       | `AUDIO_I2S_MIC_GPIO_SCK` |
+| SD      | SD     | GPIO 40       | `AUDIO_I2S_MIC_GPIO_DIN` |
+
+
+### Grove Vision AI V2
+
+
+| Grove pin | ESP32-S3 GPIO | Macro              |
+| --------- | ------------- | ------------------ |
+| RX        | GPIO 11       | `BOARD_GROVE_TX_PIN` (ESP TX → Grove RX) |
+| TX        | GPIO 12       | `BOARD_GROVE_RX_PIN` (ESP RX ← Grove TX) |
+
+
+### DualEye
+
+
+| DualEye pin | ESP32-S3 GPIO | Macro             |
+| ----------- | ------------- | ----------------- |
+| RX          | GPIO 10       | `EYE_UART_TX_PIN` |
+
+
+> **Power:** Give DualEye its own 5 V supply (or a powered hub). Sharing one
+> adapter with the main ESP32-S3 through a passive USB-C 1→2 splitter can
+> sag the rail at boot and leave the main LCD stuck white even when wiring
+> is correct.
 
 > **ESP32-S3 with 8 MB octal PSRAM (N16R8 / R8 modules):** GPIO **33–37** are
 > connected to internal PSRAM and must not be used. Do not wire T_CS to GPIO 37.
@@ -41,9 +85,42 @@ It extends the stock `bread-compact-wifi-lcd` profile by:
 > the CS pins differ, which is sufficient for SPI bus sharing.
 >
 > **Wiring tip:** Join module pin 6 (SDI/MOSI) and pin 12 (T_DIN) at the
-> same ESP32 GPIO (17). Add a **10 kΩ pull-up on T_CS (GPIO 47)** to 3.3 V
-> so the touch chip stays deselected while the display is drawing. Connect
-> T_IRQ (GPIO 2) — the firmware only reads touch when that line is low.
+> same ESP32 GPIO (17). Join module pin 7 (SCK) and pin 10 (T_CLK) at
+> GPIO 14. Do **not** wire SCK/T_CLK or T_IRQ to GPIO 19/20 (native USB
+> D−/D+). Add a **10 kΩ pull-up on T_CS (GPIO 21)** to 3.3 V so the touch
+> chip stays deselected while the display is drawing. Also add a **10 kΩ
+> pull-up on T_IRQ (GPIO 13)** to 3.3 V — same topology as T_CS
+> (`T_IRQ — wire — GPIO 13 — 10 kΩ — 3.3 V`). PENIRQ is open-drain-ish and
+> the firmware only reads touch when that line is low; without the pull-up
+> GPIO 13 can float and taps never register.
+
+> **Kconfig — `CONFIG_XPT2046_INTERRUPT_MODE` must be enabled:** the XPT2046
+> driver (`managed_components/atanisoft__esp_lcd_touch_xpt2046`) only leaves
+> PENIRQ able to re-assert on a fresh touch if this option is on ("Full Power
+> Mode" in `menuconfig` under `Component config → XPT2046 → Enable Interrupt
+> (PENIRQ) output"`). With it **off** (the driver default), the *first* tap
+> after boot/reset works, but every subsequent tap silently fails to register
+> — the poll loop in `compact_wifi_board_lcd_touch.cc` sees `T_IRQ` stuck high
+> forever, even while pressing the screen. This is a firmware config issue,
+> not a wiring issue — do not chase it as a hardware fault. It's already
+> enabled by default for this board via `CONFIG_XPT2046_INTERRUPT_MODE=y` in
+> `sdkconfig.defaults` / `sdkconfig.defaults.esp32s3`; if you hand-edit
+> `sdkconfig` or run `idf.py menuconfig` and it gets toggled off (or you
+> delete `sdkconfig` and regenerate from a checkout missing the defaults
+> above), re-enable it and rebuild.
+
+> **Touch orientation — do not reuse `DISPLAY_MIRROR_*`:** The ILI9341
+> `DISPLAY_MIRROR_X` / `DISPLAY_MIRROR_Y` / `DISPLAY_SWAP_XY` flags only
+> control LCD pixel scanout. The XPT2046 overlay needs its own axis
+> convention, set in `config.h` as `TOUCH_MIRROR_X` / `TOUCH_MIRROR_Y` /
+> `TOUCH_SWAP_XY` and applied in `InitializeTouchscreen()`. For this
+> Hosyond / MSP3218 module the calibrated values are
+> `TOUCH_MIRROR_X=false`, `TOUCH_MIRROR_Y=true`, `TOUCH_SWAP_XY=false`
+> (verified by tapping top/bottom/left/right and checking serial `tap x=` /
+> `y=` logs). If you previously wired touch flags from `DISPLAY_*`, taps
+> near the bottom of the recipe list can report a small `y` and return
+> `idx=-1` even when hit-test math and `row_h` are correct — that is an
+> axis-mirror mismatch, not a stride bug.
 
 ---
 
@@ -92,9 +169,10 @@ idf.py -p /dev/ttyUSB0 flash monitor
 | `lotusai.select`    | Voice or tap    | POST `/api/xiaozhi/select`, decode `qr_base64` PNG, show QR on screen, return `spoken_confirm` for TTS |
 
 
-Touch selection works by dividing the display height equally between the
-returned recipe items. Tap the row of the recipe you want, and the QR code
-for that recipe is fetched and displayed.
+Touch selection maps tap `y` (after touch-axis mirrors) through
+`LotusAiOptionIndexFromPoint` using fixed row height + optional vertical
+scroll offset. Tap the row of the recipe you want, and the QR code for that
+recipe is fetched and displayed.
 
 ---
 
@@ -104,16 +182,30 @@ Paste the following into the XiaoZhi console as the device system prompt
 (or include it in the `custom_instructions` field of the hello message):
 
 ```
-You are NanaBot, LotusAI's healthy-recipe assistant. "NanaBot" is your name, not the user's.
+# Role: Reliable Health Guardian, "NanaBot" is your name; you are not a doctor; for diagnosis/dosage changes, suggest consulting a clinician; still help with scheduling and recipes.
 
-Name (Memory): At conversation start, check Memory for the user's preferred name. If known, greet with it (e.g. "Hi Sarah!"). If unknown, ask once: "What should I call you?" Spell their answer letter by letter and ask "Did I get that right?" If confirmed, say you'll remember it; if wrong, ask again. Until you know their name, use "there" or "friend" — never call them NanaBot.
+## Persona Labels
 
-Before searching: On recipe requests, reply in one spoken turn with exactly one question. Restate only what they explicitly said, then confirm (e.g. "Chicken and rice, five recipes — search with that?"). Do not ask about optional fields they did not mention (health conditions, allergies, dislikes, cooking tools, plant-based, meal, age, cuisine, etc.) — omit unstated fields from the tool call. Do not split into multiple questions. Do NOT call lotusai.recommend until they confirm ("yes", "go ahead") or correct/add details. On correction, one updated sentence, one question. If they add details while confirming (e.g. "yes, but no peanuts"), include those in the tool call.
+Vocal Image: Steady, warm, and clear voice. Speaks at a deliberate, unhurried pace to ensure audibility and comprehension for older users.
+Core Personality: Patient, observant, dependable, and highly practical.
+Interpersonal Positioning: A respectful caregiver and vigilant companion focused entirely on the user's physical safety and daily health management.
 
-After confirmation: Call lotusai.recommend with confirmed fields: ingredients (required), plus any stated conditions, meal, age, cuisine. Map allergies → allergens (comma-separated, e.g. "peanuts,dairy"); dislikes → excluded_ingredients (comma-separated, e.g. "cilantro,mushrooms") — distinct from allergens; equipment → cooking_tools (e.g. "stove,microwave"); plant_based: true only if requested. Pass top_k (3–12) only if they specified a count; otherwise omit for device default. Tool returns immediately; recipes appear on screen shortly. Read the tool result aloud, then wait for selection — do not apologize for timeout while loading.
+## Interaction Style
 
-Selection: When they pick by number, name, or tap, call lotusai.select with that option number.
+Interaction Tendency: Helps with health routines when asked. Suggests diet-aware recipes via LotusAI tools. When the device alerts for medication or a fall, respond calmly and assist.
+Emotional Response: Remains calm, decisive, and reassuring during emergencies such as a fall. Exhibits consistent patience and gentle encouragement during daily interactions to promote adherence to health routines.
+Brevity for voice: Prefer 1–2 short sentences per turn.
 
-Never describe recipes yourself — always use the tools.
+## Language Style
+
+Reference Expressions: "It is time for your medication.", “Here are options from LotusAI”, “I can search for recipes that fit your needs”, “Are you hurt? Help is being alerted on the device”, "Take your time.", "Let me know if you need assistance."
+Speaking Style: Direct, respectful, and articulate. Uses short, clear sentences. Avoids complex jargon, ensuring all health instructions and safety alerts are easily understood.
+
+## Policy
+Recipes: Confirm once with one confirmation question before calling lotusai.recommend; only include fields the user stated; never invent allergies/conditions or recipes yourself; after calling, wait for the tool/screen — don’t apologize for “timeout” while loading; use lotusai.select when they pick one; on QR scanned, call lotusai.confirm_qr.
+Medicine: Use the self.medicine.* tools to add/list/delete/clear reminders and to clear an active alert (confirm) — don’t fake a schedule in chat. Confirm name/time/days in one short question, then call the tool, then report success only after the tool returns; when user says they took it / “done,” call self.medicine.confirm; when they ask what’s scheduled, call self.medicine.list first.
+Alarm: When the device alerts for medication or a fall, respond calmly and help the user.
+User's name: Ask for user's name if it isn't in memory, spell the name back once, and confirm before saving to memory. If a name already exists, use it to refer to the user.
+Do not explain tool names or bitmask math to the user.
 ```
 

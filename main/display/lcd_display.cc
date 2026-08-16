@@ -473,6 +473,7 @@ void LcdDisplay::SetupUI() {
     lv_obj_set_style_pad_row(content_, lvgl_theme->spacing(4), 0); // Space between messages
 
     // We'll create chat messages dynamically in SetChatMessage
+    // Subtitle/ chat text at the bottom of the screen
     chat_message_label_ = nullptr;
 
     low_battery_popup_ = lv_obj_create(screen);
@@ -698,7 +699,8 @@ void LcdDisplay::SetChatMessage(const char* role, const char* content) {
     chat_message_label_ = msg_text;
 }
 
-void LcdDisplay::SetPreviewImage(std::unique_ptr<LvglImage> image) {
+// Wechat mode only
+void LcdDisplay::SetPreviewImage(std::unique_ptr<LvglImage> image, bool bottom) {
     DisplayLockGuard lock(this);
     if (content_ == nullptr) {
         return;
@@ -837,6 +839,7 @@ void LcdDisplay::SetupUI() {
     lv_obj_set_style_pad_all(emoji_box_, 0, 0);
     lv_obj_set_style_border_width(emoji_box_, 0, 0);
     lv_obj_align(emoji_box_, LV_ALIGN_CENTER, 0, 0);
+    lv_obj_add_flag(emoji_box_, LV_OBJ_FLAG_HIDDEN); // Hidden by default
 
     emoji_label_ = lv_label_create(emoji_box_);
     lv_obj_set_style_text_font(emoji_label_, large_icon_font, 0);
@@ -850,7 +853,7 @@ void LcdDisplay::SetupUI() {
     /* LotusAI content panel - persistent recipe list / QR label area.
      * Must be created BEFORE preview_image_ so the QR overlay is drawn on top of it.
      * Y offset matches LOTUSAI_CONTENT_Y_OFFSET (lotusai_utils.h). */
-    lotusai_panel_ = lv_obj_create(screen);
+    lotusai_panel_ = lv_obj_create(screen); // covering the content area below the status bar
     lv_obj_set_size(lotusai_panel_, LV_HOR_RES, height_ - LOTUSAI_CONTENT_Y_OFFSET);
     lv_obj_set_pos(lotusai_panel_, 0, LOTUSAI_CONTENT_Y_OFFSET);
     lv_obj_set_style_radius(lotusai_panel_, 0, 0);
@@ -859,20 +862,25 @@ void LcdDisplay::SetupUI() {
     lv_obj_set_style_pad_all(lotusai_panel_, 0, 0);
     lv_obj_set_scrollbar_mode(lotusai_panel_, LV_SCROLLBAR_MODE_OFF);
 
-    lotusai_rows_container_ = lv_obj_create(lotusai_panel_);
+    lotusai_rows_container_ = lv_obj_create(lotusai_panel_); // container for the recipe list, child of lotusai_panel_
     lv_obj_set_size(lotusai_rows_container_, LV_HOR_RES, height_ - LOTUSAI_CONTENT_Y_OFFSET);
     lv_obj_set_pos(lotusai_rows_container_, 0, 0);
     lv_obj_set_style_radius(lotusai_rows_container_, 0, 0);
     lv_obj_set_style_bg_opa(lotusai_rows_container_, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_width(lotusai_rows_container_, 0, 0);
     lv_obj_set_style_pad_all(lotusai_rows_container_, 0, 0);
-    lv_obj_set_flex_flow(lotusai_rows_container_, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_flex_flow(lotusai_rows_container_, LV_FLEX_FLOW_COLUMN); // Allow recipes to stack vertically
     lv_obj_set_flex_align(lotusai_rows_container_, LV_FLEX_ALIGN_START,
                           LV_FLEX_ALIGN_START, LV_FLEX_ALIGN_START);
-    lv_obj_set_scrollbar_mode(lotusai_rows_container_, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_set_scroll_dir(lotusai_rows_container_, LV_DIR_VER);
+    lv_obj_set_scrollbar_mode(lotusai_rows_container_, LV_SCROLLBAR_MODE_ACTIVE);
+    lv_obj_set_style_pad_row(lotusai_rows_container_, LOTUSAI_ROW_PAD_Y, 0);
+    lv_obj_add_event_cb(lotusai_rows_container_, &LcdDisplay::OnLotusRowsScroll,
+                         LV_EVENT_SCROLL, this);
+    lotusai_scroll_y_ = 0;
     lv_obj_add_flag(lotusai_rows_container_, LV_OBJ_FLAG_HIDDEN);
 
-    lotusai_status_label_ = lv_label_create(lotusai_panel_);
+    lotusai_status_label_ = lv_label_create(lotusai_panel_); // label container, child of lotusai_panel_
     lv_label_set_text(lotusai_status_label_, "");
     lv_obj_set_width(lotusai_status_label_, LV_HOR_RES - lvgl_theme->spacing(8));
     lv_label_set_long_mode(lotusai_status_label_, LV_LABEL_LONG_DOT);
@@ -884,6 +892,8 @@ void LcdDisplay::SetupUI() {
     lv_obj_add_flag(lotusai_panel_, LV_OBJ_FLAG_HIDDEN);
 
     /* Middle layer: preview_image_ - centered display */
+    // A shared overlay for temporary image display (LotusAI QR, camera preview, etc.)
+    // Unhide by SetPreviewImage()
     preview_image_ = lv_image_create(screen);
     lv_obj_set_size(preview_image_, width_ / 2, height_ / 2);
     lv_obj_align(preview_image_, LV_ALIGN_CENTER, 0, 0);
@@ -1031,8 +1041,16 @@ void LcdDisplay::SetupUI() {
     lv_obj_add_flag(low_battery_popup_, LV_OBJ_FLAG_HIDDEN);
 }
 
-void LcdDisplay::SetPreviewImage(std::unique_ptr<LvglImage> image) {
+// Non-Wechat mode only
+void LcdDisplay::SetPreviewImage(std::unique_ptr<LvglImage> image, bool bottom) {
     DisplayLockGuard lock(this);
+
+    // check if the display is locked
+    if (!lock.IsLocked()) {
+        ESP_LOGE(TAG, "SetPreviewImage: display is not locked");
+        return;
+    }
+
     if (preview_image_ == nullptr) {
         ESP_LOGE(TAG, "Preview image is not initialized");
         return;
@@ -1040,7 +1058,6 @@ void LcdDisplay::SetPreviewImage(std::unique_ptr<LvglImage> image) {
 
     if (image == nullptr) {
         esp_timer_stop(preview_timer_);
-        lv_obj_remove_flag(emoji_box_, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(preview_image_, LV_OBJ_FLAG_HIDDEN);
         preview_image_cached_.reset();
         if (gif_controller_) {
@@ -1055,6 +1072,13 @@ void LcdDisplay::SetPreviewImage(std::unique_ptr<LvglImage> image) {
     if (img_dsc->header.w > 0 && img_dsc->header.h > 0) {
         // zoom factor 0.5
         lv_image_set_scale(preview_image_, 128 * width_ / img_dsc->header.w);
+    }
+
+    // align the preview image to the bottom of the screen if bottom is true
+    if (bottom) {
+        lv_obj_align(preview_image_, LV_ALIGN_BOTTOM_MID, 0, -8);
+    } else {
+        lv_obj_align(preview_image_, LV_ALIGN_CENTER, 0, 0);
     }
 
     // Hide emoji_box_
@@ -1123,6 +1147,10 @@ void LcdDisplay::ClearChatMessages() {
 }
 #endif
 
+/*
+    Function: ClearLotusRecipeRows
+    Description: Clear the recipe list
+*/
 void LcdDisplay::ClearLotusRecipeRows() {
     if (lotusai_rows_container_ == nullptr) return;
     while (lv_obj_get_child_cnt(lotusai_rows_container_) > 0) {
@@ -1130,13 +1158,29 @@ void LcdDisplay::ClearLotusRecipeRows() {
     }
 }
 
-void LcdDisplay::RestoreLotusChrome() {
-    if (preview_image_ == nullptr ||
-        lv_obj_has_flag(preview_image_, LV_OBJ_FLAG_HIDDEN)) {
-        if (emoji_box_ != nullptr) {
-            lv_obj_remove_flag(emoji_box_, LV_OBJ_FLAG_HIDDEN);
-        }
+void LcdDisplay::OnLotusRowsScroll(lv_event_t* e) {
+    auto* self = static_cast<LcdDisplay*>(lv_event_get_user_data(e));
+    if (self == nullptr) return;
+    lv_obj_t* target = static_cast<lv_obj_t*>(lv_event_get_target(e));
+    self->lotusai_scroll_y_ = lv_obj_get_scroll_y(target);
+}
+
+// Must only be called while already holding a DisplayLockGuard (called from
+// SetLotusRecipeList, which locks on entry).
+void LcdDisplay::ResetLotusRecipeHitTestCache() {
+    lotusai_recipe_row_h_.store(0);
+    if (lotusai_rows_container_ != nullptr) {
+        // LV_ANIM_OFF => synchronous; fires LV_EVENT_SCROLL (if offset != 0),
+        // which zeroes lotusai_scroll_y_ via OnLotusRowsScroll.
+        lv_obj_scroll_to_y(lotusai_rows_container_, 0, LV_ANIM_OFF);
     }
+}
+
+/*
+    Function: RestoreLotusChrome
+    Description: Restore the Lotus AI chrome (bottom bar, chat message, etc.)
+*/
+void LcdDisplay::RestoreLotusChrome() {
     if (bottom_bar_ != nullptr && !hide_subtitle_) {
         const char* text = (chat_message_label_ != nullptr)
                                ? lv_label_get_text(chat_message_label_) : nullptr;
@@ -1160,6 +1204,7 @@ void LcdDisplay::SetLotusRecipeList(const std::vector<std::string>& rows) {
 
     if (rows.empty()) {
         lotusai_recipe_list_active_ = false;
+        ResetLotusRecipeHitTestCache();
         lv_obj_add_flag(lotusai_rows_container_, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(lotusai_panel_, LV_OBJ_FLAG_HIDDEN);
         RestoreLotusChrome();
@@ -1171,9 +1216,12 @@ void LcdDisplay::SetLotusRecipeList(const std::vector<std::string>& rows) {
         lv_label_set_text(chat_message_label_, "");
     }
 
-    const int area_h = height_ - LOTUSAI_CONTENT_Y_OFFSET;
-    const int row_h = area_h / static_cast<int>(rows.size());
     const int label_w = LV_HOR_RES - lvgl_theme->spacing(8);
+    const int pad_side = lvgl_theme->spacing(2);
+    const int row_h = LotusAiRecipeRowHeight(text_font->line_height, pad_side * 2);
+
+    ResetLotusRecipeHitTestCache();
+    lotusai_recipe_row_h_.store(row_h);
 
     for (const auto& row_text : rows) {
         lv_obj_t* row = lv_obj_create(lotusai_rows_container_);
@@ -1186,17 +1234,34 @@ void LcdDisplay::SetLotusRecipeList(const std::vector<std::string>& rows) {
         lv_obj_set_style_border_color(row, lvgl_theme->border_color(), 0);
         lv_obj_set_style_pad_left(row, lvgl_theme->spacing(4), 0);
         lv_obj_set_style_pad_right(row, lvgl_theme->spacing(4), 0);
+        lv_obj_set_style_pad_top(row, pad_side, 0);
+        lv_obj_set_style_pad_bottom(row, pad_side, 0);
         lv_obj_set_scrollbar_mode(row, LV_SCROLLBAR_MODE_OFF);
 
         lv_obj_t* label = lv_label_create(row);
         lv_label_set_text(label, row_text.c_str());
         lv_obj_set_width(label, label_w);
-        lv_label_set_long_mode(label, LV_LABEL_LONG_DOT);
+        lv_label_set_long_mode(label, LV_LABEL_LONG_WRAP);
+        lv_obj_set_height(label, 2 * text_font->line_height);
         lv_obj_set_style_text_font(label, text_font, 0);
         lv_obj_set_style_text_color(label, lvgl_theme->text_color(), 0);
         lv_obj_set_style_text_align(label, LV_TEXT_ALIGN_LEFT, 0);
         lv_obj_align(label, LV_ALIGN_LEFT_MID, 0, 0);
     }
+
+    // TEMP DEBUG: compare computed row_h vs LVGL post-layout geometry (strip later).
+    lv_obj_update_layout(lotusai_rows_container_);
+    for (uint32_t i = 0; i < lv_obj_get_child_cnt(lotusai_rows_container_); i++) {
+        lv_obj_t* row = lv_obj_get_child(lotusai_rows_container_, i);
+        lv_area_t coords;
+        lv_obj_get_coords(row, &coords);
+        ESP_LOGI(TAG, "row %d: rel_y=%d h=%d abs_y1=%d abs_y2=%d",
+                 (int)i, (int)lv_obj_get_y(row), (int)lv_obj_get_height(row),
+                 coords.y1, coords.y2);
+    }
+    ESP_LOGI(TAG, "computed row_h=%d panel abs_y=%d container abs_y=%d",
+             row_h, (int)lv_obj_get_y(lotusai_panel_),
+             (int)lv_obj_get_y(lotusai_rows_container_));
 
     lv_obj_remove_flag(lotusai_rows_container_, LV_OBJ_FLAG_HIDDEN);
     lv_obj_remove_flag(lotusai_panel_, LV_OBJ_FLAG_HIDDEN);
@@ -1209,25 +1274,37 @@ void LcdDisplay::SetLotusRecipeList(const std::vector<std::string>& rows) {
     }
 }
 
+
+/*
+    Function: SetLotusContent
+    Description: Set the content of the Lotus AI panel
+    Parameters:
+    - content (const char*): the content to set
+*/
 void LcdDisplay::SetLotusContent(const char* content) {
     if (lotusai_panel_ == nullptr || lotusai_status_label_ == nullptr) return;
-    DisplayLockGuard lock(this);
+    DisplayLockGuard lock(this); // lock is a variable, not a function call
+
+    // check if the display is locked
+    if (!lock.IsLocked()) {
+        ESP_LOGE(TAG, "SetLotusContent: display is not locked");
+        return;
+    }
 
     ClearLotusRecipeRows();
     if (lotusai_rows_container_ != nullptr) {
         lv_obj_add_flag(lotusai_rows_container_, LV_OBJ_FLAG_HIDDEN);
     }
 
+    lotusai_recipe_list_active_ = false; // leave recipe-list mode to show content
+
     if (content == nullptr || content[0] == '\0') {
-        lotusai_recipe_list_active_ = false;
         lv_label_set_text(lotusai_status_label_, "");
         lv_obj_add_flag(lotusai_status_label_, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(lotusai_panel_, LV_OBJ_FLAG_HIDDEN);
         RestoreLotusChrome();
         return;
     }
-
-    lotusai_recipe_list_active_ = false;
 
     lv_label_set_text(lotusai_status_label_, content);
     lv_obj_remove_flag(lotusai_status_label_, LV_OBJ_FLAG_HIDDEN);

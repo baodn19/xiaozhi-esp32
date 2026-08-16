@@ -24,3 +24,6 @@ docs/
 
 # venv
 scripts/acoustic_check/audio_debug
+
+# Cursor
+.cursor

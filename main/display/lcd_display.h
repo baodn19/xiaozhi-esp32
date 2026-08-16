@@ -39,9 +39,13 @@ protected:
     lv_obj_t* lotusai_rows_container_ = nullptr;
     lv_obj_t* lotusai_status_label_ = nullptr;
     bool lotusai_recipe_list_active_ = false;
+    std::atomic<int> lotusai_recipe_row_h_{0};  // CP2 row-height cache
+    std::atomic<int> lotusai_scroll_y_{0};      // CP2 scroll cache
 
     void ClearLotusRecipeRows();
     void RestoreLotusChrome();
+    void ResetLotusRecipeHitTestCache();
+    static void OnLotusRowsScroll(lv_event_t* e);
 
     void InitializeLcdThemes();
     virtual bool Lock(int timeout_ms = 0) override;
@@ -58,7 +62,9 @@ public:
     virtual void ClearChatMessages() override;
     virtual void SetLotusContent(const char* content) override;
     virtual void SetLotusRecipeList(const std::vector<std::string>& rows) override;
-    virtual void SetPreviewImage(std::unique_ptr<LvglImage> image) override;
+    virtual int GetLotusRecipeRowHeight() const override { return lotusai_recipe_row_h_.load(); }
+    virtual int GetLotusRecipeScrollY() const override { return lotusai_scroll_y_.load(); }
+    virtual void SetPreviewImage(std::unique_ptr<LvglImage> image, bool bottom = false) override;
     virtual void SetupUI() override;
     // Add theme switching function
     virtual void SetTheme(Theme* theme) override;

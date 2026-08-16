@@ -9,11 +9,12 @@
 #include "mcp_server.h"
 #include "lotusai_controller.h"
 #include "led/single_led.h"
+#include "medicine_reminder.h"
+#include "fall_detection.h"
 
 #include <esp_log.h>
 #include <esp_timer.h>
 #include <driver/gpio.h>
-#include <driver/i2c_master.h>
 #include <esp_lcd_panel_vendor.h>
 #include <esp_lcd_panel_io.h>
 #include <esp_lcd_panel_ops.h>
@@ -27,7 +28,7 @@
 
 #define TAG "CompactWifiBoardLCDTouch"
 
-// Global pointer so the touch poll callback can reach the controller.
+// Global pointer so the touch poll callback can reach the LotusAiController.
 static LotusAiController* g_lotusai = nullptr;
 // Touch state handle and debounce flag used in the polling timer callback.
 static esp_lcd_touch_handle_t s_touch_handle = nullptr;
@@ -40,30 +41,49 @@ static bool s_was_touched = false;
 static void TouchPollCallback(void* /*arg*/) {
     if (!g_lotusai || !s_touch_handle) return;
 
+    // TEMP DEBUG: unconditional heartbeat so we can see the raw IRQ pin level
+    // even when nothing is pressed. ~1x/sec at the 200ms poll period.
+    // Remove once tap selection is confirmed working.
+    static int s_debug_tick = 0;
+    int irq_level = gpio_get_level(TOUCH_IRQ_PIN);
+    if (++s_debug_tick >= 5) {
+        s_debug_tick = 0;
+        ESP_LOGI(TAG, "touch heartbeat: irq_level=%d", irq_level);
+    }
+
     // PENIRQ is active-low: skip SPI when the panel is not touched to avoid
     // bus contention with the ILI9341 on the shared MOSI/SCK lines.
-    if (gpio_get_level(TOUCH_IRQ_PIN) != 0) {
+    if (irq_level != 0) {
         s_was_touched = false;
         return;
     }
 
-    auto* display = Board::GetInstance().GetDisplay();
+    auto* display = Board::GetInstance().GetDisplay(); // Pointer to the display object (ILI9341)
     if (!display) return;
 
     DisplayLockGuard lock(display);
-    esp_lcd_touch_read_data(s_touch_handle);
+    esp_lcd_touch_read_data(s_touch_handle); // esp_lcd_touch_read_data defined in esp_lcd_touch.h
 
-    uint16_t x[1] = {}, y[1] = {}, strength[1] = {};
-    uint8_t count = 0;
-    bool touched = esp_lcd_touch_get_coordinates(
-        s_touch_handle, x, y, strength, &count, 1);
+    esp_lcd_touch_point_data_t point[1] = {}; // Array of touch points (esp_lcd_touch.h)
+    uint8_t count = 0; // Number of touch points
+    esp_err_t err = esp_lcd_touch_get_data(s_touch_handle, point, &count, 1);
+    bool touched = (err == ESP_OK && count > 0);
 
-    if (touched && count > 0) {
+    // TEMP DEBUG: fires whenever IRQ is asserted, even if the SPI read didn't
+    // resolve a valid point (helps distinguish gate 2 vs gate 3 failures).
+    ESP_LOGI(TAG, "touch irq low: touched=%d count=%d x=%d y=%d",
+             touched, count, point[0].x, point[0].y);
+
+    if (touched) {
         if (!s_was_touched) {
             s_was_touched = true;
-            int cx = static_cast<int>(x[0]);
-            int cy = static_cast<int>(y[0]);
+            int cx = static_cast<int>(point[0].x);
+            int cy = static_cast<int>(point[0].y);
             int option_idx = g_lotusai->OptionFromPoint(cx, cy);
+            ESP_LOGI(TAG, "tap x=%d y=%d idx=%d row_h=%d scroll_y=%d",
+                     cx, cy, option_idx,
+                     display->GetLotusRecipeRowHeight(),
+                     display->GetLotusRecipeScrollY());
             if (option_idx >= 0) {
                 // Schedule on the main application task to avoid concurrency issues
                 Application::GetInstance().Schedule([option_idx]() {
@@ -86,6 +106,23 @@ class CompactWifiBoardLcdTouch : public WifiBoard {
 private:
     Button boot_button_;
     LcdDisplay* display_ = nullptr;
+    FallDetectionController* fall_detector_ = nullptr;
+
+    void InitializeEyeUart() {
+        uart_config_t uart_config = {
+            .baud_rate = EYE_UART_BAUD_RATE,
+            .data_bits = UART_DATA_8_BITS,
+            .parity    = UART_PARITY_DISABLE,
+            .stop_bits = UART_STOP_BITS_1,
+            .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+            .source_clk = UART_SCLK_DEFAULT,
+        };
+        ESP_ERROR_CHECK(uart_param_config(EYE_UART_PORT, &uart_config));
+        ESP_ERROR_CHECK(uart_set_pin(EYE_UART_PORT, EYE_UART_TX_PIN, EYE_UART_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+        ESP_ERROR_CHECK(uart_driver_install(EYE_UART_PORT, 256, 0, 0, NULL, 0));
+        
+        ESP_LOGI(TAG, "DualEye UART initialized on TX GPIO %d", EYE_UART_TX_PIN);
+    }
 
     void InitializeSpi() {
         spi_bus_config_t buscfg = {};
@@ -146,14 +183,14 @@ private:
         ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(SPI3_HOST, &touch_io_cfg, &touch_io));
 
         esp_lcd_touch_config_t touch_cfg = {};
-        touch_cfg.x_max          = DISPLAY_WIDTH - 1;
+        touch_cfg.x_max          = DISPLAY_WIDTH - 1; // Index is 0-based, so -1 is the last pixel.
         touch_cfg.y_max          = DISPLAY_HEIGHT - 1;
         touch_cfg.rst_gpio_num   = GPIO_NUM_NC;
         touch_cfg.int_gpio_num   = TOUCH_IRQ_PIN;
         touch_cfg.levels.interrupt = 0;  // active low
-        touch_cfg.flags.swap_xy  = DISPLAY_SWAP_XY ? 1u : 0u;
-        touch_cfg.flags.mirror_x = DISPLAY_MIRROR_X ? 1u : 0u;
-        touch_cfg.flags.mirror_y = DISPLAY_MIRROR_Y ? 1u : 0u;
+        touch_cfg.flags.swap_xy  = TOUCH_SWAP_XY  ? 1u : 0u;
+        touch_cfg.flags.mirror_x = TOUCH_MIRROR_X ? 1u : 0u;
+        touch_cfg.flags.mirror_y = TOUCH_MIRROR_Y ? 1u : 0u;
 
         ESP_ERROR_CHECK(esp_lcd_touch_new_spi_xpt2046(touch_io, &touch_cfg, &s_touch_handle));
 
@@ -185,19 +222,32 @@ private:
     void InitializeTools() {
         static LotusAiController lotusai;
         g_lotusai = &lotusai;
+
+        static MedicineReminderController medicine_reminder;
+
+        // Fall Detection: Initialize as static to ensure it lives for the app's lifetime
+        static FallDetectionController fall_detector(UART_NUM_1, 11, 12);
+        fall_detector_ = &fall_detector;
     }
 
 public:
     CompactWifiBoardLcdTouch() :
         boot_button_(BOOT_BUTTON_GPIO) {
+        InitializeEyeUart(); // Init serial TX to DualEye
         InitializeSpi();
         InitializeLcdDisplay();
-        InitializeTouchscreen();
         InitializeButtons();
         InitializeTools();
+        InitializeTouchscreen();
         if (DISPLAY_BACKLIGHT_PIN != GPIO_NUM_NC) {
             GetBacklight()->RestoreBrightness();
         }
+    }
+
+    // Called by Application::SetDeviceState via Board::GetInstance().SendEyeCommand()
+    virtual void SendEyeCommand(uint8_t cmd) override {
+        uart_write_bytes(EYE_UART_PORT, reinterpret_cast<const char*>(&cmd), 1);
+        ESP_LOGI(TAG, "Sent Eye Command: 0x%02X", cmd);
     }
 
     virtual Led* GetLed() override {
