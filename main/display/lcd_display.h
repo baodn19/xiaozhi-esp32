@@ -64,7 +64,7 @@ public:
     virtual void SetLotusRecipeList(const std::vector<std::string>& rows) override;
     virtual int GetLotusRecipeRowHeight() const override { return lotusai_recipe_row_h_.load(); }
     virtual int GetLotusRecipeScrollY() const override { return lotusai_scroll_y_.load(); }
-    virtual void SetPreviewImage(std::unique_ptr<LvglImage> image) override;
+    virtual void SetPreviewImage(std::unique_ptr<LvglImage> image, bool bottom = false) override;
     virtual void SetupUI() override;
     // Add theme switching function
     virtual void SetTheme(Theme* theme) override;

@@ -16,13 +16,30 @@
 #define LOTUSAI_CONTENT_Y_OFFSET 80 // For Wifi icon and status label
 #define LOTUSAI_ROW_PAD_Y 2 // Must match lv_obj_set_style_pad_row on lotusai_rows_container_
 
+/*
+    Struct: LotusAiRecommendBodyResult
+    Description: Result of building the request body for the Lotus AI API
+    Members:
+        body: The request body as a JSON string
+        error: An error message if the request body could not be built
+*/
 struct LotusAiRecommendBodyResult {
     std::string body;
     std::string error;
 };
 
-inline std::vector<std::string> LotusAiSplitCsv(const std::string& csv) {
-    std::vector<std::string> result;
+using LotusAiStringArray = std::vector<std::string>; // Alias for vector of strings
+
+/*
+    Function: LotusAiSplitCsv
+    Description: Split a CSV string into a vector of strings
+    Parameters:
+        csv: The CSV string to split
+    Returns:
+        A LotusAiStringArray (std::vector<std::string>)
+*/
+inline LotusAiStringArray LotusAiSplitCsv(const std::string& csv) {
+    LotusAiStringArray result;
     if (csv.empty()) return result;
     std::istringstream stream(csv);
     std::string token;
@@ -36,20 +53,35 @@ inline std::vector<std::string> LotusAiSplitCsv(const std::string& csv) {
     return result;
 }
 
+/*
+    Function: LotusAiAddStringArray
+    Description: Add a string array (vector of strings) to a JSON object
+    Parameters:
+        root: The JSON object to add the string array to
+        key: The key to add the string array to (e.g. "ingredients", "conditions", "cooking_tools", "allergens", "excluded_ingredients")
+        items: The string array to add
+*/
 inline void LotusAiAddStringArray(cJSON* root, const char* key,
-                                  const std::vector<std::string>& items) {
+                                  const LotusAiStringArray& items) {
     cJSON* arr = cJSON_CreateArray();
-    for (const auto& item : items)
+    for (const std::string& item : items)
         cJSON_AddItemToArray(arr, cJSON_CreateString(item.c_str()));
     cJSON_AddItemToObject(root, key, arr);
 }
 
+/*
+    Function: LotusAiBuildRecommendRequestBody
+    Description: Build the request body for the Lotus AI API
+    Parameters:
+        props: The properties to build the request body from
+        default_top_k: The default number of recipes to return
+*/
 inline LotusAiRecommendBodyResult LotusAiBuildRecommendRequestBody(
-        const PropertyList& props, int default_top_k = CONFIG_LOTUSAI_TOP_K) {
+        const PropertyList& props) {
     LotusAiRecommendBodyResult out;
     cJSON* root = cJSON_CreateObject();
 
-    auto ingredients = LotusAiSplitCsv(props["ingredients"].value<std::string>());
+    LotusAiStringArray ingredients = LotusAiSplitCsv(props["ingredients"].value<std::string>()); // required
     if (ingredients.empty()) {
         cJSON_Delete(root);
         out.error = "No ingredients provided. Please tell me what ingredients you have.";
@@ -57,29 +89,29 @@ inline LotusAiRecommendBodyResult LotusAiBuildRecommendRequestBody(
     }
     LotusAiAddStringArray(root, "ingredients", ingredients);
 
-    auto cond_str = props["conditions"].value<std::string>();
+    std::string cond_str = props["conditions"].value<std::string>(); // optional
     if (!cond_str.empty())
         LotusAiAddStringArray(root, "conditions", LotusAiSplitCsv(cond_str));
 
-    auto meal = props["meal"].value<std::string>();
+    std::string meal = props["meal"].value<std::string>();
     if (!meal.empty()) cJSON_AddStringToObject(root, "meal", meal.c_str());
-    auto age = props["age"].value<std::string>();
+    std::string age = props["age"].value<std::string>();
     if (!age.empty()) cJSON_AddStringToObject(root, "age", age.c_str());
-    auto cuisine = props["cuisine"].value<std::string>();
+    std::string cuisine = props["cuisine"].value<std::string>();
     if (!cuisine.empty()) cJSON_AddStringToObject(root, "cuisine", cuisine.c_str());
 
     int top_k = props["top_k"].value<int>();
     cJSON_AddNumberToObject(root, "top_k", top_k);
 
-    auto tools_str = props["cooking_tools"].value<std::string>();
+    std::string tools_str = props["cooking_tools"].value<std::string>();
     if (!tools_str.empty())
         LotusAiAddStringArray(root, "cooking_tools", LotusAiSplitCsv(tools_str));
 
-    auto allergens_str = props["allergens"].value<std::string>();
+    std::string allergens_str = props["allergens"].value<std::string>();
     if (!allergens_str.empty())
         LotusAiAddStringArray(root, "allergens", LotusAiSplitCsv(allergens_str));
 
-    auto excluded_str = props["excluded_ingredients"].value<std::string>();
+    std::string excluded_str = props["excluded_ingredients"].value<std::string>();
     if (!excluded_str.empty())
         LotusAiAddStringArray(root, "excluded_ingredients", LotusAiSplitCsv(excluded_str));
 

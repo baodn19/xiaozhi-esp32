@@ -15,7 +15,7 @@ class OttoEmojiDisplay : public SpiLcdDisplay {
 
     virtual ~OttoEmojiDisplay() = default;
     virtual void SetStatus(const char* status) override;
-    virtual void SetPreviewImage(std::unique_ptr<LvglImage> image) override;
+    virtual void SetPreviewImage(std::unique_ptr<LvglImage> image, bool bottom = false) override;
     virtual void SetupUI() override;
 
    private:

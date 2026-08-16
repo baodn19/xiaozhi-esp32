@@ -77,7 +77,7 @@ CONFIG_LV_BUILD_EXAMPLES=n
 CONFIG_LV_BUILD_DEMOS=n
 
 CONFIG_FLASH_CUSTOM_ASSETS=y
-CONFIG_CUSTOM_ASSETS_FILE="/home/baodn19/Tingting_Zhang/NanaBot/xiaozhi-esp32/main/assets/nanabot/assets.bin"
+CONFIG_CUSTOM_ASSETS_FILE="assets/nanabot/assets.bin"
 
 # Board / display defaults for NanaBot (Bread Compact WiFi + LCD + Touch, ILI9341)
 CONFIG_BOARD_TYPE_BREAD_COMPACT_WIFI_LCD_TOUCH=y
