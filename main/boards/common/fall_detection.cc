@@ -126,7 +126,7 @@ void FallDetectionController::ProcessDetectionLine(const char* line) {
     ptr = strchr(ptr, '[');
     if (!ptr) return;
     ptr++; // Skip outer array bracket
-
+    
     struct RawBox { int x, y, w, h, score; float ratio; };
     std::vector<RawBox> current_frame_boxes;
 
@@ -265,7 +265,19 @@ void FallDetectionController::DetectionTask(void* pvParameters) {
         }
 
         if ((xTaskGetTickCount() - last_heartbeat) >= pdMS_TO_TICKS(1000)) {
-            ESP_LOGI(TAG, "Heartbeat | Last observed state: %s", last_received_data);
+            const char* key = strstr(last_received_data, "\"boxes\"");
+            const char* start = key ? strchr(key, '[') : nullptr;
+            if (start) {
+                int depth = 0;
+                const char* end = start;
+                do {
+                    if (*end == '[') depth++;
+                    else if (*end == ']') depth--;
+                    end++;
+                } while (*end && depth > 0);
+                ESP_LOGI(TAG, "Human detected Boxes [x, y, w, h, score, target]: %.*s",
+                         (int)(end - start), start);
+            }
             last_heartbeat = xTaskGetTickCount();
         }
 
