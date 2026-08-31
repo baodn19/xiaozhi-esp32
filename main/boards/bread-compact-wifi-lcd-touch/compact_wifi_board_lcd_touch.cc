@@ -48,7 +48,7 @@ static void TouchPollCallback(void* /*arg*/) {
     int irq_level = gpio_get_level(TOUCH_IRQ_PIN);
     if (++s_debug_tick >= 5) {
         s_debug_tick = 0;
-        ESP_LOGI(TAG, "touch heartbeat: irq_level=%d", irq_level);
+        ESP_LOGD(TAG, "touch heartbeat: irq_level=%d", irq_level);
     }
 
     // PENIRQ is active-low: skip SPI when the panel is not touched to avoid

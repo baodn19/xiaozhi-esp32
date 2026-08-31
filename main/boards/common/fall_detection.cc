@@ -3,6 +3,7 @@
 #include "application.h"
 #include "assets/lang_config.h"
 #include "board.h"
+#include "display.h"
 
 #include <nvs.h>
 #include <nvs_flash.h>
@@ -234,8 +235,8 @@ void FallDetectionController::DetectionTask(void* pvParameters) {
     int line_pos = 0;
 
     char last_received_data[UART_BUF_SIZE] = "No data yet";
-    int heartbeat_counter = 0;
     TickType_t last_poll_time = xTaskGetTickCount();
+    TickType_t last_heartbeat = xTaskGetTickCount();
 
     for (;;) {
         if ((xTaskGetTickCount() - last_poll_time) > pdMS_TO_TICKS(200)) {
@@ -263,10 +264,9 @@ void FallDetectionController::DetectionTask(void* pvParameters) {
             }
         }
 
-        heartbeat_counter++;
-        if (heartbeat_counter >= 300) {
+        if ((xTaskGetTickCount() - last_heartbeat) >= pdMS_TO_TICKS(1000)) {
             ESP_LOGI(TAG, "Heartbeat | Last observed state: %s", last_received_data);
-            heartbeat_counter = 0;
+            last_heartbeat = xTaskGetTickCount();
         }
 
         vTaskDelay(pdMS_TO_TICKS(10));
