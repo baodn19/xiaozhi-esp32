@@ -5,14 +5,13 @@
 #include "application.h"
 #include "display/lvgl_display/lvgl_display.h"
 #include "settings.h"
-#include "assets/lang_config.h" // Ensures Lang::Sounds definitions are accessible
+#include "assets/lang_config.h"
 
 #include <esp_log.h>
 #include <cJSON.h>
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 #include <freertos/semphr.h>
-#include <esp_http_server.h>
 #include <string>
 #include <vector>
 #include <time.h>
@@ -33,26 +32,48 @@ class MedicineReminderController {
 private:
     std::vector<Medication> schedule_;
     std::string active_alert_med_;
-    httpd_handle_t server_ = nullptr;
     SemaphoreHandle_t schedule_mutex_ = nullptr;
+
+    // ── Helpers ───────────────────────────────────────────────────────────────
+
+    static std::string FormatTime(int hour, int minute) {
+        char buf[6];
+        snprintf(buf, sizeof(buf), "%02d:%02d", hour, minute);
+        return std::string(buf);
+    }
+
+    // ── Alarm sound task — plays for 20s then self-deletes ───────────────────
+
+    static void AlarmSoundTask(void* pvParameters) {
+        auto& app = Application::GetInstance();
+        TickType_t start_time = xTaskGetTickCount();
+        const TickType_t duration = pdMS_TO_TICKS(20000);
+
+        while ((xTaskGetTickCount() - start_time) < duration) {
+            app.PlaySound(Lang::Sounds::OGG_SUCCESS);
+            vTaskDelay(pdMS_TO_TICKS(2000));
+        }
+        vTaskDelete(NULL);
+    }
+
+    // ── Time monitor — checks every 5s, nags every 60s up to 50 times ────────
 
     static void TimeMonitorTask(void* pvParameters) {
         auto* self = static_cast<MedicineReminderController*>(pvParameters);
         struct tm timeinfo;
         int last_minute = -1;
-        
-        // Track nagging metrics safely inside the loop scope
-        TickType_t last_nag_tick = 0; 
-        const TickType_t nag_interval = pdMS_TO_TICKS(60000); // Nag every 60 seconds (1 minute)
-        bool is_alerting = false; 
-        int nag_count = 0; // <--- Track how many times we've nagged
+
+        TickType_t last_nag_tick = 0;
+        const TickType_t nag_interval = pdMS_TO_TICKS(60000);
+        bool is_alerting = false;
+        int nag_count = 0;
 
         while (true) {
             time_t now;
             time(&now);
             localtime_r(&now, &timeinfo);
 
-            // --- PART 1: Check for NEW alarms (Minute change) ---
+            // Only act on valid time (post-2020) and on minute boundary
             if (timeinfo.tm_year > (2020 - 1900) && timeinfo.tm_min != last_minute) {
                 last_minute = timeinfo.tm_min;
 
@@ -66,21 +87,20 @@ private:
                         (med.days_bitmask & current_day_bit)) {
 
                         std::string med_name = med.name;
-                        self->active_alert_med_ = med_name; 
+                        self->active_alert_med_ = med_name;
                         xSemaphoreGive(self->schedule_mutex_);
-                        
+
                         self->TriggerAlarm(med_name);
-                        
-                        last_nag_tick = xTaskGetTickCount(); 
+                        last_nag_tick = xTaskGetTickCount();
                         is_alerting = true;
-                        nag_count = 1; // Count the initial trigger
+                        nag_count = 1;
                         goto loop_delay;
                     }
                 }
                 xSemaphoreGive(self->schedule_mutex_);
             }
 
-            // --- PART 2: Check for PENDING unconfirmed alarms (Nagging) ---
+            // Nagging logic for unconfirmed alerts
             xSemaphoreTake(self->schedule_mutex_, portMAX_DELAY);
             if (!self->active_alert_med_.empty()) {
                 if (!is_alerting) {
@@ -90,22 +110,21 @@ private:
                 }
 
                 TickType_t current_tick = xTaskGetTickCount();
-                
                 if ((current_tick - last_nag_tick) >= nag_interval) {
-                    // Check if we've reached the 50 max nag limit
                     if (nag_count >= 50) {
-                        ESP_LOGW(MED_TAG, "Max nag count (50) reached. Stopping alarm for safety.");
-                        self->active_alert_med_.clear(); // Stop nagging
+                        ESP_LOGW(MED_TAG, "Max nag count reached. Stopping alarm.");
+                        self->active_alert_med_.clear();
                         is_alerting = false;
+                        nag_count = 0;
                         xSemaphoreGive(self->schedule_mutex_);
                         goto loop_delay;
                     }
 
                     std::string pending_med = self->active_alert_med_;
                     xSemaphoreGive(self->schedule_mutex_);
-                    
-                    nag_count++; // Increment our nag count
-                    ESP_LOGI(MED_TAG, "Nagging user (#%d/50) for unconfirmed medicine: %s", nag_count, pending_med.c_str());
+
+                    nag_count++;
+                    ESP_LOGI(MED_TAG, "Nagging (#%d/50): %s", nag_count, pending_med.c_str());
                     self->TriggerAlarm(pending_med);
                     last_nag_tick = current_tick;
                     goto loop_delay;
@@ -116,75 +135,50 @@ private:
             }
             xSemaphoreGive(self->schedule_mutex_);
 
-    loop_delay:
+        loop_delay:
             vTaskDelay(pdMS_TO_TICKS(5000));
         }
     }
 
-    // A helper task to play the sound repeatedly for 20 seconds without freezing the system
-    static void AlarmSoundTask(void* pvParameters) {
-        auto& app = Application::GetInstance();
-        TickType_t start_time = xTaskGetTickCount();
-        const TickType_t duration = pdMS_TO_TICKS(20000); // 20 seconds
-
-        while ((xTaskGetTickCount() - start_time) < duration) {
-            // Play sound (assuming it plays asynchronously and takes, say, 2 seconds)
-            app.PlaySound(Lang::Sounds::OGG_SUCCESS); 
-            
-            // Wait a bit before triggering the sound snippet again so it doesn't overlap harshly
-            vTaskDelay(pdMS_TO_TICKS(2000)); 
-        }
-        vTaskDelete(NULL); // Self-terminate when 20 seconds are up
-    }
+    // ── Trigger a single alarm ────────────────────────────────────────────────
 
     void TriggerAlarm(const std::string& med_name) {
-        // Define a local tag specifically for this module's logs
-        const char* LOCAL_TAG = "MedicineReminder";
-
         xSemaphoreTake(schedule_mutex_, portMAX_DELAY);
         active_alert_med_ = med_name;
         xSemaphoreGive(schedule_mutex_);
 
         auto& app = Application::GetInstance();
 
-        // Interrupt current speech/listening
         if (app.GetDeviceState() == kDeviceStateSpeaking ||
             app.GetDeviceState() == kDeviceStateListening) {
             app.AbortSpeaking(kAbortReasonWakeWordDetected);
         }
 
-        // Local notification sound
         xTaskCreate(AlarmSoundTask, "AlarmSoundTask", 2048, NULL, 5, NULL);
 
         std::string reminder = "Time to take " + med_name;
 
-        ESP_LOGW(LOCAL_TAG, "MED REMINDER: %s", reminder.c_str());
-
-        // Update display
         auto* display = Board::GetInstance().GetDisplay();
         if (display) {
-            display->SetChatMessage(
-                "assistant",
-                ("⏰ " + reminder).c_str());
+            display->SetChatMessage("assistant", ("⏰ " + reminder).c_str());
         }
 
-        // Send MCP event to cloud via direct Application method
-        std::string payload =
-            "{"
-            "\"event\":\"medicine_reminder\","
-            "\"medicine\":\"" + med_name + "\","
-            "\"message\":\"" + reminder + "\""
-            "}";
+        // Build MCP notification using cJSON — safe, no string injection
+        cJSON* root = cJSON_CreateObject();
+        cJSON_AddStringToObject(root, "event",    "medicine_reminder");
+        cJSON_AddStringToObject(root, "medicine", med_name.c_str());
+        cJSON_AddStringToObject(root, "message",  reminder.c_str());
+        char* payload_str = cJSON_PrintUnformatted(root);
+        cJSON_Delete(root);
 
-        app.SendMcpMessage(payload);
-        ESP_LOGI(LOCAL_TAG, "Sent medicine reminder MCP event");
+        if (payload_str) {
+            app.SendMcpMessage(std::string(payload_str));
+            cJSON_free(payload_str);
+            ESP_LOGI(MED_TAG, "Sent medicine_reminder MCP event for: %s", med_name.c_str());
+        }
     }
 
-    static std::string FormatTime(int hour, int minute) {
-        char buf[6];
-        snprintf(buf, sizeof(buf), "%02d:%02d", hour, minute);
-        return std::string(buf);
-    }
+    // ── NVS persistence ───────────────────────────────────────────────────────
 
     void SaveScheduleToStorage() {
         xSemaphoreTake(schedule_mutex_, portMAX_DELAY);
@@ -194,23 +188,81 @@ private:
 
         for (const auto& med : schedule_) {
             cJSON* item = cJSON_CreateObject();
-            cJSON_AddItemToArray(meds, item);
-            cJSON_AddStringToObject(item, "name", med.name.c_str());
-            cJSON_AddNumberToObject(item, "hour", med.hour);
-            cJSON_AddNumberToObject(item, "minute", med.minute);
+            cJSON_AddStringToObject(item, "name",         med.name.c_str());
+            cJSON_AddNumberToObject(item, "hour",         med.hour);
+            cJSON_AddNumberToObject(item, "minute",       med.minute);
             cJSON_AddNumberToObject(item, "days_bitmask", med.days_bitmask);
-            cJSON_AddBoolToObject(item, "active", med.active);
+            cJSON_AddBoolToObject(item,   "active",       med.active);
+            cJSON_AddItemToArray(meds, item);
         }
 
         xSemaphoreGive(schedule_mutex_);
 
         char* json_text = cJSON_PrintUnformatted(root);
-
-        Settings settings("medicine", true);
-        settings.SetString(CONFIG_MED_KEY, json_text ? json_text : "");
-
-        if (json_text) cJSON_free(json_text);
         cJSON_Delete(root);
+
+        if (json_text) {
+            Settings settings("medicine", true);
+            settings.SetString(CONFIG_MED_KEY, json_text);
+            cJSON_free(json_text);
+        }
+    }
+
+    void LoadScheduleFromStorage() {
+        Settings settings("medicine", false);
+        std::string saved = settings.GetString(CONFIG_MED_KEY, "");
+
+        if (!saved.empty()) {
+            UpdateScheduleInRam(saved);
+        }
+        // Intentionally no default medicine — start empty
+    }
+
+    void UpdateScheduleInRam(const std::string& json_str) {
+        if (json_str.empty()) return;
+
+        cJSON* root = cJSON_Parse(json_str.c_str());
+        if (!root) {
+            ESP_LOGE(MED_TAG, "Failed to parse medicine JSON from storage");
+            return;
+        }
+
+        cJSON* meds = cJSON_GetObjectItem(root, "medications");
+        if (!cJSON_IsArray(meds)) {
+            cJSON_Delete(root);
+            return;
+        }
+
+        xSemaphoreTake(schedule_mutex_, portMAX_DELAY);
+        schedule_.clear();
+
+        int size = cJSON_GetArraySize(meds);
+        for (int i = 0; i < size; i++) {
+            cJSON* item   = cJSON_GetArrayItem(meds, i);
+            cJSON* name   = cJSON_GetObjectItem(item, "name");
+            cJSON* hour   = cJSON_GetObjectItem(item, "hour");
+            cJSON* minute = cJSON_GetObjectItem(item, "minute");
+            cJSON* mask   = cJSON_GetObjectItem(item, "days_bitmask");
+            cJSON* active = cJSON_GetObjectItem(item, "active");
+
+            if (cJSON_IsString(name) &&
+                cJSON_IsNumber(hour) &&
+                cJSON_IsNumber(minute) &&
+                cJSON_IsNumber(mask)) {
+
+                Medication med;
+                med.name         = name->valuestring;
+                med.hour         = hour->valueint;
+                med.minute       = minute->valueint;
+                med.days_bitmask = mask->valueint;
+                med.active       = active ? cJSON_IsTrue(active) : true;
+                schedule_.push_back(med);
+            }
+        }
+
+        xSemaphoreGive(schedule_mutex_);
+        cJSON_Delete(root);
+        ESP_LOGI(MED_TAG, "Loaded %d medication(s) from storage", size);
     }
 
     bool AddMedicationEntry(const std::string& name, int hour, int minute,
@@ -221,152 +273,31 @@ private:
             return false;
         }
 
-        Medication med{name, hour, minute, days_bitmask, active};
-
         xSemaphoreTake(schedule_mutex_, portMAX_DELAY);
-        schedule_.push_back(med);
+        // Reject duplicate names
+        for (const auto& med : schedule_) {
+            if (med.name == name) {
+                xSemaphoreGive(schedule_mutex_);
+                ESP_LOGW(MED_TAG, "Rejected duplicate medicine: %s", name.c_str());
+                return false;
+            }
+        }
+        schedule_.push_back({name, hour, minute, days_bitmask, active});
         xSemaphoreGive(schedule_mutex_);
 
         SaveScheduleToStorage();
         return true;
     }
 
-    void UpdateScheduleInRam(const std::string& json_str) {
-        if (json_str.empty()) return;
+    // ── MCP tool registration ─────────────────────────────────────────────────
 
-        cJSON* root = cJSON_Parse(json_str.c_str());
-        if (!root) return;
+    void RegisterMcpTools() {
+        auto& mcp = McpServer::GetInstance();
 
-        cJSON* meds = cJSON_GetObjectItem(root, "medications");
-
-        if (cJSON_IsArray(meds)) {
-            xSemaphoreTake(schedule_mutex_, portMAX_DELAY);
-            schedule_.clear();
-
-            int size = cJSON_GetArraySize(meds);
-
-            for (int i = 0; i < size; i++) {
-                cJSON* item = cJSON_GetArrayItem(meds, i);
-
-                cJSON* name = cJSON_GetObjectItem(item, "name");
-                cJSON* hour = cJSON_GetObjectItem(item, "hour");
-                cJSON* minute = cJSON_GetObjectItem(item, "minute");
-                cJSON* mask = cJSON_GetObjectItem(item, "days_bitmask");
-                cJSON* active = cJSON_GetObjectItem(item, "active");
-
-                if (cJSON_IsString(name) &&
-                    cJSON_IsNumber(hour) &&
-                    cJSON_IsNumber(minute) &&
-                    cJSON_IsNumber(mask)) {
-
-                    Medication med;
-                    med.name = name->valuestring;
-                    med.hour = hour->valueint;
-                    med.minute = minute->valueint;
-                    med.days_bitmask = mask->valueint;
-                    med.active = active ? cJSON_IsTrue(active) : true;
-
-                    schedule_.push_back(med);
-                }
-            }
-
-            xSemaphoreGive(schedule_mutex_);
-            ESP_LOGI(MED_TAG, "Loaded %d medications.", size);
-        }
-
-        cJSON_Delete(root);
-    }
-
-    static esp_err_t HttpSyncHandler(httpd_req_t* req) {
-        size_t total_len = req->content_len;
-
-        if (total_len == 0 || total_len > 4096) {
-            httpd_resp_send_err(req, HTTPD_400_BAD_REQUEST, "Invalid payload");
-            return ESP_FAIL;
-        }
-
-        std::string body;
-        body.reserve(total_len);
-
-        char buf[512];
-        size_t received = 0;
-
-        while (received < total_len) {
-            size_t chunk = std::min((size_t)sizeof(buf),
-                                    total_len - received);
-
-            int ret = httpd_req_recv(req, buf, chunk);
-
-            if (ret <= 0) return ESP_FAIL;
-
-            body.append(buf, ret);
-            received += ret;
-        }
-
-        auto* self =
-            static_cast<MedicineReminderController*>(req->user_ctx);
-
-        if (!self) return ESP_FAIL;
-
-        self->UpdateScheduleInRam(body);
-
-        Settings settings("medicine", true);
-        settings.SetString(CONFIG_MED_KEY, body);
-
-        httpd_resp_set_type(req, "application/json");
-        httpd_resp_set_hdr(req, "Access-Control-Allow-Origin", "*");
-        httpd_resp_sendstr(req, "{\"status\":\"ok\"}");
-
-        return ESP_OK;
-    }
-
-    void StartLocalWebServer() {
-        // Uncomment if you want local syncing enabled
-        /*
-        httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-        config.server_port = 8080;
-
-        if (httpd_start(&server_, &config) == ESP_OK) {
-            httpd_uri_t sync_uri = {};
-            sync_uri.uri = "/sync";
-            sync_uri.method = HTTP_POST;
-            sync_uri.handler = HttpSyncHandler;
-            sync_uri.user_ctx = this;
-
-            httpd_register_uri_handler(server_, &sync_uri);
-
-            ESP_LOGI(MED_TAG,
-                     "HTTP sync endpoint started on port 8080");
-        }
-        */
-    }
-
-public:
-    MedicineReminderController() {
-        schedule_mutex_ = xSemaphoreCreateMutex();
-
-        Settings settings("medicine", false);
-        std::string saved_json =
-            settings.GetString(CONFIG_MED_KEY, "");
-
-        if (!saved_json.empty()) {
-            UpdateScheduleInRam(saved_json);
-        } else {
-            Medication test_med{
-                "Test Aspirin 50mg",
-                8,
-                30,
-                127,
-                true
-            };
-
-            schedule_.push_back(test_med);
-            SaveScheduleToStorage();
-        }
-
-        McpServer::GetInstance().AddTool(
+        // Confirm active alert
+        mcp.AddTool(
             "self.medicine.confirm",
-            "Clear active medication alert.",
+            "Clear the active medication alert after the user has taken their medicine.",
             PropertyList(std::vector<Property>()),
             [this](const PropertyList&) -> ReturnValue {
                 xSemaphoreTake(schedule_mutex_, portMAX_DELAY);
@@ -374,107 +305,84 @@ public:
                 xSemaphoreGive(schedule_mutex_);
 
                 auto* display = Board::GetInstance().GetDisplay();
-                if (display) {
-                    display->SetChatMessage("assistant", "Alarm cleared.");
-                }
+                if (display) display->SetChatMessage("assistant", "✅ Alarm cleared.");
 
-                return "Medication logged.";
+                return "Medication confirmed and alarm cleared.";
             });
 
-        McpServer::GetInstance().AddTool(
+        // Add a medicine
+        mcp.AddTool(
             "self.medicine.add",
-            "Add a medicine reminder.",
+            "Add a new medicine reminder. days_bitmask uses bit-per-weekday (Sun=1,Mon=2,...,Sat=64). 127 = every day.",
             PropertyList(std::vector<Property>{
-                Property("name", kPropertyTypeString),
-                Property("hour", kPropertyTypeInteger, 0, 0, 23),
-                Property("minute", kPropertyTypeInteger, 0, 0, 59),
+                Property("name",         kPropertyTypeString),
+                Property("hour",         kPropertyTypeInteger, 0,   0, 23),
+                Property("minute",       kPropertyTypeInteger, 0,   0, 59),
                 Property("days_bitmask", kPropertyTypeInteger, 127, 0, 127),
-                Property("active", kPropertyTypeBoolean, true)
+                Property("active",       kPropertyTypeBoolean, true)
             }),
-            [this](const PropertyList& properties) -> ReturnValue {
+            [this](const PropertyList& props) -> ReturnValue {
+                auto name         = props["name"].value<std::string>();
+                int  hour         = props["hour"].value<int>();
+                int  minute       = props["minute"].value<int>();
+                int  days_bitmask = props["days_bitmask"].value<int>();
+                bool active       = props["active"].value<bool>();
 
-                auto name = properties["name"].value<std::string>();
-                int hour = properties["hour"].value<int>();
-                int minute = properties["minute"].value<int>();
-                int days_bitmask =
-                    properties["days_bitmask"].value<int>();
-                bool active =
-                    properties["active"].value<bool>();
-
-                if (!AddMedicationEntry(
-                        name, hour, minute,
-                        days_bitmask, active)) {
+                if (!AddMedicationEntry(name, hour, minute, days_bitmask, active)) {
                     throw std::runtime_error(
-                        "Invalid medication parameters.");
+                        "Invalid parameters or duplicate medicine name: " + name);
                 }
 
-                auto* display =
-                    Board::GetInstance().GetDisplay();
-
+                auto* display = Board::GetInstance().GetDisplay();
                 if (display) {
-                    std::string msg =
-                        "✅ Added medicine reminder for " +
-                        name + " at " +
-                        FormatTime(hour, minute) + ".";
-                    display->SetChatMessage("assistant",
-                                            msg.c_str());
+                    std::string msg = "✅ Added: " + name + " at " + FormatTime(hour, minute);
+                    display->SetChatMessage("assistant", msg.c_str());
                 }
 
-                return std::string(
-                    "Added medicine reminder for " +
-                    name + " at " +
-                    FormatTime(hour, minute));
+                return "Added medicine reminder for " + name +
+                       " at " + FormatTime(hour, minute) + ".";
             });
 
-        // --- NEW MCP TOOL: Delete just one specific medication entry ---
-        McpServer::GetInstance().AddTool(
+        // Delete one entry by name
+        mcp.AddTool(
             "self.medicine.delete_entry",
-            "Remove a single medication from the schedule by its exact name string.",
+            "Remove a single medication from the schedule by its exact name.",
             PropertyList(std::vector<Property>{
                 Property("name", kPropertyTypeString)
             }),
-            [this](const PropertyList& properties) -> ReturnValue {
-                auto target_name = properties["name"].value<std::string>();
-                
+            [this](const PropertyList& props) -> ReturnValue {
+                auto target = props["name"].value<std::string>();
+
                 xSemaphoreTake(schedule_mutex_, portMAX_DELAY);
-                auto initial_size = schedule_.size();
-                
-                // Erase-remove idiom to filter out any object matching the name
+                auto before = schedule_.size();
                 schedule_.erase(
                     std::remove_if(schedule_.begin(), schedule_.end(),
-                        [&target_name](const Medication& med) {
-                            return med.name == target_name;
-                        }), 
-                    schedule_.end()
-                );
-                
-                bool removed = (schedule_.size() < initial_size);
-                
-                // If the deleted medication was actively alarming, clear it
-                if (active_alert_med_ == target_name) {
-                    active_alert_med_.clear();
-                }
+                        [&target](const Medication& m){ return m.name == target; }),
+                    schedule_.end());
+                bool removed = (schedule_.size() < before);
+
+                if (active_alert_med_ == target) active_alert_med_.clear();
                 xSemaphoreGive(schedule_mutex_);
 
                 if (!removed) {
-                    return "No scheduled medication found with the name: " + target_name;
+                    return "No scheduled medication found with the name: " + target;
                 }
 
                 SaveScheduleToStorage();
 
                 auto* display = Board::GetInstance().GetDisplay();
                 if (display) {
-                    std::string msg = "🗑️ Removed reminder: " + target_name;
-                    display->SetChatMessage("assistant", msg.c_str());
+                    display->SetChatMessage("assistant",
+                        ("🗑️ Removed: " + target).c_str());
                 }
 
-                return "Successfully removed " + target_name + " from the schedule.";
+                return "Removed " + target + " from the schedule.";
             });
 
-        // --- MCP TOOL: Clear entire schedule ---
-        McpServer::GetInstance().AddTool(
+        // Clear entire schedule
+        mcp.AddTool(
             "self.medicine.clear_all",
-            "Wipe the entire medication schedule from memory and persistent storage.",
+            "Wipe the entire medication schedule from memory and storage.",
             PropertyList(std::vector<Property>()),
             [this](const PropertyList&) -> ReturnValue {
                 xSemaphoreTake(schedule_mutex_, portMAX_DELAY);
@@ -485,49 +393,58 @@ public:
                 SaveScheduleToStorage();
 
                 auto* display = Board::GetInstance().GetDisplay();
-                if (display) {
-                    display->SetChatMessage("assistant", "All schedules cleared.");
-                }
+                if (display) display->SetChatMessage("assistant", "All schedules cleared.");
 
-                return "Successfully cleared the entire medication schedule.";
+                return "Medication schedule cleared.";
             });
 
-        // --- MCP TOOL: Read all scheduled medications ---
-        McpServer::GetInstance().AddTool(
+        // List all medications — returns JSON array for server-side parsing
+        mcp.AddTool(
             "self.medicine.list",
-            "Retrieve a list of all currently scheduled medications.",
+            "List all currently scheduled medications. Returns a JSON array.",
             PropertyList(std::vector<Property>()),
             [this](const PropertyList&) -> ReturnValue {
-                std::string summary = "Current Scheduled Medications:\n";
-                
                 xSemaphoreTake(schedule_mutex_, portMAX_DELAY);
+
                 if (schedule_.empty()) {
-                    summary += "No medications scheduled.";
-                } else {
-                    for (const auto& med : schedule_) {
-                        summary += "- " + med.name + " at " + FormatTime(med.hour, med.minute) + 
-                                   " (Active: " + (med.active ? "Yes" : "No") + ")\n";
-                    }
+                    xSemaphoreGive(schedule_mutex_);
+                    return std::string("[]");
+                }
+
+                cJSON* root = cJSON_CreateArray();
+                for (const auto& med : schedule_) {
+                    cJSON* item = cJSON_CreateObject();
+                    cJSON_AddStringToObject(item, "name",         med.name.c_str());
+                    cJSON_AddNumberToObject(item, "hour",         med.hour);
+                    cJSON_AddNumberToObject(item, "minute",       med.minute);
+                    cJSON_AddNumberToObject(item, "days_bitmask", med.days_bitmask);
+                    cJSON_AddBoolToObject(item,   "active",       med.active);
+                    cJSON_AddItemToArray(root, item);
                 }
                 xSemaphoreGive(schedule_mutex_);
 
-                return summary;
-            });
+                char* out = cJSON_PrintUnformatted(root);
+                cJSON_Delete(root);
 
-        StartLocalWebServer();
+                if (!out) return std::string("[]");
+                std::string result(out);
+                cJSON_free(out);
+                return result;
+            });
+    }
+
+public:
+    MedicineReminderController() {
+        schedule_mutex_ = xSemaphoreCreateMutex();
+        LoadScheduleFromStorage();
+        RegisterMcpTools();
 
         xTaskCreatePinnedToCore(
-            TimeMonitorTask,
-            "MedTimeTask",
-            4096,
-            this,
-            1,
-            nullptr,
-            1);
+            TimeMonitorTask, "MedTimeTask",
+            4096, this, 1, nullptr, 1);
     }
 
     ~MedicineReminderController() {
-        if (server_) httpd_stop(server_);
         if (schedule_mutex_) vSemaphoreDelete(schedule_mutex_);
     }
 };
