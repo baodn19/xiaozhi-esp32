@@ -20,7 +20,7 @@
 #include <vector>
 
 #define TAG "FallDetection"
-#define UART_BUF_SIZE (512)
+#define UART_BUF_SIZE (1024) // 15 people detection, ~50 bytes/ person, total ~750 bytes
 #define TARGET_PERSON_ID 0           // '0' is the target ID for Person in YOLO
 #define FALL_RATIO_THRESHOLD 1.2f    // If width/height > 1.2, trigger fall alert
 #define DISTANCE_THRESHOLD 60.0      // Max pixels a person can move between 200ms frames

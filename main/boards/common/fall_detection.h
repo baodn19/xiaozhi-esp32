@@ -17,7 +17,7 @@ public:
     uint32_t GetLocalFallCount();
 
 private:
-    static constexpr int kMaxTrackedPeople = 5;
+    static constexpr int kMaxTrackedPeople = 15;
 
     struct TrackedPerson {
         int id;
