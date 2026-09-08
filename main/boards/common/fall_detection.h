@@ -5,6 +5,10 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/semphr.h>
 
+// Alert when a person is detected to have fallen.
+// Example:
+//  static FallDetectionController fall_detector(UART_NUM_1, 11, 12);
+//  fall_detector_ = &fall_detector;
 class FallDetectionController {
 public:
     FallDetectionController(uart_port_t uart_bus, int tx, int rx);
@@ -24,13 +28,13 @@ private:
         int last_y;            // Tracks previous frame's Y position
         float last_ratio;      // Tracks previous frame's aspect ratio
         uint32_t last_time;    // Tracks exact tick timestamp
-        int missing_frames;
+        int frames_until_untracked;
         bool active;
         float ratio;
     };
 
     TrackedPerson tracked_people_[kMaxTrackedPeople] = {};
-    int next_track_id_ = 1;
+    int next_track_id_ = 1; // 0 is for untracked, start IDs from 1
 
     uart_port_t uart_num_;
     bool alert_active_ = false;

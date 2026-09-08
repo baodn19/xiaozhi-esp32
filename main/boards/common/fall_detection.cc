@@ -29,6 +29,10 @@
 #define VELOCITY_Y_THRESHOLD  40     // Pixels dropped per second (adjust for camera distance)
 #define RATIO_SHIFT_THRESHOLD 0.6f   // Minimum spike in width/height ratio between frames
 
+// Dumps every raw UART line (and poll send time) as FDLOG/FDPOLL entries for
+// offline replay. Disable for normal field operation to cut UART log noise.
+#define FD_CAPTURE_MODE 1
+
 uint32_t FallDetectionController::GetLocalFallCount() {
     nvs_handle_t nvs_handle;
     uint32_t count = 0;
@@ -195,7 +199,7 @@ void FallDetectionController::ProcessDetectionLine(const char* line) {
 
             p.x = box.x; p.y = box.y; p.w = box.w; p.h = box.h;
             p.ratio = (float)box.w / (float)box.h;
-            p.missing_frames = 0;
+            p.frames_until_untracked = 0;
 
         } else {
             for (int i = 0; i < kMaxTrackedPeople; i++) {
@@ -209,7 +213,7 @@ void FallDetectionController::ProcessDetectionLine(const char* line) {
                     tracked_people_[i].last_y = box.y;
                     tracked_people_[i].last_ratio = box.ratio;
                     tracked_people_[i].last_time = now;
-                    tracked_people_[i].missing_frames = 0;
+                    tracked_people_[i].frames_until_untracked = 0;
                     tracked_people_[i].active = true;
                     break;
                 }
@@ -219,8 +223,8 @@ void FallDetectionController::ProcessDetectionLine(const char* line) {
 
     for (int i = 0; i < kMaxTrackedPeople; i++) {
         if (tracked_people_[i].active && tracked_people_[i].last_time != now) {
-            tracked_people_[i].missing_frames++;
-            if (tracked_people_[i].missing_frames > MAX_MISSING_FRAMES) {
+            tracked_people_[i].frames_until_untracked++;
+            if (tracked_people_[i].frames_until_untracked > MAX_MISSING_FRAMES) {
                 tracked_people_[i].active = false;
             }
         }
@@ -237,12 +241,20 @@ void FallDetectionController::DetectionTask(void* pvParameters) {
     char last_received_data[UART_BUF_SIZE] = "No data yet";
     TickType_t last_poll_time = xTaskGetTickCount();
     TickType_t last_heartbeat = xTaskGetTickCount();
+#if FD_CAPTURE_MODE
+    uint32_t fd_seq = 0;
+    bool line_overflow = false; // True signals potential data loss in FDLOG entries
+#endif
 
     for (;;) {
+        // ESP32-S3 sending request to Grove Vision Module every 200ms
         if ((xTaskGetTickCount() - last_poll_time) > pdMS_TO_TICKS(200)) {
             const char* poll_cmd = "AT+INVOKE=1,0,1\r";
             uart_write_bytes(self->uart_num_, poll_cmd, strlen(poll_cmd));
             last_poll_time = xTaskGetTickCount();
+#if FD_CAPTURE_MODE
+            ESP_LOGI(TAG, "FDPOLL,%lu", (unsigned long)(last_poll_time * portTICK_PERIOD_MS));
+#endif
         }
 
         int len = uart_read_bytes(self->uart_num_, data, UART_BUF_SIZE - 1, pdMS_TO_TICKS(50));
@@ -255,11 +267,23 @@ void FallDetectionController::DetectionTask(void* pvParameters) {
                         line_buffer[line_pos] = '\0';
 
                         strncpy(last_received_data, line_buffer, UART_BUF_SIZE - 1);
+#if FD_CAPTURE_MODE
+                        ESP_LOGI(TAG, "FDLOG,%lu,%lu,%d,%s",
+                                 (unsigned long)fd_seq++,
+                                 (unsigned long)(xTaskGetTickCount() * portTICK_PERIOD_MS),
+                                 line_overflow ? 1 : 0,
+                                 line_buffer);
+                        line_overflow = false;
+#endif
                         self->ProcessDetectionLine(line_buffer);
                         line_pos = 0;
                     }
                 } else if (line_pos < (sizeof(line_buffer) - 1)) {
                     line_buffer[line_pos++] = c;
+#if FD_CAPTURE_MODE
+                } else {
+                    line_overflow = true;
+#endif
                 }
             }
         }
@@ -275,8 +299,8 @@ void FallDetectionController::DetectionTask(void* pvParameters) {
                     else if (*end == ']') depth--;
                     end++;
                 } while (*end && depth > 0);
-                ESP_LOGI(TAG, "Human detected Boxes [x, y, w, h, score, target]: %.*s",
-                         (int)(end - start), start);
+                //ESP_LOGI(TAG, "Human detected Boxes [x, y, w, h, score, target]: %.*s",
+                //         (int)(end - start), start);
             }
             last_heartbeat = xTaskGetTickCount();
         }
