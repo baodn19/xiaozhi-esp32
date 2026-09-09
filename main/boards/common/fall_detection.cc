@@ -33,6 +33,10 @@
 // offline replay. Disable for normal field operation to cut UART log noise.
 #define FD_CAPTURE_MODE 1
 
+// DetectionTask holds two UART_BUF_SIZE buffers on its stack (2 KB at 1024) and
+// calls into sscanf / ESP_LOGI, each of which needs ~1 KB of frame on top.
+static constexpr uint32_t kDetectionTaskStackSize = 6144;
+
 uint32_t FallDetectionController::GetLocalFallCount() {
     nvs_handle_t nvs_handle;
     uint32_t count = 0;
@@ -238,7 +242,6 @@ void FallDetectionController::DetectionTask(void* pvParameters) {
     char line_buffer[UART_BUF_SIZE];
     int line_pos = 0;
 
-    char last_received_data[UART_BUF_SIZE] = "No data yet";
     TickType_t last_poll_time = xTaskGetTickCount();
     TickType_t last_heartbeat = xTaskGetTickCount();
 #if FD_CAPTURE_MODE
@@ -266,7 +269,6 @@ void FallDetectionController::DetectionTask(void* pvParameters) {
                     if (line_pos > 0) {
                         line_buffer[line_pos] = '\0';
 
-                        strncpy(last_received_data, line_buffer, UART_BUF_SIZE - 1);
 #if FD_CAPTURE_MODE
                         ESP_LOGI(TAG, "FDLOG,%lu,%lu,%d,%s",
                                  (unsigned long)fd_seq++,
@@ -289,19 +291,11 @@ void FallDetectionController::DetectionTask(void* pvParameters) {
         }
 
         if ((xTaskGetTickCount() - last_heartbeat) >= pdMS_TO_TICKS(1000)) {
-            const char* key = strstr(last_received_data, "\"boxes\"");
-            const char* start = key ? strchr(key, '[') : nullptr;
-            if (start) {
-                int depth = 0;
-                const char* end = start;
-                do {
-                    if (*end == '[') depth++;
-                    else if (*end == ']') depth--;
-                    end++;
-                } while (*end && depth > 0);
-                //ESP_LOGI(TAG, "Human detected Boxes [x, y, w, h, score, target]: %.*s",
-                //         (int)(end - start), start);
-            }
+#if FD_CAPTURE_MODE
+            // Bytes of stack never touched: tune kDetectionTaskStackSize from this.
+            // Peak for UART_BUF_SIZE (1024) is ~3.6 KB = 2.1 KB (DetectionTask) + 1.5 KB (sscanf / ESP_LOGI)
+            ESP_LOGI(TAG, "FDSTACK,%u", (unsigned)uxTaskGetStackHighWaterMark(nullptr));
+#endif
             last_heartbeat = xTaskGetTickCount();
         }
 
@@ -332,7 +326,7 @@ FallDetectionController::FallDetectionController(uart_port_t uart_bus, int tx, i
 
     vTaskDelay(pdMS_TO_TICKS(1000));
 
-    xTaskCreatePinnedToCore(DetectionTask, "FallDetTask", 4096, this, 1, nullptr, 1);
+    xTaskCreatePinnedToCore(DetectionTask, "FallDetTask", kDetectionTaskStackSize, this, 1, nullptr, 1);
     ESP_LOGI(TAG, "Fall Detection Initialized via UART (YOLO Array Mode).");
 }
 
