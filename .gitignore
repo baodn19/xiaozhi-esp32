@@ -25,5 +25,8 @@ docs/
 # venv
 scripts/acoustic_check/audio_debug
 
+# Test folder
+test/
+
 # Cursor
 .cursor
