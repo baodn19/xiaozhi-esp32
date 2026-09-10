@@ -294,7 +294,7 @@ void FallDetectionController::DetectionTask(void* pvParameters) {
 #if FD_CAPTURE_MODE
             // Bytes of stack never touched: tune kDetectionTaskStackSize from this.
             // Peak for UART_BUF_SIZE (1024) is ~3.6 KB = 2.1 KB (DetectionTask) + 1.5 KB (sscanf / ESP_LOGI)
-            ESP_LOGI(TAG, "FDSTACK,%u", (unsigned)uxTaskGetStackHighWaterMark(nullptr));
+            ESP_LOGI(TAG, "FDSTACK_FREE,%u", (unsigned)uxTaskGetStackHighWaterMark(nullptr));
 #endif
             last_heartbeat = xTaskGetTickCount();
         }
