@@ -56,6 +56,7 @@ list(APPEND SOURCES
     "boards/common/i2c_device.cc"
     "boards/common/knob.cc"
     "boards/common/fall_detection.cc"
+    "boards/common/fall_posture.cc"
     "boards/common/power_save_timer.cc"
     "boards/common/press_to_talk_mcp_tool.cc"
     "boards/common/sleep_timer.cc"
