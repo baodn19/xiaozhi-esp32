@@ -133,16 +133,21 @@ void PostureTracker::Associate(const BoxObservation* boxes, size_t count, uint32
     Candidate candidates[kMaxTrackedPeople * kMaxTrackedPeople];
     int n_candidates = 0;
 
+    // M8: anchor association on the box BOTTOM (feet), not the centre. A fall collapses h, which
+    // moves the centre by half the height loss even when the body has not travelled -- so the
+    // centre gate rejects the prone box precisely when a fall is what produced it. Feet stay on
+    // the ground plane: in the Sep 16 capture fall #1's centre moved 92px (outside the gate) while
+    // its bottom moved 7px.
     for (size_t bi = 0; bi < count; bi++) {
         float bcx = boxes[bi].x + boxes[bi].w / 2.0f;
-        float bcy = boxes[bi].y + boxes[bi].h / 2.0f;
+        float bcy = boxes[bi].y + boxes[bi].h;
 
         for (int ti = 0; ti < kMaxTrackedPeople; ti++) {
             const TrackedPerson& t = tracks_[ti];
             if (!t.active) continue;
 
             float tcx = t.x + t.w / 2.0f;
-            float tcy = t.y + t.h / 2.0f;
+            float tcy = t.y + t.h;  // M8: feet anchor, matching bcy above
             float dx = bcx - tcx, dy = bcy - tcy;
             float dist = std::sqrt(dx * dx + dy * dy);
 
@@ -204,7 +209,20 @@ void PostureTracker::UpdateBaseline(TrackedPerson& t, uint32_t /*now_ms*/) {
     // Reject h samples that deviate too far from the running baseline -- partial occlusion
     // behind furniture truncates h and would otherwise drag h_ref down to mimic an axial collapse.
     float dev = std::fabs(t.h - t.h_ref) / t.h_ref;
-    if (dev > tuning_.baseline_reject_frac) return;
+    if (dev > tuning_.baseline_reject_frac) {
+        // Rejection is right for a transient truncation, but h_ref is seeded from the very first
+        // box a track sees. Seed that from a partial detection and every *correct* sample after it
+        // is an outlier too, so h_ref latches at the wrong value and T1 can never fire -- the track
+        // is dead on arrival. A baseline contradicted this many times running is the wrong
+        // baseline, not a run of bad samples, so adopt what the detector is actually reporting.
+        if (++t.baseline_reject_streak >= tuning_.baseline_reseed_after) {
+            t.h_ref = t.h;
+            t.cy_ref = t.cy;
+            t.baseline_reject_streak = 0;
+        }
+        return;
+    }
+    t.baseline_reject_streak = 0;
 
     t.h_ref = tuning_.baseline_ema_alpha * t.h + (1.0f - tuning_.baseline_ema_alpha) * t.h_ref;
     t.cy_ref = tuning_.baseline_ema_alpha * t.cy + (1.0f - tuning_.baseline_ema_alpha) * t.cy_ref;

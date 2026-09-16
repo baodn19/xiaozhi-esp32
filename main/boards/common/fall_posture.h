@@ -28,10 +28,19 @@ struct Tuning {
     // Baseline (h_ref / cy_ref) learning.
     float baseline_ema_alpha = 0.1f;      // ~2s time constant at 5 Hz
     float baseline_reject_frac = 0.25f;   // reject h samples deviating more than this from h_ref
+    // h_ref seeds from the first box a track ever sees. If that box is a partial detection the
+    // seed is wrong, and every correct sample afterwards reads as an outlier and is rejected --
+    // including from updating h_ref -- so the baseline latches and the track can never satisfy T1.
+    // Re-seed once the baseline has been contradicted this many times in a row. See the Sep 16
+    // capture: a track seeded at h=120 by a partial box never accepted the person's real h=193.
+    int baseline_reseed_after = 5;
     float min_classify_h_ref = 100.0f;    // px (of 240, ~42%); below this a track never alarms (was 80 @ 192)
 
     // T1: kInit -> kUpright.
-    int upright_confirm_frames = 10;
+    // 10 consecutive frames is 2.2s at the measured 4.4fps -- long enough that a person walking in
+    // and falling never completes it, while a stationary false detection does so trivially. The
+    // Sep 16 capture had a real fall reach 9 consecutive frames and miss by one.
+    int upright_confirm_frames = 5;
     float upright_h_tolerance = 0.20f;
     float upright_min_h_frac_of_frame = 0.25f;
 
@@ -69,7 +78,10 @@ struct Tuning {
 
     // Ballisticity -- computed from the descent leg immediately preceding ground entry.
     float ballistic_peak_norm_vel_min = 0.32f;
-    uint32_t ballistic_max_duration_ms = 1400;
+    // At 4.4fps a descent is only ~5-7 samples, so the measured descent leg quantises coarsely and
+    // lands long. A real fall in the Sep 16 capture measured 1.61s from T2 to ground entry and was
+    // classified a controlled descent at 1400. Revisit if the poll rate goes up (Phase B).
+    uint32_t ballistic_max_duration_ms = 1800;
 
     // Zombie handling for detector dropout on prone bodies.
     int max_missing_frames = 3;
@@ -131,6 +143,7 @@ struct TrackedPerson {
     float cy_ref = 0;
     bool has_baseline = false;
     int upright_confirm_count = 0;  // T1 accumulator
+    int baseline_reject_streak = 0;  // consecutive h samples rejected as outliers; drives re-seed
 
     // Short history for windowed (least-squares) velocity, in chronological order.
     float hist_t_ms[kVelWindow] = {};
