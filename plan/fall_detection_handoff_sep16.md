@@ -4,7 +4,9 @@ State as of commit `c27d082` on `feature/improve-fall-detection` (pushed to orig
 Companion to `fall_detection_sensing_fix.md` (the Phase A/B plan) and
 `fall_detection_state_machine.md` (the state machine design).
 
-**Next action: flash `c27d082`, re-enact falls, analyse. See "What to do next".**
+**Superseded in part by the Sep 16 (later) round — see "Round 2: the post-`c27d082` capture"
+at the end of this document. `c27d082` was flashed, three falls were re-enacted, none
+alerted on-device, and two further tracker defects were found and fixed.**
 
 ---
 
@@ -194,3 +196,145 @@ To find why a specific fall did not alarm, dump the raw boxes around it. The par
 Then check the `FDEVT` trace for that time window: no transitions at all means the track never
 reached `Upright` (T1 gate); `Upright→Init` means it died via the non-ballistic zombie path;
 `SUPPRESS,controlled_descent` means it tracked the fall but classified it benign.
+
+---
+
+# Round 2: the post-`c27d082` capture
+
+`c27d082` was flashed and three falls re-enacted at **~29s, ~43s, ~57s**. **None alerted on the
+device.** The replay harness reproduced the device's `FDEVT` output byte-for-byte, which confirmed
+the device really was running `c27d082` and the failure was in the tracker, not the flash.
+
+Two further defects were found, both confirmed frame-by-frame from the capture. With them fixed,
+**fall #2 alerts**; falls #1 and #3 are not reachable by tracker changes and are explained below.
+
+## ⚠ The reference capture was overwritten
+
+`capture_conf25_falls.log` was re-used as the output filename, so the 54.7%-detection reference
+capture the round-1 numbers came from **is gone**. The intact tscore=50 capture survives only as
+`monitor.log` inside the older worktrees under `.claude/worktrees/*/`; the copy in the main
+checkout was also clobbered (47 frames, was 197). The doc's earlier warning about distinct capture
+names stands, and now has a second casualty. Treat `.claude/worktrees/handoff-doc/monitor.log`
+(197 frames, 395 FDLOG lines) as the surviving tscore=50 regression fixture.
+
+## Sensing got worse, not better
+
+| | round 1 (`capture_conf25_falls.log`, lost) | round 2 (same filename) |
+|---|---|---|
+| module `tscore` | 26 | 26 |
+| detection rate | 54.7% (141/258) | **32.8% (81/247)** |
+| score floor | 29 | 27 |
+| frame rate | 4.38 fps | 4.41 fps |
+| blackouts >1s | — | **6, totalling ~18s of a 56s capture** |
+| worst blackout | 7.66s | 6.02s |
+
+The score floor (27) is still above the module threshold (26), so this is **not** threshold
+clipping — the detector genuinely does not see the person for about a third of the capture. Poll
+timing is steady (median gap 230ms, max 290ms), so these are frames returning **zero boxes**, not
+missed polls. Whatever changed between the two sessions — distance, lighting, framing — cost more
+detection than the entire Phase A threshold fix gained. **This is now the dominant problem.**
+
+One piece of good news: the stationary spurious `41x115` box at `cx≈189` is **gone** (one box near
+that column in 247 frames, versus most frames previously). That open problem is closed.
+
+## The two defects fixed
+
+### 1. Detector dropout was billed to the descent as if it were slow motion
+
+`ComputeBallistic()` measured `as_of_ms - descent_start_ms` — wall-clock, including time the
+detector was blind. Fall #2 was a textbook capture:
+
+```
+40500  Init->Upright      h_ref=190, clean (h=193 held for 2.0s)
+42580  Upright->Descending h 177->120, r=1.15
+42810  h=78  h_n=0.41  r=1.77  peak_norm_vel=0.95  pause_count=0   <- ballistic, 3x the 0.32 gate
+       ... detector blind for 2.91s ...
+45720  h=54  h_n=0.28  r=1.93  drop_n=0.42  is_ground=1            <- unambiguous ground pose
+       ... detector blind for 6.02s ...
+49190  zombie expiry -> ResolveZombie -> ballistic? NO -> Descending->Init, no alert
+```
+
+The real descent was 0.23s of observed motion. The measured duration was `45720 - 42580 = 3140ms`,
+over `ballistic_max_duration_ms = 1800`, so the one signal that was screaming "fall"
+(`peak_norm_vel = 0.95`) was overruled by a duration made entirely of blind time.
+
+**Fix:** accumulate `descent_observed_ms` over frames the track was actually matched on, capping
+each inter-frame gap at the new `Tuning::max_gap_counted_ms = 600`. Blind time is unknown time,
+not slow time. `ComputeBallistic()` now reads that accumulator and takes no timestamp argument.
+`descent_start_ms` is still used for the T7 forced-exit timeout, where wall-clock is correct.
+
+With this, fall #2's measured descent is 830ms, it resolves as ballistic, and the zombie path
+fires `ALERT,zombie_dropout` at 49190.
+
+### 2. The association gate's pre-baseline fallback was unreachable
+
+```c
+float gate = (t.h_ref > 0.0f) ? assoc_gate_ratio * t.h_ref : assoc_gate_px;
+```
+
+`CreateTrack()` seeds `t.h_ref = box.h`, so `h_ref > 0` is true from a track's first frame and the
+`assoc_gate_px` branch **never executed**. The intended test is `has_baseline`, which is set only
+at T1 — and which, it turns out, was written at line 342 and read nowhere.
+
+The effect: an unconfirmed track was gated on a baseline that was still a guess. Fall #1's track
+had a provisional `h_ref = 175` from a half-out-of-frame box, giving a 61px gate; the person's next
+box was 70px away, was rejected, and started a **second track seeded at prone height (`h_ref=62`)**
+— below `min_classify_h_ref`, so incapable of alarming.
+
+**Fix:** `float gate = t.has_baseline ? assoc_gate_ratio * t.h_ref : assoc_gate_px;`
+Fall #1's track now survives the collapse intact instead of splitting in two.
+
+## Why falls #1 and #3 still do not alert
+
+Neither is a tuning problem; no threshold change reaches them.
+
+**Fall #1 (~29s) — never established an upright baseline.** The person entered at the extreme left
+edge: `w=28px` for a 177px-tall body, i.e. well over half the body out of frame. Four boxes total
+before the collapse began, of which the upright gate accepted two (one had `r=0.18` from the
+clipped width, one had cropped feet, `bottom_valid=0`). T1 needs 5 consecutive; the count peaked at
+2. The track therefore stayed in `kInit`, which by design never alarms. This is the **same failure
+as round 1's ~26s fall, at the same edge of the same frame.**
+
+**Fall #3 (~57s) — the descent happened inside a blackout.** The last pre-fall box at 54210 is
+upright; the first post-fall box at 57830 is already prone. The 3.62s in between returned zero
+boxes. The post-fall track is born prone (`h_ref` 54–80, under `min_classify_h_ref = 100`) with no
+upright history. The fall is simply not in the data.
+
+## Verification
+
+| Check | Result |
+|---|---|
+| Round-2 capture | fall #2 `ALERT,zombie_dropout @49190`; #1, #3 still missed |
+| Intact tscore=50 capture (`.claude/worktrees/handoff-doc/monitor.log`) | **byte-identical** to `c27d082` — no false positives, no behaviour change |
+| `capture_conf25_check.log` | no alerts, unchanged |
+| `make test` | ALL PASS (velocity regression, crouch/T10 0 alerts, ballistic/T11 1 alert, lie-down benign) |
+| `idf.py build` | succeeds, `xiaozhi.bin` 0x23e820, 24% partition free |
+
+Alert latency for fall #2 is 6.6s (fall at ~42.6s, alert at 49190). It is set by the zombie clock
+restarting when the body was briefly re-acquired at 45720, not by the fix.
+
+## New tooling
+
+`./fall_replay --trace` dumps every active track's state and derived features per frame
+(`h`, `h_ref`, `h_n`, `r`, `drop_n`, velocities, each boolean gate, the T1/ground counters,
+`peak_norm_vel`, `pause_count`, missing-frame count, zombie flag). This is what turned "no alert"
+into a named gate for each of the three falls. Host-only; the device has no equivalent, so it
+cannot affect `FDEVT` reproduction.
+
+## What to do next (revised)
+
+1. **Fix the framing before tuning anything else.** Two of the three misses are framing/visibility,
+   and detection rate fell to 32.8%. Re-aim or reposition the camera so the whole fall area is
+   well inside the frame, then re-capture and check the rate before re-enacting falls. Target the
+   ~55% the previous session achieved.
+2. **Stand fully in frame and upright for ≥1.5s before falling.** T1 needs 5 consecutive upright
+   frames (~1.1s at 4.4fps) and a track that never confirms can never alarm, no matter how clean
+   the fall itself looks.
+3. **Phase B (poll rate 200ms → ~100ms) is now the highest-value code change.** Fall #3 was lost
+   entirely to a 3.62s blackout and fall #2 nearly was. Doubling the rate does not fix zero-box
+   frames, but it halves the quantisation that makes short descents hard to measure and gives the
+   ground-confirmation window more chances to land two frames.
+4. Still open from round 1: remove the dead `AT+TSCORE` send, set `FD_PROBE_COMMANDS 0`.
+5. Consider whether `ground_confirm_frames = 2` should tolerate a dropout between the two frames.
+   Fall #2 had one clean ground frame (45720, `drop_n=0.42`) and was rescued only by the zombie
+   path. Not changed here — it is a single-capture judgement and the zombie path already covers it.

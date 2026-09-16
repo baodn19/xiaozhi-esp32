@@ -151,9 +151,16 @@ void PostureTracker::Associate(const BoxObservation* boxes, size_t count, uint32
             float dx = bcx - tcx, dy = bcy - tcy;
             float dist = std::sqrt(dx * dx + dy * dy);
 
-            // Fixed pixel gate before a baseline exists; once h_ref is known the gate scales with
-            // distance instead of being uniformly generous. See design doc "Association".
-            float gate = (t.h_ref > 0.0f) ? tuning_.assoc_gate_ratio * t.h_ref : tuning_.assoc_gate_px;
+            // Fixed pixel gate before a baseline exists; once h_ref is CONFIRMED the gate scales
+            // with distance instead of being uniformly generous. See design doc "Association".
+            // The test is has_baseline (set at T1), not h_ref > 0: CreateTrack seeds h_ref from the
+            // track's first box, so h_ref > 0 was true from birth and the fixed-gate branch was
+            // unreachable. Unconfirmed tracks were therefore gated on a baseline that was still a
+            // guess -- and when that guess came from a partial box the gate was correspondingly
+            // tight. Sep 16 fall #1: an unconfirmed track with a provisional h_ref=175 got a
+            // 61px gate, rejected the person's next box 70px away, and split into a second track
+            // seeded at prone height that could never alarm.
+            float gate = t.has_baseline ? tuning_.assoc_gate_ratio * t.h_ref : tuning_.assoc_gate_px;
             if (dist < gate) {
                 candidates[n_candidates++] = {dist, static_cast<int>(bi), ti};
             }
@@ -263,10 +270,12 @@ Features PostureTracker::ComputeFeatures(const TrackedPerson& t) const {
     return f;
 }
 
-bool PostureTracker::ComputeBallistic(const TrackedPerson& t, uint32_t as_of_ms) const {
-    uint32_t duration = as_of_ms - t.descent_start_ms;
+bool PostureTracker::ComputeBallistic(const TrackedPerson& t) const {
+    // descent_observed_ms, not (now - descent_start_ms): the latter charges detector dropout to
+    // the descent. See Tuning::max_gap_counted_ms -- a real ballistic fall whose prone body the
+    // detector then lost for 2.91s measured 3.14s and was written off as a controlled descent.
     return t.peak_norm_vel > tuning_.ballistic_peak_norm_vel_min && t.pause_count == 0 &&
-           duration < tuning_.ballistic_max_duration_ms;
+           t.descent_observed_ms < tuning_.ballistic_max_duration_ms;
 }
 
 void PostureTracker::EnterState(TrackedPerson& t, PostureState new_state, uint32_t now_ms) {
@@ -289,6 +298,8 @@ void PostureTracker::EnterState(TrackedPerson& t, PostureState new_state, uint32
             break;
         case PostureState::kDescending:
             t.descent_start_ms = now_ms;
+            t.descent_observed_ms = 0;
+            t.descent_last_sample_ms = now_ms;
             t.peak_norm_vel = 0;
             t.stall_frames = 0;
             t.pause_count = 0;
@@ -342,6 +353,13 @@ void PostureTracker::UpdatePosture(TrackedPerson& t, const Features& f, uint32_t
         }
 
         case PostureState::kDescending: {
+            // Accumulate the descent's OBSERVED duration, capping each inter-frame gap: this
+            // function only runs on frames where the track was actually matched, so an uncapped
+            // delta would silently bill a detector blackout to the fall. See max_gap_counted_ms.
+            uint32_t gap = now_ms - t.descent_last_sample_ms;
+            t.descent_observed_ms += (gap > tuning_.max_gap_counted_ms) ? tuning_.max_gap_counted_ms : gap;
+            t.descent_last_sample_ms = now_ms;
+
             // T3: track the peak descent speed and count distinct mid-fall pauses (a "stall run"
             // reaching 2 frames counts once, so a long pause doesn't inflate pause_count).
             float norm_vel = std::max(f.v_cy_n, -f.v_h_n);
@@ -380,14 +398,14 @@ void PostureTracker::UpdatePosture(TrackedPerson& t, const Features& f, uint32_t
                 t.ground_confirm_count = 0;
             }
             if (t.ground_confirm_count >= tuning_.ground_confirm_frames) {  // T6
-                t.was_ballistic = ComputeBallistic(t, now_ms);
+                t.was_ballistic = ComputeBallistic(t);
                 EnterState(t, PostureState::kGroundUnconfirmed, now_ms);
                 break;
             }
 
             if (now_ms - t.descent_start_ms > tuning_.descending_forced_exit_ms) {  // T7
                 if (f.is_ground) {
-                    t.was_ballistic = ComputeBallistic(t, now_ms);
+                    t.was_ballistic = ComputeBallistic(t);
                     EnterState(t, PostureState::kGroundUnconfirmed, now_ms);
                 } else if (f.is_low) {
                     EnterState(t, PostureState::kLowTransient, now_ms);
@@ -501,7 +519,7 @@ void PostureTracker::UpdatePosture(TrackedPerson& t, const Features& f, uint32_t
 void PostureTracker::ResolveZombie(TrackedPerson& t, uint32_t now_ms) {
     bool ballistic = (t.zombie_from_state == PostureState::kGroundUnconfirmed)
                           ? t.was_ballistic
-                          : ComputeBallistic(t, t.last_seen_ms);
+                          : ComputeBallistic(t);
 
     if (ballistic) {
         // "went down fast, then the detector lost them" is a fall, not a non-event -- person

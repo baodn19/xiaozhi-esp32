@@ -78,6 +78,12 @@ struct Tuning {
 
     // Ballisticity -- computed from the descent leg immediately preceding ground entry.
     float ballistic_peak_norm_vel_min = 0.32f;
+    // A descent's duration is accumulated from OBSERVED frames only, with each inter-frame gap
+    // capped here. The detector goes blind for seconds at a time precisely when a body goes prone
+    // (Sep 16: a 2.91s dropout mid-fall), and charging that blind time to the descent made a 0.23s
+    // ballistic collapse measure 3.14s and fail ballistic_max_duration_ms. Blind time is unknown
+    // time, not slow time; cap it at a plausible frame interval instead of counting it in full.
+    uint32_t max_gap_counted_ms = 600;
     // At 4.4fps a descent is only ~5-7 samples, so the measured descent leg quantises coarsely and
     // lands long. A real fall in the Sep 16 capture measured 1.61s from T2 to ground entry and was
     // classified a controlled descent at 1400. Revisit if the poll rate goes up (Phase B).
@@ -159,6 +165,8 @@ struct TrackedPerson {
 
     // kDescending accumulators.
     uint32_t descent_start_ms = 0;
+    uint32_t descent_observed_ms = 0;    // descent duration over observed frames, blind gaps capped
+    uint32_t descent_last_sample_ms = 0;  // previous observed frame in this descent
     float peak_norm_vel = 0;
     int stall_frames = 0;
     int pause_count = 0;
@@ -235,7 +243,7 @@ private:
     Features ComputeFeatures(const TrackedPerson& t) const;
     void UpdatePosture(TrackedPerson& t, const Features& f, uint32_t now_ms);
     void EnterState(TrackedPerson& t, PostureState new_state, uint32_t now_ms);
-    bool ComputeBallistic(const TrackedPerson& t, uint32_t as_of_ms) const;
+    bool ComputeBallistic(const TrackedPerson& t) const;
 
     void FireAlert(TrackedPerson& t, const char* reason, uint32_t now_ms);
     void LogSuppressed(const TrackedPerson& t, const char* reason, uint32_t now_ms);

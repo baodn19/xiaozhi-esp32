@@ -87,9 +87,32 @@ void OnSuppressLog(void*, uint32_t now_ms, const TrackedPerson& t, const char* r
     printf("FDEVT,%d,SUPPRESS,%s,%u\n", t.id, reason, now_ms);
 }
 
+// --trace: dump every active track's state and derived features after each frame. Host-only
+// diagnostic -- the device has no equivalent, so this never affects FDEVT reproduction.
+void TraceTracks(const PostureTracker& tracker, uint32_t now_ms) {
+    for (int i = 0; i < PostureTracker::kMaxTrackedPeople; i++) {
+        const TrackedPerson& t = tracker.TrackAt(i);
+        if (!t.active) continue;
+        const Features& f = t.last_features;
+        printf("TRACE,%u,id=%d,%s%s,h=%.0f,h_ref=%.0f,h_n=%.2f,r=%.2f,drop=%.2f,"
+               "vcy=%.2f,vh=%.2f,vbot=%.2f,up=%d,gnd=%d,low=%d,desc=%d,"
+               "upcnt=%d,gndcnt=%d,rej=%d,peakv=%.2f,pause=%d,miss=%d,bot_ok=%d\n",
+               now_ms, t.id, PostureStateName(t.state), t.is_zombie ? "(Z)" : "",
+               t.h, t.h_ref, f.h_n, f.r, f.drop_n, f.v_cy_n, f.v_h_n, f.v_bot_n,
+               f.is_upright, f.is_ground, f.is_low, f.descent_sig,
+               t.upright_confirm_count, t.ground_confirm_count, t.baseline_reject_streak,
+               t.peak_norm_vel, t.pause_count, t.frames_until_untracked, f.bottom_valid);
+    }
+}
+
 }  // namespace
 
-int main() {
+int main(int argc, char** argv) {
+    bool trace = false;
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "--trace") == 0) trace = true;
+    }
+
     PostureTracker tracker;
     tracker.SetFallAlertCallback(&OnFallAlert);
     tracker.SetEventLogCallback(&OnEventLog);
@@ -110,6 +133,7 @@ int main() {
         // spurious missing-frame tick for a line that was never a detector inference.
         if (!ParseBoxes(json.c_str(), &boxes)) continue;
         tracker.Update(boxes.data(), boxes.size(), ms);
+        if (trace) TraceTracks(tracker, ms);
         last_ms = ms;
         frames++;
     }
