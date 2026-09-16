@@ -24,9 +24,15 @@
 
 // Boxes below this confidence are dropped before association, so low-confidence jitter never
 // reaches the tracker. Mirrors the detect_threshold gate in sensecap-watcher/sscma_camera.cc:118.
-// NOTE: the score scale is not yet confirmed for this model -- SSCMA reports 0..100, but that must
-// be verified against a real FDLOG line before this number means anything.
-#define MIN_BOX_SCORE 40
+// Must track FD_TSCORE below and tools/fall_replay/main.cc's hardcoded `score >= 25` -- if these
+// three drift apart, the replay harness stops reproducing device behaviour. See
+// plan/fall_detection_sensing_fix.md M2.
+#define MIN_BOX_SCORE 25
+
+// Module-side score gate sent via AT+TSCORE at init (fall_detection.cc constructor). The module's
+// default cut (50) hard-clips prone-body boxes, which score ~8 points lower than upright ones --
+// exactly the frames a fall needs. See plan/fall_detection_sensing_fix.md M1.
+#define FD_TSCORE 25
 
 // How long the alert stays suppressed after firing, so one fall cannot re-trigger per frame.
 #define ALERT_COOLDOWN_MS 15000
@@ -290,6 +296,11 @@ FallDetectionController::FallDetectionController(uart_port_t uart_bus, int tx, i
     uart_write_bytes(uart_num_, query_cmd, strlen(query_cmd));
 
     vTaskDelay(pdMS_TO_TICKS(1000));
+
+    char tscore_cmd[24];
+    snprintf(tscore_cmd, sizeof(tscore_cmd), "AT+TSCORE=%d\r", FD_TSCORE);
+    uart_write_bytes(uart_num_, tscore_cmd, strlen(tscore_cmd));
+    vTaskDelay(pdMS_TO_TICKS(200));
 
     xTaskCreatePinnedToCore(DetectionTask, "FallDetTask", kDetectionTaskStackSize, this, 1, nullptr, 1);
     ESP_LOGI(TAG, "Fall Detection Initialized via UART (YOLO Array Mode).");

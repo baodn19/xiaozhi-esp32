@@ -33,7 +33,7 @@ bool ParseBoxes(const char* json, std::vector<BoxObservation>* out) {
         int x = 0, y = 0, w = 0, h = 0, score = 0, target = 0;
         if (sscanf(ptr, "[%d,%d,%d,%d,%d,%d]", &x, &y, &w, &h, &score, &target) == 6 ||
             sscanf(ptr, "[%d, %d, %d, %d, %d, %d]", &x, &y, &w, &h, &score, &target) == 6) {
-            if (target == 0 && w > 0 && h > 0 && score >= 40) {
+            if (target == 0 && w > 0 && h > 0 && score >= 25) {
                 // SSCMA reports (x, y) as the box CENTER, not the top-left corner -- see the
                 // matching conversion (and its rationale) in FallDetectionController::ProcessDetectionLine.
                 out->push_back(BoxObservation{static_cast<float>(x) - static_cast<float>(w) / 2.0f,
