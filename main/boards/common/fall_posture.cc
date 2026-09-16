@@ -146,6 +146,7 @@ void PostureTracker::Associate(const BoxObservation* boxes, size_t count, uint32
         float dist;
         int box_idx;
         int track_idx;
+        bool confirmed;
     };
     Candidate candidates[kMaxTrackedPeople * kMaxTrackedPeople];
     int n_candidates = 0;
@@ -179,13 +180,16 @@ void PostureTracker::Associate(const BoxObservation* boxes, size_t count, uint32
             // seeded at prone height that could never alarm.
             float gate = t.has_baseline ? tuning_.assoc_gate_ratio * t.h_ref : tuning_.assoc_gate_px;
             if (dist < gate) {
-                candidates[n_candidates++] = {dist, static_cast<int>(bi), ti};
+                candidates[n_candidates++] = {dist, static_cast<int>(bi), ti, t.has_baseline};
             }
         }
     }
 
     std::sort(candidates, candidates + n_candidates,
-              [](const Candidate& a, const Candidate& b) { return a.dist < b.dist; });
+              [](const Candidate& a, const Candidate& b) {
+                  if (a.confirmed != b.confirmed) return a.confirmed;
+                  return a.dist < b.dist;
+              });
 
     bool track_claimed[kMaxTrackedPeople] = {};
     for (int i = 0; i < n_candidates; i++) {
