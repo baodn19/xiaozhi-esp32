@@ -151,12 +151,19 @@ struct TrackedPerson {
     int upright_confirm_count = 0;  // T1 accumulator
     int baseline_reject_streak = 0;  // consecutive h samples rejected as outliers; drives re-seed
 
-    // Short history for windowed (least-squares) velocity, in chronological order.
+    // Short history for windowed (least-squares) velocity, in chronological order. The timestamps
+    // are GAP-COMPRESSED (see PushHistory and Tuning::max_gap_counted_ms), not raw: a velocity is
+    // a change divided by the time it was observed over, and a detector blackout contributes
+    // change without observation. Dividing by raw wall-clock across a blackout reports a fast
+    // collapse as a slow one -- Sep 16 round 3: h 193->57 across a 2.06s blind gap measured
+    // peak_norm_vel 0.23 against a 0.32 ballistic gate, and a real fall was classified benign.
     float hist_t_ms[kVelWindow] = {};
     float hist_cy[kVelWindow] = {};
     float hist_bottom[kVelWindow] = {};
     float hist_h[kVelWindow] = {};
     int hist_count = 0;
+    uint32_t hist_raw_last_ms = 0;   // raw timestamp of the newest history sample
+    float hist_comp_last_ms = 0;     // its gap-compressed counterpart, the value stored above
 
     // State machine.
     PostureState state = PostureState::kInit;

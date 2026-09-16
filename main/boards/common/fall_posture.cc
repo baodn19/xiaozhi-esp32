@@ -73,9 +73,26 @@ void PostureTracker::LogSuppressed(const TrackedPerson& t, const char* reason, u
 
 void PostureTracker::PushHistory(TrackedPerson& t, uint32_t now_ms, float cy, float bottom, float h) {
     constexpr int N = TrackedPerson::kVelWindow;
+
+    // Compress blind gaps out of the time axis the velocity regression runs on. Only frames where
+    // this track was matched reach here, so a raw delta silently includes however long the
+    // detector saw nothing -- and the resulting slope understates a collapse by exactly the factor
+    // the blackout stretched it. Cap each step at the same max_gap_counted_ms the descent duration
+    // uses: unobserved time is unknown time, and it belongs in neither term.
+    float comp_t;
+    if (t.hist_count == 0) {
+        comp_t = static_cast<float>(now_ms);
+    } else {
+        uint32_t gap = now_ms - t.hist_raw_last_ms;
+        if (gap > tuning_.max_gap_counted_ms) gap = tuning_.max_gap_counted_ms;
+        comp_t = t.hist_comp_last_ms + static_cast<float>(gap);
+    }
+    t.hist_raw_last_ms = now_ms;
+    t.hist_comp_last_ms = comp_t;
+
     if (t.hist_count < N) {
         int i = t.hist_count++;
-        t.hist_t_ms[i] = static_cast<float>(now_ms);
+        t.hist_t_ms[i] = comp_t;
         t.hist_cy[i] = cy;
         t.hist_bottom[i] = bottom;
         t.hist_h[i] = h;
@@ -87,7 +104,7 @@ void PostureTracker::PushHistory(TrackedPerson& t, uint32_t now_ms, float cy, fl
         t.hist_bottom[i - 1] = t.hist_bottom[i];
         t.hist_h[i - 1] = t.hist_h[i];
     }
-    t.hist_t_ms[N - 1] = static_cast<float>(now_ms);
+    t.hist_t_ms[N - 1] = comp_t;
     t.hist_cy[N - 1] = cy;
     t.hist_bottom[N - 1] = bottom;
     t.hist_h[N - 1] = h;
