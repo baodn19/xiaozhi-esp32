@@ -1,0 +1,843 @@
+[0;33m--- esp-idf-monitor 1.9.0 on /dev/ttyACM0 115200[0m
+[0;33m--- Quit: Ctrl+] | Menu: Ctrl+T | Help: Ctrl+T followed by Ctrl+H[0m
+Executing action: monitor
+Running idf_monitor in directory /home/baodn19/Bio-FAIRCH/Nanabot/xiaozhi-esp32
+Executing "/home/baodn19/.espressif/python_env/idf5.5_py3.12_env/bin/python /home/baodn19/.espressif/v5.5.4/esp-idf/tools/idf_monitor.py -p /dev/ttyACM0 -b 115200 --toolchain-prefix xtensa-esp32s3-elf- --target esp32s3 --revision 0 /home/baodn19/Bio-FAIRCH/Nanabot/xiaozhi-esp32/build/xiaozhi.elf /home/baodn19/Bio-FAIRCH/Nanabot/xiaozhi-esp32/build/bootloader/bootloader.elf -m '/home/baodn19/.espressif/python_env/idf5.5_py3.12_env/bin/python' '/home/baodn19/.espressif/v5.5.4/esp-idf/tools/idf.py' '-p' '/dev/ttyACM0'"...
+ESP-ROM:esp32s3-20210327
+Build:Mar 27 2021
+rst:0x1 (POWERON),boot:0x8 (SPI_FAST_FLASH_BOOT)
+SPIWP:0xee
+mode:DIO, clock div:1
+load:0x3fce2820,len:0x548
+load:0x403c8700,len:0xc3c
+[0m--- 0x403c8700: [0;33m_stext[0m[0m at [0;32m??[0m[0m:[1;31m?[0m
+load:0x403cb700,len:0x2d9c
+entry 0x403c8908
+[0m--- 0x403c8908: [0;33mcall_start_cpu0[0m[0m at [0;32m/home/baodn19/.espressif/v5.5.4/esp-idf/components/bootloader/subproject/main/bootloader_start.c[0m[0m:[1;31m27[0m
+[0;32mI (35) octal_psram: vendor id    : 0x0d (AP)[0m
+[0;32mI (35) octal_psram: dev id       : 0x02 (generation 3)[0m
+[0;32mI (35) octal_psram: density      : 0x03 (64 Mbit)[0m
+[0;32mI (37) octal_psram: good-die     : 0x01 (Pass)[0m
+[0;32mI (41) octal_psram: Latency      : 0x01 (Fixed)[0m
+[0;32mI (45) octal_psram: VCC          : 0x01 (3V)[0m
+[0;32mI (49) octal_psram: SRF          : 0x01 (Fast Refresh)[0m
+[0;32mI (54) octal_psram: BurstType    : 0x01 (Hybrid Wrap)[0m
+[0;32mI (59) octal_psram: BurstLen     : 0x01 (32 Byte)[0m
+[0;32mI (64) octal_psram: Readlatency  : 0x02 (10 cycles@Fixed)[0m
+[0;32mI (69) octal_psram: DriveStrength: 0x00 (1/1)[0m
+[0;32mI (73) MSPI Timing: Enter psram timing tuning[0m
+[0;32mI (78) esp_psram: Found 8MB PSRAM device[0m
+[0;32mI (80) esp_psram: Speed: 80MHz[0m
+[0;32mI (83) cpu_start: Multicore app[0m
+[0;32mI (98) cpu_start: GPIO 44 and 43 are used as console UART I/O pins[0m
+[0;32mI (98) cpu_start: Pro cpu start user code[0m
+[0;32mI (98) cpu_start: cpu freq: 240000000 Hz[0m
+[0;32mI (100) app_init: Application information:[0m
+[0;32mI (103) app_init: Project name:     xiaozhi[0m
+[0;32mI (107) app_init: App version:      2.2.6[0m
+[0;32mI (111) app_init: Compile time:     Sep  2 2026 16:16:51[0m
+[0;32mI (116) app_init: ELF file SHA256:  a33d4a937...[0m
+[0;32mI (120) app_init: ESP-IDF:          v5.5.4[0m
+[0;32mI (124) efuse_init: Min chip rev:     v0.0[0m
+[0;32mI (128) efuse_init: Max chip rev:     v0.99 [0m
+[0;32mI (132) efuse_init: Chip rev:         v0.2[0m
+[0;32mI (136) heap_init: Initializing. RAM available for dynamic allocation:[0m
+[0;32mI (142) heap_init: At 3FCB1488 len 00038288 (224 KiB): RAM[0m
+[0;32mI (147) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM[0m
+[0;32mI (152) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM[0m
+[0;32mI (158) heap_init: At 600FE000 len 00001FD8 (7 KiB): RTCRAM[0m
+[0;32mI (163) esp_psram: Adding pool of 8192K of PSRAM memory to heap allocator[0m
+[0;32mI (170) spi_flash: detected chip: boya[0m
+[0;32mI (173) spi_flash: flash io: qio[0m
+[0;32mI (176) sleep_gpio: Configure to isolate all GPIO pins in sleep state[0m
+[0;32mI (182) sleep_gpio: Enable automatic switching of GPIO sleep configuration[0m
+[0;32mI (189) main_task: Started on CPU0[0m
+[0;32mI (219) esp_psram: Reserving pool of 96K of internal memory for DMA/internal allocations[0m
+[0;32mI (219) main_task: Calling app_main()[0m
+[0;32mI (229) Board: UUID=61ef4035-34dd-4f89-b926-151badd531d9 SKU=bread-compact-wifi-lcd-touch[0m
+[0;32mI (229) button: IoT Button Version: 4.1.7[0m
+[0;32mI (229) uart: ESP_INTR_FLAG_IRAM flag not set while CONFIG_UART_ISR_IN_IRAM is enabled, flag updated[0m
+[0;32mI (239) CompactWifiBoardLCDTouch: DualEye UART initialized on TX GPIO 10[0m
+[0;32mI (249) ili9341: LCD panel create success, version: 1.2.0[0m
+[0;32mI (369) Display: Power management not supported[0m
+[0;32mI (449) LcdDisplay: Turning display on[0m
+[0;32mI (449) LcdDisplay: Initialize LVGL library[0m
+[0;32mI (449) LcdDisplay: Use 2MB of PSRAM for image cache[0m
+[0;32mI (449) LcdDisplay: Initialize LVGL port[0m
+[0;32mI (459) LcdDisplay: Adding LCD display[0m
+[0;32mI (459) LVGL: Starting LVGL task[0m
+[0;32mI (459) MCP: Add tool: lotusai.recommend[0m
+[0;32mI (469) MCP: Add tool: lotusai.select[0m
+[0;32mI (469) MCP: Add tool: lotusai.confirm_qr[0m
+[0;32mI (479) MedReminder: Loaded 1 medications.[0m
+[0;32mI (479) MCP: Add tool: self.medicine.confirm[0m
+[0;32mI (479) MCP: Add tool: self.medicine.add[0m
+[0;32mI (489) MCP: Add tool: self.medicine.delete_entry[0m
+[0;32mI (489) MCP: Add tool: self.medicine.clear_all[0m
+[0;32mI (489) MCP: Add tool: self.medicine.list[0m
+[0;32mI (499) uart: ESP_INTR_FLAG_IRAM flag not set while CONFIG_UART_ISR_IN_IRAM is enabled, flag updated[0m
+[0;32mI (3509) FallDetection: Fall Detection Initialized via UART (YOLO Array Mode).[0m
+[0;32mI (3509) Backlight: Set brightness to 75[0m
+[0;32mI (3509) StateMachine: State: unknown -> starting[0m
+[0;32mI (3559) FallDetection: FDLOG,0,3370,0,{"type": 2, "name": "AT", "code": 5, "data": "Unknown command: "}[0m
+[0;32mI (3579) NoAudioCodec: Simplex channels created[0m
+[0;32mI (3579) AudioCodec: Audio codec started[0m
+[0;32mI (3589) MCP: Add tool: self.get_device_status[0m
+[0;32mI (3589) MCP: Add tool: self.audio_speaker.set_volume[0m
+[0;32mI (3589) MCP: Add tool: self.screen.set_brightness[0m
+[0;32mI (3589) MCP: Add tool: self.screen.set_theme[0m
+[0;32mI (3599) MCP: Add tool: self.get_system_info [user][0m
+[0;32mI (3599) MCP: Add tool: self.reboot [user][0m
+[0;32mI (3609) MCP: Add tool: self.upgrade_firmware [user][0m
+[0;32mI (3609) MCP: Add tool: self.screen.get_info [user][0m
+[0;32mI (3619) MCP: Add tool: self.screen.snapshot [user][0m
+[0;32mI (3619) MCP: Add tool: self.screen.preview_image [user][0m
+[0;32mI (3629) MCP: Add tool: self.assets.set_download_url [user][0m
+[0;32mI (3629) WifiManager: Initializing...[0m
+[0;32mI (3639) pp: pp rom version: e7ae62f[0m
+[0;32mI (3639) net80211: net80211 rom version: e7ae62f[0m
+[0;32mI (3649) wifi:wifi driver task: 3fce8a74, prio:23, stack:6144, core=0[0m
+[0;32mI (3649) wifi:wifi firmware version: 0947e8b[0m
+[0;32mI (3649) wifi:wifi certification version: v7.0[0m
+[0;32mI (3659) wifi:config NVS flash: disabled[0m
+[0;32mI (3659) wifi:config nano formatting: enabled[0m
+[0;32mI (3659) wifi:Init data frame dynamic rx buffer num: 6[0m
+[0;32mI (3669) wifi:Init dynamic rx mgmt buffer num: 5[0m
+[0;32mI (3669) wifi:Init management short buffer num: 32[0m
+[0;32mI (3679) wifi:Init dynamic tx buffer num: 32[0m
+[0;32mI (3679) wifi:Init static tx FG buffer num: 2[0m
+[0;32mI (3689) wifi:Init static rx buffer size: 1600[0m
+[0;32mI (3689) wifi:Init static rx buffer num: 3[0m
+[0;32mI (3689) wifi:Init dynamic rx buffer num: 6[0m
+[0;32mI (3699) wifi_init: rx ba win: 3[0m
+[0;32mI (3699) wifi_init: accept mbox: 6[0m
+[0;32mI (3699) wifi_init: tcpip mbox: 16[0m
+[0;32mI (3709) wifi_init: udp mbox: 6[0m
+[0;32mI (3709) wifi_init: tcp mbox: 6[0m
+[0;32mI (3709) wifi_init: tcp tx win: 5760[0m
+[0;32mI (3719) wifi_init: tcp rx win: 5760[0m
+[0;32mI (3719) wifi_init: tcp mss: 1440[0m
+[0;32mI (3719) WifiManager: Initialized[0m
+[0;32mI (3729) WifiBoard: Starting WiFi connection attempt[0m
+[0;32mI (3729) WifiManager: Starting station[0m
+[0;32mI (3729) phy_init: phy_version 711,97bcf0a2,Aug 25 2025,19:04:10[0m
+[0;32mI (3749) FallDetection: FDPOLL,3560[0m
+[0;32mI (3769) wifi:mode : sta (44:1b:f6:d4:11:40)[0m
+[0;32mI (3769) wifi:enable tsf[0m
+[0;32mI (3779) WifiBoard: WiFi scanning[0m
+[0;32mI (3879) FallDetection: FDLOG,1,3690,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (3899) FallDetection: FDLOG,2,3710,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (3979) FallDetection: FDPOLL,3790[0m
+[0;32mI (4039) FallDetection: FDLOG,3,3850,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (4119) FallDetection: FDLOG,4,3930,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (4189) FallDetection: FDPOLL,4000[0m
+[0;32mI (4319) FallDetection: FDLOG,5,4130,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (4339) FallDetection: FDLOG,6,4150,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (4419) FallDetection: FDPOLL,4230[0m
+[0;32mI (4479) FallDetection: FDLOG,7,4290,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (4559) FallDetection: FDLOG,8,4370,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (4559) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (4639) FallDetection: FDPOLL,4450[0m
+[0;32mI (4759) FallDetection: FDLOG,9,4570,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (4779) FallDetection: FDLOG,10,4590,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (4859) FallDetection: FDPOLL,4670[0m
+[0;32mI (4919) FallDetection: FDLOG,11,4730,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (4999) FallDetection: FDLOG,12,4810,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (5069) FallDetection: FDPOLL,4880[0m
+[0;32mI (5199) FallDetection: FDLOG,13,5010,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (5219) FallDetection: FDLOG,14,5030,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (5309) FallDetection: FDPOLL,5120[0m
+[0;32mI (5379) FallDetection: FDLOG,15,5190,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (5459) FallDetection: FDLOG,16,5270,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (5529) FallDetection: FDPOLL,5340[0m
+[0;32mI (5659) FallDetection: FDLOG,17,5470,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (5679) FallDetection: FDLOG,18,5490,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (5689) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (5769) FallDetection: FDPOLL,5580[0m
+[0;32mI (5839) FallDetection: FDLOG,19,5650,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (5919) FallDetection: FDLOG,20,5730,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (5989) FallDetection: FDPOLL,5800[0m
+[0;32mI (6119) FallDetection: FDLOG,21,5930,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (6139) FallDetection: FDLOG,22,5950,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (6179) WifiStation: Found AP: xlerobot-2.4GHz, BSSID: e8:9c:25:8c:ff:10, RSSI: -18, Channel: 8, Authmode: 3[0m
+[0;32mI (6179) WifiBoard: WiFi connecting to xlerobot-2.4GHz[0m
+[0;33mW (6189) wifi:Password length matches WPA2 standards, authmode threshold changes from OPEN to WPA2[0m
+[0;32mI (6219) FallDetection: FDPOLL,6030[0m
+[0;32mI (6329) FallDetection: FDLOG,23,6140,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (6349) FallDetection: FDLOG,24,6160,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (6439) FallDetection: FDPOLL,6250[0m
+[0;32mI (6559) FallDetection: FDLOG,25,6370,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (6579) FallDetection: FDLOG,26,6390,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (6659) FallDetection: FDPOLL,6470[0m
+[0;32mI (6719) FallDetection: FDLOG,27,6530,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (6739) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (6809) FallDetection: FDLOG,28,6620,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (6879) FallDetection: FDPOLL,6690[0m
+[0;32mI (6999) FallDetection: FDLOG,29,6810,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (7019) FallDetection: FDLOG,30,6830,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (7099) FallDetection: FDPOLL,6910[0m
+[0;32mI (7109) wifi:new:<8,0>, old:<1,0>, ap:<255,255>, sta:<8,0>, prof:1, snd_ch_cfg:0x0[0m
+[0;32mI (7109) wifi:state: init -> auth (0xb0)[0m
+[0;32mI (7119) wifi:state: auth -> assoc (0x0)[0m
+[0;32mI (7119) wifi:state: assoc -> run (0x10)[0m
+[0;32mI (7129) wifi:connected with xlerobot-2.4GHz, aid = 12, channel 8, BW20, bssid = e8:9c:25:8c:ff:10[0m
+[0;32mI (7139) wifi:security: WPA2-PSK, phy: bg, rssi: -14, cipher(pairwise:0x3, group:0x3), pmf:0[0m
+[0;32mI (7139) wifi:pm start, type: 1[0m
+
+[0;32mI (7139) wifi:dp: 1, bi: 102400, li: 10, scale listen interval from 1024000 us to 1024000 us[0m
+[0;32mI (7149) wifi:set rx beacon pti, rx_bcn_pti: 0, bcn_timeout: 25000, mt_pti: 0, mt_time: 10000[0m
+[0;32mI (7159) FallDetection: FDLOG,31,6970,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (7209) wifi:AP's beacon interval = 102400 us, DTIM period = 1[0m
+[0;32mI (7249) FallDetection: FDLOG,32,7060,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (7319) FallDetection: FDPOLL,7130[0m
+[0;32mI (7439) FallDetection: FDLOG,33,7250,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (7459) FallDetection: FDLOG,34,7270,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (7539) FallDetection: FDPOLL,7350[0m
+[0;32mI (7599) FallDetection: FDLOG,35,7410,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (7679) FallDetection: FDLOG,36,7490,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (7749) FallDetection: FDPOLL,7560[0m
+[0;32mI (7879) FallDetection: FDLOG,37,7690,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (7889) FallDetection: FDLOG,38,7700,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (7909) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (7989) FallDetection: FDPOLL,7800[0m
+[0;32mI (8059) FallDetection: FDLOG,39,7870,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (8139) FallDetection: FDLOG,40,7950,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (8169) esp_netif_handlers: sta ip: 192.168.50.193, mask: 255.255.255.0, gw: 192.168.50.1[0m
+[0;32mI (8169) WifiStation: Got IP: 192.168.50.193[0m
+[0;32mI (8169) WifiBoard: Connected to WiFi: xlerobot-2.4GHz[0m
+[0;32mI (8169) Application: Network connected[0m
+[0;32mI (8169) StateMachine: State: starting -> activating[0m
+[0;32mI (8179) Assets: The storage free size is 21888 KB[0m
+[0;33mW (8179) SingleLed: SingleLed initialized with GPIO_NUM_NC, LED will not function[0m
+[0;32mI (8179) Assets: The partition size is 8192 KB[0m
+[0;32mI (8399) Assets: The checksum calculation time is 202 ms[0m
+create static modelsI (8399) MODEL_LOADER: Successfully load srmodels
+[0;32mI (8399) Assets: Refreshing display theme...[0m
+[0;32mI (8409) Assets: Set hide_subtitle to false[0m
+[0;32mI (8409) Ota: Current version: 2.2.6[0m
+[0;32mI (8419) FallDetection: FDPOLL,8230[0m
+[0;32mI (8539) FallDetection: FDLOG,41,8350,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (8559) FallDetection: FDLOG,42,8370,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (8639) FallDetection: FDPOLL,8450[0m
+[0;32mI (8699) FallDetection: FDLOG,43,8510,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (8779) FallDetection: FDLOG,44,8590,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (8849) FallDetection: FDPOLL,8660[0m
+[0;32mI (9019) FallDetection: FDLOG,45,8830,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (9039) esp-x509-crt-bundle: Certificate validated[0m
+[0;32mI (9069) FallDetection: FDLOG,46,8880,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (9259) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (9269) FallDetection: FDPOLL,9080[0m
+[0;32mI (9399) FallDetection: FDLOG,47,9210,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (9419) FallDetection: FDLOG,48,9230,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (9509) FallDetection: FDPOLL,9320[0m
+[0;32mI (9639) FallDetection: FDLOG,49,9450,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (9649) FallDetection: FDLOG,50,9460,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (9739) FallDetection: FDPOLL,9550[0m
+[0;32mI (9849) FallDetection: FDLOG,51,9660,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (9869) FallDetection: FDLOG,52,9680,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[36, 117, 62, 240, 77, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (9879) HttpClient: Established new connection to api.tenclass.net:443[0m
+[0;32mI (9959) FallDetection: FDPOLL,9770[0m
+[0;32mI (10079) FallDetection: FDLOG,53,9890,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (10099) FallDetection: FDLOG,54,9910,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (10179) FallDetection: FDPOLL,9990[0m
+[0;32mI (10239) FallDetection: FDLOG,55,10050,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (10259) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (10329) FallDetection: FDLOG,56,10140,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (10399) FallDetection: FDPOLL,10210[0m
+[0;32mI (10499) HttpClient: HTTP connection closed[0m
+[0;32mI (10499) Ota: Current is the latest version[0m
+[0;32mI (10499) Ota: Running partition: ota_0[0m
+[0;32mI (10499) MQTT: Connecting to endpoint api.tenclass.net[0m
+[0;32mI (10519) FallDetection: FDLOG,57,10330,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (10539) FallDetection: FDLOG,58,10350,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[65, 117, 94, 240, 89, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (10629) FallDetection: FDPOLL,10440[0m
+[0;32mI (10699) FallDetection: FDLOG,59,10510,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (10779) FallDetection: FDLOG,60,10590,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[65, 117, 94, 240, 89, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (10859) FallDetection: FDPOLL,10670[0m
+[0;32mI (10979) FallDetection: FDLOG,61,10790,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (10999) FallDetection: FDLOG,62,10810,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[65, 122, 94, 240, 89, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (11109) FallDetection: FDPOLL,10920[0m
+[0;32mI (11109) esp-x509-crt-bundle: Certificate validated[0m
+[0;32mI (11369) FallDetection: FDLOG,63,11180,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (11389) FallDetection: FDLOG,64,11200,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[65, 122, 138, 240, 89, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (11409) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (11419) FallDetection: FDPOLL,11230[0m
+[0;32mI (11539) FallDetection: FDLOG,65,11350,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (11559) FallDetection: FDLOG,66,11370,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[70, 122, 138, 240, 64, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (11649) FallDetection: FDPOLL,11460[0m
+[0;32mI (11719) FallDetection: FDLOG,67,11530,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (11799) FallDetection: FDLOG,68,11610,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[70, 122, 138, 240, 64, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (11879) FallDetection: FDPOLL,11690[0m
+[0;32mI (11999) FallDetection: FDLOG,69,11810,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (12019) FallDetection: FDLOG,70,11830,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[75, 122, 138, 240, 71, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (12109) FallDetection: FDPOLL,11920[0m
+[0;32mI (12179) FallDetection: FDLOG,71,11990,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (12239) MQTT: Connected to endpoint[0m
+[0;32mI (12239) Application: Activation done[0m
+[0;32mI (12239) SystemInfo: free sram: 96795 minimal sram: 90467[0m
+[0;32mI (12239) StateMachine: State: activating -> idle[0m
+[0;32mI (12239) CompactWifiBoardLCDTouch: Sent Eye Command: 0x02[0m
+[0;32mI (12249) WifiStation: Setting WiFi power save level: LOW_POWER (MAX_MODEM)[0m
+[0;32mI (12249) wifi:Set ps type: 2, coexist: 0[0m
+
+[0;32mI (12259) CustomWakeWord: Command: NA NA BOT, Text: NanaBot, Action: wake[0m
+[0;32mI (12259) FallDetection: FDLOG,72,12070,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[65, 122, 138, 240, 71, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (12359) FallDetection: FDPOLL,12170[0m
+[0;32mI (12479) FallDetection: FDLOG,73,12290,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (12499) FallDetection: FDLOG,74,12310,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[70, 122, 138, 240, 50, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (12519) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (12589) FallDetection: FDPOLL,12400[0m
+[0;32mI (12659) FallDetection: FDLOG,75,12470,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+Build fst from commands.
+[0;32mI (12739) FallDetection: FDLOG,76,12550,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (12809) FallDetection: FDPOLL,12620[0m
+Quantized MultiNet6:rnnt_ctc_1.0, name:mn6_en, (Dec 16 2025 14:45:55)
+Quantized MultiNet6 search method: 2, time out:3.0 s
+set det threshold to 0.100000
+Build fst from commands.
+[0;32mI (12939) FallDetection: FDLOG,77,12750,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+1 active speech commands:
+[0;32mI (12969) FallDetection: FDLOG,78,12780,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+Command 1: NA NA BOT
+[0;32mI (12989) AudioCodec: Set output enable to true[0m
+[0;32mI (12989) AudioCodec: Set input enable to true[0m
+[0;32mI (12989) AudioService: Resampling audio from 16000 to 24000[0m
+[0;32mI (13049) FallDetection: FDPOLL,12860[0m
+[0;32mI (13119) FallDetection: FDLOG,79,12930,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (13199) FallDetection: FDLOG,80,13010,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (13269) FallDetection: FDPOLL,13080[0m
+[0;32mI (13399) FallDetection: FDLOG,81,13210,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (13419) FallDetection: FDLOG,82,13230,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (13499) FallDetection: FDPOLL,13310[0m
+[0;32mI (13559) FallDetection: FDLOG,83,13370,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (13579) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (13639) FallDetection: FDLOG,84,13450,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (13709) FallDetection: FDPOLL,13520[0m
+[0;32mI (13789) FallDetection: FDLOG,85,13600,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (13819) CustomWakeWord: Custom wake word detected: command_id=1, string= NA NA NA BOT, prob=0.172355[0m
+[0;32mI (13859) FallDetection: FDLOG,86,13670,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (13929) FallDetection: FDPOLL,13740[0m
+[0;32mI (13999) FallDetection: FDLOG,87,13810,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (14079) FallDetection: FDLOG,88,13890,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (14149) FallDetection: FDPOLL,13960[0m
+[0;32mI (14279) FallDetection: FDLOG,89,14090,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (14299) FallDetection: FDLOG,90,14110,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (14379) FallDetection: FDPOLL,14190[0m
+[0;32mI (14399) Application: Wake word detected: NanaBot (state: 3)[0m
+[0;32mI (14399) StateMachine: State: idle -> connecting[0m
+[0;32mI (14399) WifiStation: Setting WiFi power save level: PERFORMANCE (NONE)[0m
+[0;32mI (14399) wifi:Set ps type: 0, coexist: 0[0m
+
+[0;32mI (14479) CustomWakeWord: Encode wake word opus 13 packets in 83 ms[0m
+[0;32mI (14529) FallDetection: FDLOG,91,14340,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (14549) FallDetection: FDLOG,92,14360,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[70, 122, 138, 240, 87, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (14629) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (14639) FallDetection: FDPOLL,14450[0m
+[0;32mI (14759) FallDetection: FDLOG,93,14570,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (14779) FallDetection: FDLOG,94,14590,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (14859) FallDetection: FDPOLL,14670[0m
+[0;32mI (14919) FallDetection: FDLOG,95,14730,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (14969) MQTT: Session ID: cc4ed268[0m
+[0;32mI (14969) WifiStation: Setting WiFi power save level: PERFORMANCE (NONE)[0m
+[0;32mI (14969) wifi:Set ps type: 0, coexist: 0[0m
+
+[0;32mI (14979) Application: Wake word detected: NanaBot[0m
+[0;32mI (14989) StateMachine: State: connecting -> listening[0m
+[0;32mI (14989) CompactWifiBoardLCDTouch: Sent Eye Command: 0x01[0m
+[0;32mI (14999) FallDetection: FDLOG,96,14810,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (14999) AFE: AFE Version: (1MIC_V251128)[0m
+[0;32mI (15009) AFE: Input PCM Config: total 1 channels(1 microphone, 0 playback), sample rate:16000[0m
+[0;32mI (15019) AFE: AFE Pipeline: [input] -> |VAD(WebRTC)| -> [output][0m
+[0;32mI (15019) AfeAudioProcessor: Audio communication task started, feed size: 512 fetch size: 512[0m
+[0;32mI (15069) FallDetection: FDPOLL,14880[0m
+[0;32mI (15199) FallDetection: FDLOG,97,15010,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (15219) FallDetection: FDLOG,98,15030,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (15299) Application: >> NanaBot[0m
+[0;32mI (15309) FallDetection: FDPOLL,15120[0m
+[0;32mI (15319) StateMachine: State: listening -> speaking[0m
+[0;32mI (15319) CompactWifiBoardLCDTouch: Sent Eye Command: 0x03[0m
+[0;32mI (15379) FallDetection: FDLOG,99,15190,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (15459) FallDetection: FDLOG,100,15270,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[112, 122, 196, 240, 71, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (15539) FallDetection: FDPOLL,15350[0m
+[0;32mI (15659) FallDetection: FDLOG,101,15470,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (15679) FallDetection: FDLOG,102,15490,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (15689) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (15769) FallDetection: FDPOLL,15580[0m
+[0;32mI (15839) FallDetection: FDLOG,103,15650,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (15919) FallDetection: FDLOG,104,15730,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (15989) FallDetection: FDPOLL,15800[0m
+[0;32mI (16039) Application: << Hi there![0m
+[0;32mI (16119) FallDetection: FDLOG,105,15930,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (16139) FallDetection: FDLOG,106,15950,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (16219) FallDetection: FDPOLL,16030[0m
+[0;32mI (16279) FallDetection: FDLOG,107,16090,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (16369) FallDetection: FDLOG,108,16180,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[60, 117, 138, 240, 64, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (16439) FallDetection: FDPOLL,16250[0m
+[0;32mI (16559) FallDetection: FDLOG,109,16370,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (16579) FallDetection: FDLOG,110,16390,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[60, 117, 138, 240, 64, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (16669) FallDetection: FDPOLL,16480[0m
+[0;32mI (16739) FallDetection: FDLOG,111,16550,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (16759) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (16819) FallDetection: FDLOG,112,16630,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[60, 117, 138, 240, 50, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (16899) FallDetection: FDPOLL,16710[0m
+[0;32mI (16969) FallDetection: FDLOG,113,16780,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (17049) FallDetection: FDLOG,114,16860,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[60, 117, 94, 240, 58, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (17129) FallDetection: FDPOLL,16940[0m
+[0;32mI (17199) FallDetection: FDLOG,115,17010,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (17279) FallDetection: FDLOG,116,17090,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (17349) FallDetection: FDPOLL,17160[0m
+[0;32mI (17429) Application: << How can I help you today?[0m
+[0;32mI (17479) FallDetection: FDLOG,117,17290,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (17499) FallDetection: FDLOG,118,17310,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (17579) FallDetection: FDPOLL,17390[0m
+[0;32mI (17639) FallDetection: FDLOG,119,17450,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (17719) FallDetection: FDLOG,120,17530,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (17779) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (17789) FallDetection: FDPOLL,17600[0m
+[0;32mI (17869) FallDetection: FDLOG,121,17680,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (17949) FallDetection: FDLOG,122,17760,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (18019) FallDetection: FDPOLL,17830[0m
+[0;32mI (18129) FallDetection: FDLOG,123,17940,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (18149) FallDetection: FDLOG,124,17960,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (18229) FallDetection: FDPOLL,18040[0m
+[0;32mI (18359) FallDetection: FDLOG,125,18170,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (18379) FallDetection: FDLOG,126,18190,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (18469) FallDetection: FDPOLL,18280[0m
+[0;32mI (18539) FallDetection: FDLOG,127,18350,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (18619) FallDetection: FDLOG,128,18430,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (18689) FallDetection: FDPOLL,18500[0m
+[0;32mI (18769) FallDetection: FDLOG,129,18580,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (18789) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (18849) FallDetection: FDLOG,130,18660,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (18919) FallDetection: FDPOLL,18730[0m
+[0;32mI (18979) FallDetection: FDLOG,131,18790,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (19059) FallDetection: FDLOG,132,18870,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (19129) FallDetection: FDPOLL,18940[0m
+[0;32mI (19229) StateMachine: State: speaking -> listening[0m
+[0;32mI (19239) CompactWifiBoardLCDTouch: Sent Eye Command: 0x01[0m
+[0;32mI (19259) FallDetection: FDLOG,133,19070,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (19279) FallDetection: FDLOG,134,19090,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (19359) FallDetection: FDPOLL,19170[0m
+[0;32mI (19419) FallDetection: FDLOG,135,19230,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (19499) FallDetection: FDLOG,136,19310,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (19569) FallDetection: FDPOLL,19380[0m
+[0;32mI (19699) FallDetection: FDLOG,137,19510,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (19719) FallDetection: FDLOG,138,19530,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (19789) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (19799) FallDetection: FDPOLL,19610[0m
+[0;32mI (19859) FallDetection: FDLOG,139,19670,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (19939) FallDetection: FDLOG,140,19750,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (20019) FallDetection: FDPOLL,19830[0m
+[0;32mI (20139) FallDetection: FDLOG,141,19950,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (20159) FallDetection: FDLOG,142,19970,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (20239) FallDetection: FDPOLL,20050[0m
+[0;32mI (20299) FallDetection: FDLOG,143,20110,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (20379) FallDetection: FDLOG,144,20190,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (20449) FallDetection: FDPOLL,20260[0m
+[0;32mI (20559) FallDetection: FDLOG,145,20370,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (20579) FallDetection: FDLOG,146,20390,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (20659) FallDetection: FDPOLL,20470[0m
+[0;32mI (20719) FallDetection: FDLOG,147,20530,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (20799) FallDetection: FDLOG,148,20610,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (20799) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (20879) FallDetection: FDPOLL,20690[0m
+[0;32mI (20999) FallDetection: FDLOG,149,20810,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (21019) FallDetection: FDLOG,150,20830,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (21109) FallDetection: FDPOLL,20920[0m
+[0;32mI (21179) FallDetection: FDLOG,151,20990,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (21259) FallDetection: FDLOG,152,21070,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (21339) FallDetection: FDPOLL,21150[0m
+[0;32mI (21409) FallDetection: FDLOG,153,21220,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (21479) FallDetection: FDLOG,154,21290,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (21549) FallDetection: FDPOLL,21360[0m
+[0;32mI (21619) FallDetection: FDLOG,155,21430,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (21699) FallDetection: FDLOG,156,21510,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (21769) FallDetection: FDPOLL,21580[0m
+[0;32mI (21829) FallDetection: FDLOG,157,21640,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (21839) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (21909) FallDetection: FDLOG,158,21720,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (21979) FallDetection: FDPOLL,21790[0m
+[0;32mI (22089) FallDetection: FDLOG,159,21900,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (22109) FallDetection: FDLOG,160,21920,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (22189) FallDetection: FDPOLL,22000[0m
+[0;32mI (22249) FallDetection: FDLOG,161,22060,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (22319) FallDetection: FDLOG,162,22130,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (22449) FallDetection: FDPOLL,22260[0m
+[0;32mI (22569) FallDetection: FDLOG,163,22380,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (22589) FallDetection: FDLOG,164,22400,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (22669) FallDetection: FDPOLL,22480[0m
+[0;32mI (22799) FallDetection: FDLOG,165,22610,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (22819) FallDetection: FDLOG,166,22630,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[65, 122, 138, 240, 77, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (22899) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (22909) FallDetection: FDPOLL,22720[0m
+[0;32mI (22989) FallDetection: FDLOG,167,22790,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (23069) FallDetection: FDLOG,168,22880,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[65, 117, 138, 240, 87, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (23149) FallDetection: FDPOLL,22960[0m
+[0;32mI (23209) FallDetection: FDLOG,169,23020,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (23279) FallDetection: FDLOG,170,23090,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[65, 122, 138, 240, 83, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (23359) FallDetection: FDPOLL,23170[0m
+[0;32mI (23419) FallDetection: FDLOG,171,23230,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (23499) FallDetection: FDLOG,172,23310,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[65, 117, 138, 240, 89, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (23579) FallDetection: FDPOLL,23390[0m
+[0;32mI (23699) FallDetection: FDLOG,173,23510,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (23719) FallDetection: FDLOG,174,23530,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[65, 122, 138, 240, 87, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (23809) FallDetection: FDPOLL,23620[0m
+[0;32mI (23879) FallDetection: FDLOG,175,23690,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (23899) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (23959) FallDetection: FDLOG,176,23770,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[65, 117, 138, 240, 87, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (24039) FallDetection: FDPOLL,23850[0m
+[0;32mI (24109) FallDetection: FDLOG,177,23920,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (24179) FallDetection: FDLOG,178,23990,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[65, 117, 138, 240, 87, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (24259) FallDetection: FDPOLL,24070[0m
+[0;32mI (24319) FallDetection: FDLOG,179,24130,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (24399) FallDetection: FDLOG,180,24210,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[60, 117, 138, 240, 87, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (24469) FallDetection: FDPOLL,24280[0m
+[0;32mI (24599) FallDetection: FDLOG,181,24410,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (24619) FallDetection: FDLOG,182,24430,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[60, 117, 138, 240, 83, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (24709) FallDetection: FDPOLL,24520[0m
+[0;32mI (24779) FallDetection: FDLOG,183,24590,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (24859) FallDetection: FDLOG,184,24670,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[52, 117, 94, 240, 77, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (24929) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (24939) FallDetection: FDPOLL,24750[0m
+[0;32mI (25009) FallDetection: FDLOG,185,24820,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (25079) FallDetection: FDLOG,186,24890,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[47, 117, 94, 240, 77, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (25089) FallDetection: FDEVT,3,Init,Upright,24890,vy=0.00,vh=0.00,drop=-0.01,r=0.39[0m
+[0;32mI (25159) FallDetection: FDPOLL,24970[0m
+[0;32mI (25219) FallDetection: FDLOG,187,25030,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (25299) FallDetection: FDLOG,188,25110,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (25369) FallDetection: FDPOLL,25180[0m
+[0;32mI (25449) FallDetection: FDLOG,189,25260,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (25529) FallDetection: FDLOG,190,25340,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[60, 117, 138, 240, 87, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (25609) FallDetection: FDPOLL,25420[0m
+[0;32mI (25659) FallDetection: FDLOG,191,25470,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (25739) FallDetection: FDLOG,192,25550,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[52, 117, 94, 240, 89, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (25819) FallDetection: FDPOLL,25630[0m
+[0;32mI (25939) FallDetection: FDLOG,193,25750,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (25959) FallDetection: FDLOG,194,25770,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[41, 117, 94, 240, 58, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (25979) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (26049) FallDetection: FDPOLL,25860[0m
+[0;32mI (26119) FallDetection: FDLOG,195,25930,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (26199) FallDetection: FDLOG,196,26010,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[36, 117, 62, 240, 87, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (26279) FallDetection: FDPOLL,26090[0m
+[0;32mI (26349) FallDetection: FDLOG,197,26160,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (26429) FallDetection: FDLOG,198,26240,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[36, 122, 62, 240, 83, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (26509) FallDetection: FDPOLL,26320[0m
+[0;32mI (26579) FallDetection: FDLOG,199,26390,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (26659) FallDetection: FDLOG,200,26470,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[36, 122, 94, 240, 87, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (26739) FallDetection: FDPOLL,26550[0m
+[0;32mI (26859) FallDetection: FDLOG,201,26670,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (26879) FallDetection: FDLOG,202,26690,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[20, 117, 47, 235, 71, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (26969) FallDetection: FDPOLL,26780[0m
+[0;32mI (27039) FallDetection: FDLOG,203,26850,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (27059) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (27119) FallDetection: FDLOG,204,26930,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (27189) FallDetection: FDPOLL,27000[0m
+[0;32mI (27319) FallDetection: FDLOG,205,27130,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (27339) FallDetection: FDLOG,206,27150,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (27419) FallDetection: FDPOLL,27230[0m
+[0;32mI (27479) FallDetection: FDLOG,207,27290,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (27559) FallDetection: FDLOG,208,27370,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (27639) FallDetection: FDPOLL,27450[0m
+[0;32mI (27759) FallDetection: FDLOG,209,27570,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (27779) FallDetection: FDLOG,210,27590,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (27859) FallDetection: FDPOLL,27670[0m
+[0;32mI (27919) FallDetection: FDLOG,211,27730,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (27999) FallDetection: FDLOG,212,27810,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (28059) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (28069) FallDetection: FDPOLL,27880[0m
+[0;32mI (28199) FallDetection: FDLOG,213,28010,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (28219) FallDetection: FDLOG,214,28030,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (28309) FallDetection: FDPOLL,28120[0m
+[0;32mI (28379) FallDetection: FDLOG,215,28190,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (28459) FallDetection: FDLOG,216,28270,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (28539) FallDetection: FDPOLL,28350[0m
+[0;32mI (28589) SystemInfo: free sram: 78963 minimal sram: 64159[0m
+[0;32mI (28609) FallDetection: FDLOG,217,28420,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (28679) FallDetection: FDLOG,218,28490,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (28749) FallDetection: FDPOLL,28560[0m
+[0;32mI (28819) FallDetection: FDLOG,219,28630,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (28899) FallDetection: FDLOG,220,28710,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (28969) FallDetection: FDPOLL,28780[0m
+[0;32mI (29099) FallDetection: FDLOG,221,28910,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (29119) FallDetection: FDLOG,222,28930,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (29129) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (29209) FallDetection: FDPOLL,29020[0m
+[0;32mI (29289) FallDetection: FDLOG,223,29100,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (29369) FallDetection: FDLOG,224,29180,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (29439) FallDetection: FDPOLL,29250[0m
+[0;32mI (29509) FallDetection: FDLOG,225,29320,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (29579) FallDetection: FDLOG,226,29390,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (29649) FallDetection: FDPOLL,29460[0m
+[0;32mI (29769) FallDetection: FDLOG,227,29580,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (29789) FallDetection: FDLOG,228,29600,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (29869) FallDetection: FDPOLL,29680[0m
+[0;32mI (29999) FallDetection: FDLOG,229,29810,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (30019) FallDetection: FDLOG,230,29830,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (30099) FallDetection: FDPOLL,29910[0m
+[0;32mI (30159) FallDetection: FDLOG,231,29970,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (30179) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (30249) FallDetection: FDLOG,232,30060,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[78, 188, 138, 78, 77, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (30319) FallDetection: FDPOLL,30130[0m
+[0;32mI (30439) FallDetection: FDLOG,233,30250,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (30459) FallDetection: FDLOG,234,30270,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (30479) FallDetection: FDEVT,3,Upright,Init,30270,vy=0.00,vh=-0.03,drop=-0.01,r=0.20[0m
+[0;32mI (30549) FallDetection: FDPOLL,30360[0m
+[0;32mI (30619) FallDetection: FDLOG,235,30430,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (30699) FallDetection: FDLOG,236,30510,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (30769) FallDetection: FDPOLL,30580[0m
+[0;32mI (30899) FallDetection: FDLOG,237,30710,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (30919) FallDetection: FDLOG,238,30730,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (30999) FallDetection: FDPOLL,30810[0m
+[0;32mI (31059) FallDetection: FDLOG,239,30870,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (31139) FallDetection: FDLOG,240,30950,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (31209) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (31219) FallDetection: FDPOLL,31030[0m
+[0;32mI (31339) FallDetection: FDLOG,241,31150,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (31359) FallDetection: FDLOG,242,31170,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (31439) FallDetection: FDPOLL,31250[0m
+[0;32mI (31499) FallDetection: FDLOG,243,31310,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (31579) FallDetection: FDLOG,244,31390,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (31649) FallDetection: FDPOLL,31460[0m
+[0;32mI (31729) FallDetection: FDLOG,245,31540,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (31799) FallDetection: FDLOG,246,31610,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (31869) FallDetection: FDPOLL,31680[0m
+[0;32mI (31939) FallDetection: FDLOG,247,31750,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (32019) FallDetection: FDLOG,248,31830,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (32089) FallDetection: FDPOLL,31900[0m
+[0;32mI (32169) FallDetection: FDLOG,249,31980,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (32249) FallDetection: FDLOG,250,32060,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (32249) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (32329) FallDetection: FDPOLL,32140[0m
+[0;32mI (32399) FallDetection: FDLOG,251,32210,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (32479) FallDetection: FDLOG,252,32290,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (32559) FallDetection: FDPOLL,32370[0m
+[0;32mI (32679) FallDetection: FDLOG,253,32490,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (32699) FallDetection: FDLOG,254,32510,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (32779) FallDetection: FDPOLL,32590[0m
+[0;32mI (32839) FallDetection: FDLOG,255,32650,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (32919) FallDetection: FDLOG,256,32730,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (32989) FallDetection: FDPOLL,32800[0m
+[0;32mI (33069) FallDetection: FDLOG,257,32880,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (33149) FallDetection: FDLOG,258,32960,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (33219) FallDetection: FDPOLL,33030[0m
+[0;32mI (33279) FallDetection: FDLOG,259,33090,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (33299) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (33359) FallDetection: FDLOG,260,33170,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (33429) FallDetection: FDPOLL,33240[0m
+[0;32mI (33559) FallDetection: FDLOG,261,33370,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (33579) FallDetection: FDLOG,262,33390,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (33659) FallDetection: FDPOLL,33470[0m
+[0;32mI (33719) FallDetection: FDLOG,263,33530,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (33799) FallDetection: FDLOG,264,33610,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (33879) FallDetection: FDPOLL,33690[0m
+[0;32mI (33999) FallDetection: FDLOG,265,33810,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (34019) FallDetection: FDLOG,266,33830,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (34099) FallDetection: FDPOLL,33910[0m
+[0;32mI (34159) FallDetection: FDLOG,267,33970,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (34239) FallDetection: FDLOG,268,34050,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (34299) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (34309) FallDetection: FDPOLL,34120[0m
+[0;32mI (34439) FallDetection: FDLOG,269,34250,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (34459) FallDetection: FDLOG,270,34270,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[83, 193, 138, 78, 58, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (34549) FallDetection: FDPOLL,34360[0m
+[0;32mI (34619) FallDetection: FDLOG,271,34430,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (34699) FallDetection: FDLOG,272,34510,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[107, 188, 70, 81, 64, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (34779) FallDetection: FDPOLL,34590[0m
+[0;32mI (34849) FallDetection: FDLOG,273,34660,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (34919) FallDetection: FDLOG,274,34730,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[68, 180, 138, 120, 58, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (34989) AudioCodec: Set output enable to false[0m
+[0;32mI (34999) FallDetection: FDPOLL,34810[0m
+[0;32mI (35059) FallDetection: FDLOG,275,34870,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (35139) FallDetection: FDLOG,276,34950,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[68, 188, 138, 120, 77, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (35219) FallDetection: FDPOLL,35030[0m
+[0;32mI (35339) FallDetection: FDLOG,277,35150,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (35359) FallDetection: FDLOG,278,35170,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[65, 188, 138, 120, 71, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (35379) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (35449) FallDetection: FDPOLL,35260[0m
+[0;32mI (35529) FallDetection: FDLOG,279,35340,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (35609) FallDetection: FDLOG,280,35420,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (35679) FallDetection: FDPOLL,35490[0m
+[0;32mI (35749) FallDetection: FDLOG,281,35560,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (35819) FallDetection: FDLOG,282,35630,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (35889) FallDetection: FDPOLL,35700[0m
+[0;32mI (36009) FallDetection: FDLOG,283,35820,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (36029) FallDetection: FDLOG,284,35840,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[52, 180, 94, 120, 58, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (36109) FallDetection: FDPOLL,35920[0m
+[0;32mI (36239) FallDetection: FDLOG,285,36050,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (36259) FallDetection: FDLOG,286,36070,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (36339) FallDetection: FDPOLL,36150[0m
+[0;32mI (36399) FallDetection: FDLOG,287,36210,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (36419) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (36489) FallDetection: FDLOG,288,36300,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (36559) FallDetection: FDPOLL,36370[0m
+[0;32mI (36679) FallDetection: FDLOG,289,36490,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (36699) FallDetection: FDLOG,290,36510,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (36789) FallDetection: FDPOLL,36600[0m
+[0;32mI (36859) FallDetection: FDLOG,291,36670,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (36939) FallDetection: FDLOG,292,36750,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (37009) FallDetection: FDPOLL,36820[0m
+[0;32mI (37139) FallDetection: FDLOG,293,36950,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (37159) FallDetection: FDLOG,294,36970,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (37239) FallDetection: FDPOLL,37050[0m
+[0;32mI (37299) FallDetection: FDLOG,295,37110,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (37379) FallDetection: FDLOG,296,37190,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (37449) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (37459) FallDetection: FDPOLL,37270[0m
+[0;32mI (37579) FallDetection: FDLOG,297,37390,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (37599) FallDetection: FDLOG,298,37410,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (37679) FallDetection: FDPOLL,37490[0m
+[0;32mI (37739) FallDetection: FDLOG,299,37550,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (37819) FallDetection: FDLOG,300,37630,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (37889) FallDetection: FDPOLL,37700[0m
+[0;32mI (37969) FallDetection: FDLOG,301,37780,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (38039) FallDetection: FDLOG,302,37850,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (38109) FallDetection: FDPOLL,37920[0m
+[0;32mI (38179) FallDetection: FDLOG,303,37990,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (38259) FallDetection: FDLOG,304,38070,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (38329) FallDetection: FDPOLL,38140[0m
+[0;32mI (38409) FallDetection: FDLOG,305,38220,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (38489) FallDetection: FDLOG,306,38300,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (38489) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (38569) FallDetection: FDPOLL,38380[0m
+[0;32mI (38589) SystemInfo: free sram: 78815 minimal sram: 63975[0m
+[0;32mI (38639) FallDetection: FDLOG,307,38450,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (38719) FallDetection: FDLOG,308,38530,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (38799) FallDetection: FDPOLL,38610[0m
+[0;32mI (38919) FallDetection: FDLOG,309,38730,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (38939) FallDetection: FDLOG,310,38750,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (39019) FallDetection: FDPOLL,38830[0m
+[0;32mI (39079) FallDetection: FDLOG,311,38890,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (39159) FallDetection: FDLOG,312,38970,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (39229) FallDetection: FDPOLL,39040[0m
+[0;32mI (39309) FallDetection: FDLOG,313,39120,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (39389) FallDetection: FDLOG,314,39200,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (39459) FallDetection: FDPOLL,39270[0m
+[0;32mI (39519) FallDetection: FDLOG,315,39330,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (39539) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (39599) FallDetection: FDLOG,316,39410,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (39669) FallDetection: FDPOLL,39480[0m
+[0;32mI (39799) FallDetection: FDLOG,317,39610,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (39819) FallDetection: FDLOG,318,39630,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (39899) FallDetection: FDPOLL,39710[0m
+[0;32mI (39959) FallDetection: FDLOG,319,39770,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (40039) FallDetection: FDLOG,320,39850,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (40119) FallDetection: FDPOLL,39930[0m
+[0;32mI (40239) FallDetection: FDLOG,321,40050,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (40259) FallDetection: FDLOG,322,40070,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (40339) FallDetection: FDPOLL,40150[0m
+[0;32mI (40399) FallDetection: FDLOG,323,40210,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (40479) FallDetection: FDLOG,324,40290,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (40539) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (40549) FallDetection: FDPOLL,40360[0m
+[0;32mI (40679) FallDetection: FDLOG,325,40490,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (40699) FallDetection: FDLOG,326,40510,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (40789) FallDetection: FDPOLL,40600[0m
+[0;32mI (40859) FallDetection: FDLOG,327,40670,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (40939) FallDetection: FDLOG,328,40750,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (41019) FallDetection: FDPOLL,40830[0m
+[0;32mI (41089) FallDetection: FDLOG,329,40900,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (41159) FallDetection: FDLOG,330,40970,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (41229) FallDetection: FDPOLL,41040[0m
+[0;32mI (41299) FallDetection: FDLOG,331,41110,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (41379) FallDetection: FDLOG,332,41190,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (41449) FallDetection: FDPOLL,41260[0m
+[0;32mI (41579) FallDetection: FDLOG,333,41390,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (41599) FallDetection: FDLOG,334,41410,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (41609) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (41689) FallDetection: FDPOLL,41500[0m
+[0;32mI (41769) FallDetection: FDLOG,335,41580,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (41849) FallDetection: FDLOG,336,41660,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (41919) FallDetection: FDPOLL,41730[0m
+[0;32mI (41989) FallDetection: FDLOG,337,41800,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (42059) FallDetection: FDLOG,338,41870,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (42129) FallDetection: FDPOLL,41940[0m
+[0;32mI (42249) FallDetection: FDLOG,339,42060,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (42269) FallDetection: FDLOG,340,42080,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (42349) FallDetection: FDPOLL,42160[0m
+[0;32mI (42479) FallDetection: FDLOG,341,42290,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (42499) FallDetection: FDLOG,342,42310,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (42579) FallDetection: FDPOLL,42390[0m
+[0;32mI (42639) FallDetection: FDLOG,343,42450,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (42659) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (42729) FallDetection: FDLOG,344,42540,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (42799) FallDetection: FDPOLL,42610[0m
+[0;32mI (42919) FallDetection: FDLOG,345,42730,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (42939) FallDetection: FDLOG,346,42750,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (43029) FallDetection: FDPOLL,42840[0m
+[0;32mI (43099) FallDetection: FDLOG,347,42910,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (43179) FallDetection: FDLOG,348,42990,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (43249) FallDetection: FDPOLL,43060[0m
+[0;32mI (43379) FallDetection: FDLOG,349,43190,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (43399) FallDetection: FDLOG,350,43210,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (43479) FallDetection: FDPOLL,43290[0m
+[0;32mI (43539) FallDetection: FDLOG,351,43350,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (43619) FallDetection: FDLOG,352,43430,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (43689) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (43699) FallDetection: FDPOLL,43510[0m
+[0;32mI (43819) FallDetection: FDLOG,353,43630,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (43839) FallDetection: FDLOG,354,43650,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (43919) FallDetection: FDPOLL,43730[0m
+[0;32mI (43979) FallDetection: FDLOG,355,43790,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (44059) FallDetection: FDLOG,356,43870,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (44129) FallDetection: FDPOLL,43940[0m
+[0;32mI (44209) FallDetection: FDLOG,357,44020,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (44279) FallDetection: FDLOG,358,44090,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (44349) FallDetection: FDPOLL,44160[0m
+[0;32mI (44419) FallDetection: FDLOG,359,44230,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (44499) FallDetection: FDLOG,360,44310,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[146, 196, 94, 78, 64, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (44579) FallDetection: FDPOLL,44390[0m
+[0;32mI (44649) FallDetection: FDLOG,361,44460,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (44729) FallDetection: FDLOG,362,44540,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[146, 193, 94, 78, 58, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (44739) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (44809) FallDetection: FDPOLL,44620[0m
+[0;32mI (44879) FallDetection: FDLOG,363,44690,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (44959) FallDetection: FDLOG,364,44770,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[99, 193, 196, 120, 77, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (45039) FallDetection: FDPOLL,44850[0m
+[0;32mI (45159) FallDetection: FDLOG,365,44970,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (45179) FallDetection: FDLOG,366,44990,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (45259) FallDetection: FDPOLL,45070[0m
+[0;32mI (45319) FallDetection: FDLOG,367,45130,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (45399) FallDetection: FDLOG,368,45210,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (45469) FallDetection: FDPOLL,45280[0m
+[0;32mI (45549) FallDetection: FDLOG,369,45360,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (45629) FallDetection: FDLOG,370,45440,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (45699) FallDetection: FDPOLL,45510[0m
+[0;32mI (45759) FallDetection: FDLOG,371,45570,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (45779) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (45839) FallDetection: FDLOG,372,45650,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (45909) FallDetection: FDPOLL,45720[0m
+[0;32mI (46039) FallDetection: FDLOG,373,45850,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (46059) FallDetection: FDLOG,374,45870,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (46139) FallDetection: FDPOLL,45950[0m
+[0;32mI (46199) FallDetection: FDLOG,375,46010,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (46279) FallDetection: FDLOG,376,46090,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[88, 151, 138, 177, 83, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (46359) FallDetection: FDPOLL,46170[0m
+[0;32mI (46479) FallDetection: FDLOG,377,46290,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (46499) FallDetection: FDLOG,378,46310,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[83, 122, 138, 240, 87, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (46579) FallDetection: FDPOLL,46390[0m
+[0;32mI (46639) FallDetection: FDLOG,379,46450,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (46719) FallDetection: FDLOG,380,46530,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[70, 117, 138, 240, 89, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (46789) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (46799) FallDetection: FDPOLL,46610[0m
+[0;32mI (46919) FallDetection: FDLOG,381,46730,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (46939) FallDetection: FDLOG,382,46750,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[83, 122, 138, 240, 71, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (47029) FallDetection: FDPOLL,46840[0m
+[0;32mI (47099) FallDetection: FDLOG,383,46910,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (47179) FallDetection: FDLOG,384,46990,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[94, 117, 224, 196, 83, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (47259) FallDetection: FDPOLL,47070[0m
+[0;32mI (47329) FallDetection: FDLOG,385,47140,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (47399) FallDetection: FDLOG,386,47210,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[52, 122, 94, 240, 71, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (47479) FallDetection: FDPOLL,47290[0m
+[0;32mI (47539) FallDetection: FDLOG,387,47350,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (47619) FallDetection: FDLOG,388,47430,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [[52, 117, 94, 240, 50, 0]], "resolution": [240, 240]}}[0m
+[0;32mI (47699) FallDetection: FDPOLL,47510[0m
+[0;32mI (47819) FallDetection: FDLOG,389,47630,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (47839) FallDetection: FDLOG,390,47650,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (47849) FallDetection: FDSTACK_FREE,476[0m
+[0;32mI (47929) FallDetection: FDPOLL,47740[0m
+[0;32mI (48009) FallDetection: FDLOG,391,47820,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (48089) FallDetection: FDLOG,392,47900,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0;32mI (48159) FallDetection: FDPOLL,47970[0m
+[0;32mI (48229) FallDetection: FDLOG,393,48040,0,{"type": 0, "name": "INVOKE", "code": 0, "data": {"model": {"id": 1, "type": 0, "address": 4194304, "size": 0}, "algorithm": {"type": 3, "categroy": 1, "input_from": 1, "config": {"tscore": 50, "tiou": 35}}, "sensor": {"id": 1, "type": 1, "state": 1, "opt_id": 0, "opt_detail": "240x240 Auto"}}}[0m
+[0;32mI (48299) FallDetection: FDLOG,394,48110,0,{"type": 1, "name": "INVOKE", "code": 0, "data": {"count": 1, "perf": [7, 48, 0], "boxes": [], "resolution": [240, 240]}}[0m
+[0m

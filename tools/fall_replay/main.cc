@@ -34,7 +34,10 @@ bool ParseBoxes(const char* json, std::vector<BoxObservation>* out) {
         if (sscanf(ptr, "[%d,%d,%d,%d,%d,%d]", &x, &y, &w, &h, &score, &target) == 6 ||
             sscanf(ptr, "[%d, %d, %d, %d, %d, %d]", &x, &y, &w, &h, &score, &target) == 6) {
             if (target == 0 && w > 0 && h > 0 && score >= 40) {
-                out->push_back(BoxObservation{static_cast<float>(x), static_cast<float>(y),
+                // SSCMA reports (x, y) as the box CENTER, not the top-left corner -- see the
+                // matching conversion (and its rationale) in FallDetectionController::ProcessDetectionLine.
+                out->push_back(BoxObservation{static_cast<float>(x) - static_cast<float>(w) / 2.0f,
+                                               static_cast<float>(y) - static_cast<float>(h) / 2.0f,
                                                static_cast<float>(w), static_cast<float>(h), score});
             }
         }
@@ -101,7 +104,11 @@ int main() {
         if (!ParseFdlogLine(line, &ms, &json)) continue;
 
         std::vector<BoxObservation> boxes;
-        ParseBoxes(json.c_str(), &boxes);
+        // Lines with no "boxes" key (AT-command echoes, model-config echoes) are not detection
+        // frames -- ProcessDetectionLine() on-device skips them entirely (fall_detection.cc:157)
+        // rather than treating them as a frame with zero boxes, so tracks aren't penalized with a
+        // spurious missing-frame tick for a line that was never a detector inference.
+        if (!ParseBoxes(json.c_str(), &boxes)) continue;
         tracker.Update(boxes.data(), boxes.size(), ms);
         last_ms = ms;
         frames++;

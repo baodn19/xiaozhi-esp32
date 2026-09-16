@@ -12,20 +12,23 @@
 // without touching the algorithm. Defaults are the sweep starting points from the design doc;
 // none of them have been confirmed against real hardware captures yet.
 struct Tuning {
-    // Frame geometry (192x192 after downscale -- see design doc "Frame geometry").
-    float frame_w = 192.0f;
-    float frame_h = 192.0f;
-    float edge_margin = 4.0f;  // px; feet within this of frame_h count as cropped
+    // Frame geometry -- confirmed from a real FDLOG capture's "resolution" field: the Grove
+    // module reports 240x240, not the 192x192 assumed by the original design doc math. Every
+    // absolute-pixel constant below is scaled by 240/192 = 1.25 from its original derivation to
+    // preserve the fraction-of-frame it was meant to represent; see design doc "Frame geometry".
+    float frame_w = 240.0f;
+    float frame_h = 240.0f;
+    float edge_margin = 5.0f;  // px; feet within this of frame_h count as cropped (was 4 @ 192)
 
     // Association. Fixed pixel gate is the fallback before a track has a baseline; once h_ref
     // exists the gate scales with distance instead of being generous for near people only.
-    float assoc_gate_px = 60.0f;
+    float assoc_gate_px = 75.0f;  // was 60 @ 192 (31% of frame; same fraction at 240)
     float assoc_gate_ratio = 0.35f;  // * h_ref
 
     // Baseline (h_ref / cy_ref) learning.
     float baseline_ema_alpha = 0.1f;      // ~2s time constant at 5 Hz
     float baseline_reject_frac = 0.25f;   // reject h samples deviating more than this from h_ref
-    float min_classify_h_ref = 80.0f;     // px (of 192); below this a track never alarms
+    float min_classify_h_ref = 100.0f;    // px (of 240, ~42%); below this a track never alarms (was 80 @ 192)
 
     // T1: kInit -> kUpright.
     int upright_confirm_frames = 10;

@@ -5,8 +5,12 @@
 //      a ballistic drop reaches T11.
 //   4. zero alarms across sit/lie/crouch sequences (a deliberate lie-down sinks to kLyingBenign).
 //
-// All box coordinates below are hand-derived from the frame geometry in the design doc
-// (192x192, h_ref ~100px indoor framing) -- not measured on hardware.
+// All box coordinates below are hand-derived synthetic sequences testing state-machine logic,
+// not values calibrated to real footage or rescaled for the corrected 240x240 frame geometry
+// (see fall_posture.h). Most feature math here is h_ref-relative and scale-invariant, so the
+// literal pixel values are unaffected -- except TestBallisticFallFiresT11's standing height,
+// bumped from 100 to 110 to clear the corrected min_classify_h_ref=100 with real margin (see
+// that test for why 100 landed exactly on the boundary).
 
 #include "fall_posture.h"
 
@@ -151,15 +155,20 @@ void TestBallisticFallFiresT11() {
     const uint32_t dt_ms = 200;
     const float x = 70;
 
-    now_ms = Establish(tracker, now_ms, x, 46, 50, 100, dt_ms, 12);
+    // Standing height 110, not 100: UpdateBaseline runs before UpdatePosture each frame, so the
+    // entry frame that trips kUpright -> kDescending still folds its own (already-shrinking) box
+    // into h_ref before the freeze takes effect -- h_ref settles a few px below the literal
+    // standing height. At h=100 that lands at ~99, exactly on top of min_classify_h_ref=100 and
+    // making this test's pass/fail a coincidence of float rounding. 110 gives real margin.
+    now_ms = Establish(tracker, now_ms, x, 41, 50, 110, dt_ms, 12);
     CHECK(tracker.TrackAt(0).state == PostureState::kUpright);
 
-    // Standing (w=50,h=100,cy=96) -> lying sideways (w=140,h=60,cy=146) over 4 fast frames
+    // Standing (w=50,h=110,cy=96) -> lying sideways (w=140,h=60,cy=146) over 4 fast frames
     // (~800 ms), well inside the ballistic_max_duration_ms=1400 window.
     for (int i = 1; i <= 4; i++) {
         float frac = i / 4.0f;
         float w = 50 + frac * (140 - 50);
-        float h = 100 + frac * (60 - 100);
+        float h = 110 + frac * (60 - 110);
         float cy = 96 + frac * (146 - 96);
         BoxObservation b = Box(x, cy - h / 2.0f, w, h);
         tracker.Update(&b, 1, now_ms);

@@ -6,8 +6,8 @@
 namespace {
 
 // Least-squares slope of v(t) over the last n (t_ms, v) samples, units of v per ms. Recovers most
-// of the fall/crouch margin that a single-frame difference loses to quantization at 192x192 --
-// see plan/fall_detection_state_machine.md "Frame geometry".
+// of the fall/crouch margin that a single-frame difference loses to quantization at the Grove
+// module's 240x240 inference resolution -- see plan/fall_detection_state_machine.md "Frame geometry".
 float LeastSquaresSlope(const float* t_ms, const float* v, int n) {
     if (n < 2) return 0.0f;
 
@@ -537,9 +537,17 @@ void PostureTracker::Update(const BoxObservation* boxes, size_t count, uint32_t 
 
         t.frames_until_untracked++;
         if (t.frames_until_untracked > tuning_.max_missing_frames) {
-            if (t.state == PostureState::kDescending || t.state == PostureState::kGroundUnconfirmed) {
+            if (t.state == PostureState::kDescending || t.state == PostureState::kGroundUnconfirmed ||
+                t.state == PostureState::kUpright) {
                 // Detector confidence collapses on prone bodies -- hold the track as a zombie
-                // instead of deleting the in-progress confirmation evidence.
+                // instead of deleting the in-progress confirmation evidence. kUpright is included
+                // because dropout can hit right at a fall's onset, before descent_sig has had a
+                // frame to fire: killing the track there would discard an established baseline
+                // (has_baseline, from T1) for no reason other than a momentary miss, forcing a
+                // fresh 10-frame re-confirmation right as a fall is starting. ComputeBallistic()
+                // naturally resolves a kUpright zombie as non-ballistic (peak_norm_vel is 0 here),
+                // so this cannot fire a false alarm on its own -- it only preserves the baseline
+                // for the reappearing box to be classified against.
                 t.is_zombie = true;
                 t.zombie_started_ms = now_ms;
                 t.zombie_from_state = t.state;

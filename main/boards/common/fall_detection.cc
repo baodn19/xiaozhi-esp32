@@ -169,8 +169,13 @@ void FallDetectionController::ProcessDetectionLine(const char* line, uint32_t no
             sscanf(ptr, "[%d, %d, %d, %d, %d, %d]", &x, &y, &w, &h, &score, &target) == 6) {
 
             if (target == TARGET_PERSON_ID && w > 0 && h > 0 && score >= MIN_BOX_SCORE) {
+                // SSCMA reports (x, y) as the box CENTER, not the top-left corner -- confirmed from
+                // capture.csv, where y + h exceeds the 240 px frame height on every single box.
+                // BoxObservation and everything downstream (fall_posture.cc) is defined in top-left
+                // coordinates, so convert here at the parse boundary.
                 boxes.push_back(BoxObservation{
-                    static_cast<float>(x), static_cast<float>(y),
+                    static_cast<float>(x) - static_cast<float>(w) / 2.0f,
+                    static_cast<float>(y) - static_cast<float>(h) / 2.0f,
                     static_cast<float>(w), static_cast<float>(h), score});
             }
         }
