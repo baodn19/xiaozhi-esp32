@@ -4,9 +4,9 @@ State as of commit `c27d082` on `feature/improve-fall-detection` (pushed to orig
 Companion to `fall_detection_sensing_fix.md` (the Phase A/B plan) and
 `fall_detection_state_machine.md` (the state machine design).
 
-**Superseded in part by the Sep 16 (later) round — see "Round 2: the post-`c27d082` capture"
-at the end of this document. `c27d082` was flashed, three falls were re-enacted, none
-alerted on-device, and two further tracker defects were found and fixed.**
+**Superseded by rounds 2 and 3 at the end of this document. After three rounds of
+capture-and-fix, all three of round 3's re-enacted falls alert offline, two of them through
+the full ground-confirmation path. Read "Round 3" first — it has the current state.**
 
 ---
 
@@ -338,3 +338,124 @@ cannot affect `FDEVT` reproduction.
 5. Consider whether `ground_confirm_frames = 2` should tolerate a dropout between the two frames.
    Fall #2 had one clean ground frame (45720, `drop_n=0.42`) and was rescued only by the zombie
    path. Not changed here — it is a single-capture judgement and the zombie path already covers it.
+
+---
+
+# Round 3: three falls, three alerts
+
+`b313645` was flashed and three falls re-enacted at **~35s, ~52s, ~66s**. **One alerted on-device**
+(the ~66s one). The replay again reproduced the device's `FDEVT` sequence exactly, so the two
+misses were diagnosed offline. Two more defects were found and fixed; **round 3 now alerts on all
+three falls**, two through the full ground-confirmation path.
+
+## Sensing is fixed — this was the big win
+
+| | round 1 (lost) | round 2 | **round 3** |
+|---|---|---|---|
+| detection rate | 54.7% | 32.8% | **65.3% (198/303)** |
+| span | — | 56.0s | 70.3s |
+| frame rate | 4.38 fps | 4.41 fps | 4.31 fps |
+| worst blackout | 7.66s | 6.02s | **4.02s** |
+| blackouts >1s | — | 6 (~18s of 56s) | 10, but all shorter; only one >2.6s |
+
+Whatever was changed about the framing between rounds 2 and 3 worked: detection is the best it has
+ever been, well past the round-1 reference, and the catastrophic multi-second blackouts are gone.
+**Do not change the camera position again without re-measuring.**
+
+The remaining weak spot is the **left frame edge** (`cx < 40`), which has now been implicated in a
+missed or degraded fall in all three rounds: clipped widths (`w=23..31` for a full-height body) and,
+in round 3, the detector splitting one person into two boxes.
+
+## The two defects fixed
+
+### 3. Detector blind gaps were deflating measured velocity
+
+`b313645` established that unobserved time must not be charged to the descent *duration*. The same
+error was still live in the *velocity* term, and it cost the ~35s fall:
+
+```
+34620  Upright->Descending   h=120 (from h=193)
+       ... detector blind for 2.06s ...
+36920  h=57  h_n=0.31  r=2.42  drop_n=0.46  is_ground=1   peak_norm_vel=0.23  <- vs 0.32 gate
+40330  zombie expiry -> not ballistic -> Descending->Init, no alert
+```
+
+The person collapsed from `h=193` to `h=57` — a total axial collapse — and it measured
+`0.23 h_ref/s` because `ComputeFeatures()` runs a least-squares fit over `hist_t_ms`, and those
+timestamps were raw wall-clock. Only matched frames reach `PushHistory`, so the fit divided a real
+collapse by 2.3s of mostly-blind time. A blackout does not just inflate duration; it deflates every
+rate measured across it, by exactly the factor it stretched.
+
+**Fix:** `PushHistory()` now stores **gap-compressed** timestamps, each step capped at the same
+`Tuning::max_gap_counted_ms = 600`. `v_cy_n`, `v_bot_n` and `v_h_n` share one time axis, so all
+three inherit the fix. The ~35s fall now measures `vy=0.37 vh=-0.57`, resolves ballistic, and fires
+`ALERT,zombie_dropout` at 40330.
+
+### 4. Greedy association let an unconfirmed track steal the fall
+
+The ~52s fall was lost to **association**, not classification. At the left frame edge the detector
+emitted two boxes for one person, so next to the track that had confirmed a baseline through T1
+(`h_ref=179`) sat a second, unconfirmed track a few pixels nearer. When the person went down, the
+prone box was inside both gates and nearest-neighbour gave it to the unconfirmed track — which is
+in `kInit` and **can never alarm by design**. The confirmed track starved and expired.
+
+Nearest-neighbour is arbitrary between two in-gate claimants, and they are not equivalent: a
+confirmed track has passed T1 and is the only kind that can classify a fall; an unconfirmed one is
+a hypothesis that may be detector noise.
+
+**Fix:** sort association candidates **confirmed-first, then by distance**. A confirmed track's
+gate is the *tighter* of the two (`0.35 * h_ref` ≈ 65px vs the 75px fixed gate), so the preference
+only applies where the confirmed track was already a close claimant, and the existing
+one-box-per-track guard bounds any mis-assignment to a single frame.
+
+## Result
+
+```
+~35s  Upright -> Descending -> ALERT,zombie_dropout                        @40330
+~52s  Upright -> Descending -> GroundUnconfirmed -> ALERT,ground_confirmed @55630
+~66s  Upright -> Descending -> GroundUnconfirmed -> ALERT,ground_confirmed @70570
+```
+
+with correct `FallConfirmed -> Upright` recovery between them as the person got back up. Two of the
+three now come through the full ground-confirmation path rather than a dropout inference.
+
+| Check | Result |
+|---|---|
+| Round-3 capture | **3/3 falls alert** |
+| Round-2 capture | unchanged, 1 alert (its other two remain framing/blackout losses) |
+| Intact tscore=50 capture | 0 alerts — no false positives |
+| `capture_conf25_check.log` | 0 alerts |
+| `make test` | ALL PASS (incl. crouch/T10 at 0 alerts and lie-down benign, both velocity-sensitive) |
+| `idf.py build` | succeeds |
+
+## ⚠ Expect only 2 alerts on hardware, not 3
+
+`FallDetectionController`'s global `ALERT_COOLDOWN_MS` is **15000**, and the last two alerts are
+**14940ms** apart — 60ms inside the cooldown. On-device the third will be suppressed. That is the
+re-enactment spacing, not a detection failure. **Space re-enacted falls more than 20s apart** or
+the test under-reports.
+
+## ⚠ The capture filename has now been overwritten three times
+
+`capture_conf25_falls.log` has been re-used for every round. Rounds 1 and 2 are gone. Use
+`capture_<round>_<date>.log` or the analysis cannot be re-run against history. The surviving
+fixtures are the tscore=50 `monitor.log` under `.claude/worktrees/*/` and
+`capture_conf25_check.log`.
+
+## What to do next
+
+1. **Flash `f4cdb32` and re-enact, spacing falls >20s apart.** Expect three alerts. This is the
+   first build where all three offline paths are clean, so the on-device run is the real test.
+2. **Leave the camera where it is.** 65.3% detection is the best result so far and two of the three
+   fixes above only mattered because earlier framing was poor. If it must move, re-run
+   `capture_stats.py` and confirm the rate before re-enacting falls.
+3. **The left frame edge is the last sensing problem.** It has degraded a fall in all three rounds.
+   If the fall area cannot be moved inward, consider ignoring boxes whose width is clipped by the
+   left edge rather than letting them seed tracks.
+4. **Phase B (poll rate 200ms → ~100ms)** is still unimplemented and is still the right lever: it
+   shortens every blackout and halves the quantisation that made these velocity estimates fragile
+   in the first place.
+5. Still open from round 1: remove the dead `AT+TSCORE` send, set `FD_PROBE_COMMANDS 0`.
+6. Untouched tuning judgement: `ground_confirm_frames = 2` requires two *consecutive* observed
+   ground frames. Round 2's ~43s fall and round 3's ~35s fall each produced exactly one and were
+   rescued by the zombie path. Worth revisiting only with more field data.
