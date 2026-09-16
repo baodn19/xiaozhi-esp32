@@ -459,3 +459,33 @@ fixtures are the tscore=50 `monitor.log` under `.claude/worktrees/*/` and
 6. Untouched tuning judgement: `ground_confirm_frames = 2` requires two *consecutive* observed
    ground frames. Round 2's ~43s fall and round 3's ~35s fall each produced exactly one and were
    rescued by the zombie path. Worth revisiting only with more field data.
+
+## ⚠ The DetectionTask stack has almost no headroom — read before editing `Associate()`
+
+Shipping the round-3 association fix crashed the device on boot, repeatedly, in a way that looked
+nothing like fall detection:
+
+```
+assert failed: xQueueSemaphoreTake queue.c:1713 (pxQueue->uxItemSize == 0)
+  uart_read_bytes() <- FallDetectionController::DetectionTask()
+```
+or an interrupt watchdog timeout at the same place. No fall-detection frame in the backtrace.
+
+The cause was a **one-byte struct field**. `PostureTracker::Associate()` holds
+`Candidate candidates[kMaxTrackedPeople * kMaxTrackedPeople]` — **225 entries — on the
+DetectionTask stack**. Adding a `bool` padded `Candidate` from 12 to 16 bytes, i.e. **+900 bytes of
+stack**, in a task whose measured high-water mark was **`FDSTACK_FREE,412`**. It overflowed, and an
+overflow there does not abort cleanly: it corrupts what is below and resurfaces as a bad semaphore
+handle deep inside the UART driver.
+
+**Rules that follow:**
+- **Never add a field to `Candidate`.** Read what you need off `tracks_` in the comparator instead
+  (the comparator can capture `this` for free). A field there costs 225x its padded size.
+- `kDetectionTaskStackSize` is now **8192** (was 6144). The old peak comment omitted `Associate()`'s
+  2.7 KB array entirely, which is why 6144 looked fine on paper.
+- **`FDSTACK_FREE` is in every capture — check it.** Treat anything under ~1 KB as a defect, not a
+  tight fit. It is the only warning you get before a corruption-class crash.
+- The replay harness cannot catch this. It runs on a host with an 8 MB stack, so every offline
+  result stayed byte-identical while the device was unbootable. **Offline validation does not cover
+  memory footprint** — that is the one thing that still needs a hardware cycle.
+
