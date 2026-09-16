@@ -41,6 +41,26 @@
 // offline replay. Disable for normal field operation to cut UART log noise.
 #define FD_CAPTURE_MODE 1
 
+// One-off diagnostic sweep: sends each command in kProbeCommands once at task start and captures
+// the module's reply, to establish which AT commands this firmware actually implements.
+//
+// Why: the Sep 16 re-capture showed AT+TSCORE=25 rejected with
+//   {"type": 2, "name": "AT", "code": 5, "data": "Unknown command: AT+TSCORE=25"}
+// while the poll command AT+INVOKE=1,0,1\r -- same bare \r terminator -- succeeded on all 259
+// polls. So the terminator is not the problem and this module's firmware simply does not
+// implement TSCORE, even though it is in the vendored client's command table
+// (managed_components/wvirgil123__sscma_client/include/sscma_client_commands.h:35). The module
+// does expose the value we want: every INVOKE reply echoes "config": {"tscore": 50, "tiou": 35}
+// under "algorithm", so the threshold is reachable under *some* name -- this sweep finds it.
+//
+// Costs ~8 s of startup before polling begins (kProbeCount * kProbeDrainMs). Set to 0 for normal
+// field operation.
+#define FD_PROBE_COMMANDS 1
+
+#if FD_PROBE_COMMANDS && !FD_CAPTURE_MODE
+#error "FD_PROBE_COMMANDS needs FD_CAPTURE_MODE: the replies are only visible as FDLOG entries."
+#endif
+
 // DetectionTask holds two UART_BUF_SIZE buffers on its stack (2 KB at 1024) and
 // calls into sscanf / ESP_LOGI, each of which needs ~1 KB of frame on top.
 static constexpr uint32_t kDetectionTaskStackSize = 6144;
@@ -197,6 +217,84 @@ void FallDetectionController::ProcessDetectionLine(const char* line, uint32_t no
     posture_tracker_.Update(boxes.data(), boxes.size(), now_ms);
 }
 
+#if FD_PROBE_COMMANDS
+namespace {
+
+struct ProbeCommand {
+    const char* body;        // command text with no terminator
+    const char* terminator;  // sent verbatim after body
+    const char* term_name;   // printable form of terminator -- a raw \r would break the log line
+};
+
+// Query forms only, plus the two TSCORE set controls at the end.
+//
+// Deliberately no speculative set commands (AT+ALGO=..., etc): the argument order is unknown, the
+// module re-echoes its algorithm config on every INVOKE, and a wrong set could reconfigure the
+// detector for the rest of the run -- poisoning the fall data this same build needs to collect.
+// Round 2 can set the value once these replies show the real syntax.
+const ProbeCommand kProbeCommands[] = {
+    // Identity / capability -- establishes that a reply means "implemented" for this firmware.
+    {"AT+ID?",        "\r",   "CR"},
+    {"AT+NAME?",      "\r",   "CR"},
+    {"AT+VER?",       "\r",   "CR"},
+    {"AT+STAT?",      "\r",   "CR"},
+    {"AT+INFO?",      "\r",   "CR"},
+    // Algorithm surface -- "tscore" lives under "algorithm" in the INVOKE echo, so if the
+    // threshold is settable at all, it is most likely through one of these.
+    {"AT+ALGOS?",     "\r",   "CR"},
+    {"AT+ALGO?",      "\r",   "CR"},
+    // Model / sensor surface.
+    {"AT+MODELS?",    "\r",   "CR"},   // control: already known to be rejected
+    {"AT+MODEL?",     "\r",   "CR"},
+    {"AT+SENSORS?",   "\r",   "CR"},
+    {"AT+SENSOR?",    "\r",   "CR"},
+    // The actual target. A code 0 here with a value would mean TSCORE exists as a query and only
+    // our *set* syntax was wrong -- a very different fix from "not implemented".
+    {"AT+TSCORE?",    "\r",   "CR"},
+    {"AT+TIOU?",      "\r",   "CR"},
+    // Controls, last. The first reproduces the known rejection; the second settles the plan's
+    // "\r\n" fallback with direct evidence instead of inference from the poll command.
+    {"AT+TSCORE=25",  "\r",   "CR"},
+    {"AT+TSCORE=25",  "\r\n", "CRLF"},
+};
+const size_t kProbeCount = sizeof(kProbeCommands) / sizeof(kProbeCommands[0]);
+
+// Per-probe reply window. Unknown-command errors come back immediately; this is sized for a slow
+// query, not for the client library's conservative 2000 ms CMD_WAIT_DELAY.
+const uint32_t kProbeDrainMs = 500;
+
+// Drains UART for window_ms, emitting each complete line as an FDLOG entry so the existing capture
+// tooling (and fall_replay, which skips any line without a "boxes" key) reads these unchanged.
+// Borrows the caller's buffers rather than declaring its own -- DetectionTask already holds two
+// UART_BUF_SIZE buffers and the task stack has no room for a third.
+void ProbeDrain(uart_port_t uart_num, uint32_t window_ms, uint32_t* fd_seq,
+                uint8_t* data, size_t data_cap, char* line, size_t line_cap) {
+    int pos = 0;
+    TickType_t start = xTaskGetTickCount();
+
+    while ((xTaskGetTickCount() - start) < pdMS_TO_TICKS(window_ms)) {
+        int len = uart_read_bytes(uart_num, data, data_cap - 1, pdMS_TO_TICKS(20));
+        for (int i = 0; i < len; i++) {
+            char c = data[i];
+            if (c == '\n' || c == '\r') {
+                if (pos > 0) {
+                    line[pos] = '\0';
+                    ESP_LOGI(TAG, "FDLOG,%lu,%lu,0,%s",
+                             (unsigned long)(*fd_seq)++,
+                             (unsigned long)(xTaskGetTickCount() * portTICK_PERIOD_MS),
+                             line);
+                    pos = 0;
+                }
+            } else if (pos < (int)line_cap - 1) {
+                line[pos++] = c;
+            }
+        }
+    }
+}
+
+}  // namespace
+#endif  // FD_PROBE_COMMANDS
+
 void FallDetectionController::DetectionTask(void* pvParameters) {
     auto* self = static_cast<FallDetectionController*>(pvParameters);
     uint8_t data[UART_BUF_SIZE];
@@ -209,6 +307,30 @@ void FallDetectionController::DetectionTask(void* pvParameters) {
 #if FD_CAPTURE_MODE
     uint32_t fd_seq = 0;
     bool line_overflow = false; // True signals potential data loss in FDLOG entries
+#endif
+
+#if FD_PROBE_COMMANDS
+    // The constructor's own AT+MODELS? / AT+TSCORE= replies are already sitting in the RX buffer.
+    // Drain them under their own marker first, so they are not misattributed to probe 0.
+    ESP_LOGI(TAG, "FDPROBE,init,-,(constructor replies)");
+    ProbeDrain(self->uart_num_, kProbeDrainMs, &fd_seq, data, sizeof(data),
+               line_buffer, sizeof(line_buffer));
+
+    for (size_t i = 0; i < kProbeCount; i++) {
+        const ProbeCommand& probe = kProbeCommands[i];
+
+        // Marker first: every FDLOG line until the next FDPROBE is this command's reply.
+        ESP_LOGI(TAG, "FDPROBE,%u,%s,%s", (unsigned)i, probe.term_name, probe.body);
+
+        uart_write_bytes(self->uart_num_, probe.body, strlen(probe.body));
+        uart_write_bytes(self->uart_num_, probe.terminator, strlen(probe.terminator));
+
+        ProbeDrain(self->uart_num_, kProbeDrainMs, &fd_seq, data, sizeof(data),
+                   line_buffer, sizeof(line_buffer));
+    }
+
+    ESP_LOGI(TAG, "FDPROBE,done,-,(%u commands)", (unsigned)kProbeCount);
+    last_poll_time = xTaskGetTickCount();  // start the poll cadence fresh after the sweep
 #endif
 
     for (;;) {
