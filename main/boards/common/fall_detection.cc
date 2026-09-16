@@ -62,8 +62,15 @@
 #endif
 
 // DetectionTask holds two UART_BUF_SIZE buffers on its stack (2 KB at 1024) and
-// calls into sscanf / ESP_LOGI, each of which needs ~1 KB of frame on top.
-static constexpr uint32_t kDetectionTaskStackSize = 6144;
+// calls into sscanf / ESP_LOGI, each of which needs ~1 KB of frame on top. It also runs
+// PostureTracker::Associate(), whose candidate array is another 2.7 KB of stack.
+//
+// 6144 left only 412 bytes untouched on real hardware (measured: FDSTACK_FREE bottomed out at
+// 412 in the Sep 16 round-3 capture). That is not headroom, it is a near miss -- and overflowing
+// here does not fault cleanly, it corrupts whatever is below and surfaces as an assert or watchdog
+// deep inside the UART driver. Raised to 8192; keep tuning it from FDSTACK_FREE and treat anything
+// under ~1 KB as a defect.
+static constexpr uint32_t kDetectionTaskStackSize = 8192;
 
 uint32_t FallDetectionController::GetLocalFallCount() {
     nvs_handle_t nvs_handle;
@@ -380,7 +387,10 @@ void FallDetectionController::DetectionTask(void* pvParameters) {
         if ((xTaskGetTickCount() - last_heartbeat) >= pdMS_TO_TICKS(1000)) {
 #if FD_CAPTURE_MODE
             // Bytes of stack never touched: tune kDetectionTaskStackSize from this.
-            // Peak for UART_BUF_SIZE (1024) is ~3.6 KB = 2.1 KB (DetectionTask) + 1.5 KB (sscanf / ESP_LOGI)
+            // Peak for UART_BUF_SIZE (1024) is ~5.7 KB = 2.1 KB (DetectionTask) + 2.7 KB
+            // (Associate's candidate array) + ~1 KB (sscanf / ESP_LOGI).
+            // Anything under ~1 KB free here is a defect, not a tight fit -- see the note on
+            // kDetectionTaskStackSize.
             ESP_LOGI(TAG, "FDSTACK_FREE,%u", (unsigned)uxTaskGetStackHighWaterMark(nullptr));
 #endif
             last_heartbeat = xTaskGetTickCount();

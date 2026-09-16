@@ -142,11 +142,16 @@ void PostureTracker::Associate(const BoxObservation* boxes, size_t count, uint32
                                 int* assigned_track_out) {
     for (size_t i = 0; i < count; i++) assigned_track_out[i] = -1;
 
+    // NOTE: this is a 225-entry array on the DetectionTask stack, which runs with very little
+    // headroom (FDSTACK_FREE bottomed out at 412 bytes on real hardware). Adding a field here
+    // costs 225 * sizeof(field+padding) of stack and WILL overflow it -- a bool added for the
+    // has_baseline sort padded this struct 12 -> 16 bytes, overran the stack, corrupted the UART
+    // driver's semaphore handle and crashed the device in uart_read_bytes. Keep it at 12 bytes
+    // and read anything else off tracks_ in the comparator instead.
     struct Candidate {
         float dist;
         int box_idx;
         int track_idx;
-        bool confirmed;
     };
     Candidate candidates[kMaxTrackedPeople * kMaxTrackedPeople];
     int n_candidates = 0;
@@ -180,16 +185,19 @@ void PostureTracker::Associate(const BoxObservation* boxes, size_t count, uint32
             // seeded at prone height that could never alarm.
             float gate = t.has_baseline ? tuning_.assoc_gate_ratio * t.h_ref : tuning_.assoc_gate_px;
             if (dist < gate) {
-                candidates[n_candidates++] = {dist, static_cast<int>(bi), ti, t.has_baseline};
+                candidates[n_candidates++] = {dist, static_cast<int>(bi), ti};
             }
         }
     }
 
-    std::sort(candidates, candidates + n_candidates,
-              [](const Candidate& a, const Candidate& b) {
-                  if (a.confirmed != b.confirmed) return a.confirmed;
-                  return a.dist < b.dist;
-              });
+    // Confirmed tracks first, then nearest. has_baseline is read from tracks_ rather than cached
+    // in Candidate for the stack reason above.
+    std::sort(candidates, candidates + n_candidates, [this](const Candidate& a, const Candidate& b) {
+        bool a_conf = tracks_[a.track_idx].has_baseline;
+        bool b_conf = tracks_[b.track_idx].has_baseline;
+        if (a_conf != b_conf) return a_conf;
+        return a.dist < b.dist;
+    });
 
     bool track_claimed[kMaxTrackedPeople] = {};
     for (int i = 0; i < n_candidates; i++) {
