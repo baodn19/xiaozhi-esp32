@@ -27,6 +27,7 @@ scripts/acoustic_check/audio_debug
 
 # Test folder
 test/
+log/
 
 # Cursor
 .cursor
