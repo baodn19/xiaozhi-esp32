@@ -712,3 +712,162 @@ Two new tests, and the negative one has teeth — deleting the `born_upright` te
   **11.6s** before the 74570 one, so **on hardware the second will be suppressed.** That is the
   re-enactment spacing (falls 11s apart), not a detection failure — but the cooldown is now the
   binding constraint on closely-spaced falls and should be revisited.
+
+---
+
+# Round 5: T1b lands — 3 of 3 falls alert, and the left edge is now measurable
+
+`2649d85` flashed, **three** falls re-enacted (`capture_round5_1151.log`). Operator reported them at
+~35s, ~63s and ~92s. **All three alerted.** Zero false positives across 110.9s.
+
+## The build is genuinely `2649d85`
+
+Replay reproduces **27 of 27** `FDEVT` lines byte-for-byte. The flash took; the analysis below is
+about the T1b firmware and nothing else.
+
+```
+diff <(grep -o 'FDEVT,[0-9]*,[A-Za-z]*,[A-Za-z]*,[0-9]*' capture_round5_1151.log) \
+     <(./tools/fall_replay/fall_replay < capture_round5_1151.log | grep -o '^FDEVT,[0-9]*,[A-Za-z]*,[A-Za-z]*,[0-9]*' | grep -v ,ALERT,)
+```
+
+Device clock runs **6.7s behind** operator wall-clock, consistent to ±0.3s across all three falls —
+the tightest correspondence any round has produced.
+
+| operator | device descent | alert | latency | `kInit` exit | reason |
+|---|---|---|---|---|---|
+| ~35s | 28640 | 32650 | 4.01s | **T1b** | `ground_confirmed` |
+| ~63s | 56090 | 60460 | 4.37s | T1 | **`zombie_dropout`** |
+| ~92s | 85250 | 89680 | 4.43s | T1 | `ground_confirmed` |
+
+Alerts are 27.8s and 29.2s apart, both clear of `ALERT_COOLDOWN_MS = 15000`, so **all three fired
+on-device** — offline and on-device counts agree for the first time since round 2.
+`FDSTACK_FREE` bottoms at **2348 of 8192**; healthy, and unchanged in character by T1b's +60 B.
+`make test` **ALL PASS**, now including both T1b tests.
+
+## T1b is responsible for one of the three alerts
+
+Fall 1 is a textbook instance of the defect T1b was written for, and the trace proves the
+counterfactual outright:
+
+```
+TRACE,27910,id=7,Init,h=151,h_ref=151,upcnt=0     <- track born at cx=15, the LEFT EDGE
+TRACE,28120,id=7,Init,h=151,           upcnt=1
+TRACE,28410,id=7,Init,h=185,           upcnt=2    <- height jumps, up=0
+TRACE,28640,id=7,Descending, r=0.78,   upcnt=0    <- T1b fires. T1 needs upcnt=5.
+```
+
+`upcnt` peaked at **2 of the 5** T1 requires, and the subject was already collapsing. Pre-`2649d85`
+`id=7` sits in `kInit` for the entire fall and never alarms. **Without T1b round 5 is 2/3, not 3/3.**
+
+Two secondary confirmations that the edge behaves as designed:
+
+- **The baseline freeze works in the field.** `h_ref` stays pinned at 151 through the whole ground
+  phase (`h_n=0.36, drop=0.64` for 3s). Round 4's prone-baseline re-seed did **not** recur — moving
+  to `kDescending` stops `UpdateBaseline` learning, exactly as the T1b writeup predicted.
+- **The new edge rejects non-falls.** `id=3` also took `Init -> Descending` (12420) and returned
+  `Descending -> Upright` 500ms later with no alarm. The downstream gates still do their job on the
+  T1b path; T1b widens the entrance, not the exit.
+
+## Sensing: best-ever headline, but the headline is flattered by phantoms
+
+| | round 2 | round 3 | round 4 | **round 5** |
+|---|---|---|---|---|
+| detection rate (any box) | 32.8% | 65.3% | 77.3% | **94.1% (449/477)** |
+| span | 56.0s | 70.3s | 150.8s | 110.9s |
+| frame rate | 4.41 | 4.31 | 4.33 | 4.29 fps |
+| worst blackout (any box) | 6.02s | 4.02s | 3.37s | **0.91s** |
+
+The metric is the one every prior round used (frames with ≥1 box; it reproduces round 4's
+504/652 exactly). **But this capture contains two static phantoms** that keep it saturated:
+
+- **cx≈211, h=115–193** — present in 287 frames from t=12190 to t=122940, never moves. Furniture.
+- **cx≈20, w≈23, h≈60** — a second static blob on the left.
+
+Neither is a person, and both mask the subject's absence. Scoring **subject boxes only**:
+
+| | any-box | **subject-only** |
+|---|---|---|
+| detection rate | 94.1% | **78.2% (373/477)** |
+| worst blackout | 0.91s | **8.22s** |
+
+**78.2% is the honest number**, and it is a marginal gain on round 4, not the leap the headline
+suggests. The phantoms also spawn real tracks (ids 2, 3, 11, 12, 21, 22, 24) that consume
+association slots — they cost nothing in false alarms this round, but they are not free.
+
+## The left frame edge, finally quantified
+
+The four longest subject blackouts total 17.3s. **Three of them — 15.7s, 91% — begin with a box
+touching or crossing the left boundary**, and the box shape at the moment of loss is round 4's
+signature reproduced twice more:
+
+| blackout | last box before loss | span in a 0..240 frame |
+|---|---|---|
+| **8.22s** | prone, cx=70 w=146 h=54, **bottom-left corner** | **-3 .. 143** |
+| 4.29s | upright, cx=18 **w=31 for h=227** (ar 0.14) | 2 .. 34 |
+| 3.20s | upright, cx=18 **w=31 for h=227** (ar 0.14) | 2 .. 34 |
+| 1.61s | prone, cx=94 w=104 h=54 | 42 .. 146 — *not clipped, and the shortest* |
+
+Round 4's miss began with `w=28` for `h=214`. Round 5 has `w=31` for `h=227`, twice. Same defect.
+
+Aggregated over every subject frame:
+
+```
+P(subject lost on next poll | box touches left boundary)  =  11/121 = 9.1%
+P(subject lost on next poll | box fully in frame)         =   4/252 = 1.6%
+                                            relative risk =  5.7x
+32% of all subject frames are in the clipped state.
+```
+
+**The camera is aimed too far right.** Confident person detections cluster at cx≈45 of 240 — the
+left fifth — while the right quarter of the frame contributes only the static phantom. The subject
+spends a third of their time half-outside the sensor.
+
+### The 8.22s blackout is the safety-critical one
+
+After fall 2 the subject came to rest in the **bottom-left corner**, box spanning **-3..143** — about
+a quarter of the body outside the frame. The detector then saw nothing at all from 57240 to 65230.
+**That is 8.2 seconds of blindness on a person lying on the floor**, ending only when they got up.
+
+The alert still fired, but **only through `zombie_dropout`** — the fallback that infers a fall from
+the *absence* of data. It is the weakest evidence path in the system: nothing distinguishes it from
+a coincidental detector dropout. Fall 3, whose prone body was fully in frame (span 55..159), was
+tracked for 58 consecutive frames and produced a clean `ground_confirmed`. That is the control.
+
+### Would fixing the framing improve detection?
+
+**Yes, but the reason has changed, and the headline rate is not where it shows up.** Round 5 has no
+misses for framing to rescue. What it buys:
+
+1. **Removes the dependence on `zombie_dropout`.** Fall 2 would have confirmed on observed ground
+   frames at ~59050 (`GroundUnconfirmed` 56550 + `ground_confirm_ms` 2500) instead of 60460 —
+   **~1.4s earlier and on real evidence**. One of three alerts currently rests on absence.
+2. **Removes the dependence on T1b for left-entry falls.** Fall 1's subject was visible for only
+   730ms / 3 frames before collapsing *because they entered at the frame boundary*. With adequate
+   left coverage they would have walked upright in view for seconds, T1 would have confirmed
+   normally, and the track would have had a real baseline. **Left-edge framing is the root cause of
+   the condition T1b patches** — T1b is the safety net, not the fix.
+3. **Recovers most of the blind time.** The three left-edge blackouts are 69 of 104 subject-blind
+   polls (**66%**). At the in-frame loss rate, subject detection projects from 78.2% to **~92%**.
+4. **Likely evicts the right-side phantom**, removing seven spurious tracks.
+
+Cost: re-aiming a camera. **It remains the highest-value remaining work, and it is still not
+firmware.** Recommend panning left by ~40–50px of frame width (≈20°) and re-running a 3-fall
+re-enactment with at least one fall deliberately placed in the bottom-left corner.
+
+Caveat: one 111s capture, three falls. The claim the doc has carried since round 2 —
+"left edge implicated in a degraded or missed fall in every round" — holds for round 5 as
+**degraded, not missed**. T1b and the `zombie_dropout` fallback absorbed it this time. Both are
+backstops, and both were load-bearing here.
+
+## What to do next
+
+1. **Re-aim the camera left.** Everything above. Sensing, not firmware.
+2. **Gate the baseline re-seed on an upright pose** — still open. T1b closes it only for tracks that
+   take the descent path; a track that never descends can still latch onto a prone box.
+3. **Suppress static phantoms.** Seven tracks and a badly inflated detection metric come from two
+   boxes that never move. A long-lived zero-motion track could be excluded from the metric and from
+   association cheaply.
+4. **`ALERT_COOLDOWN_MS = 15000` did not bite this round** (27.8s / 29.2s spacing) but remains the
+   binding constraint on closely-spaced falls. Unchanged from round 4's assessment.
+5. Phase B — still deferred; round 5 does not change the round 4 analysis.
+6. Still open from round 1: remove the dead `AT+TSCORE` send, set `FD_PROBE_COMMANDS 0`.
