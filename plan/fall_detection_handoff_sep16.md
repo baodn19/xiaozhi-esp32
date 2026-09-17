@@ -619,7 +619,7 @@ framing and the left edge — is what limits this system now.
 4. **`ALERT_COOLDOWN_MS = 15000` needs revisiting before fall 1 is fixed.** Had it alerted (~60.5s),
    fall 2's alert at 74570 would have been 14.1s later — suppressed on-device.
 5. Then reconsider Phase B, with M8 already landed and the decimation cross-check as its gate.
-6. Still open from round 1: remove the dead `AT+TSCORE` send, set `FD_PROBE_COMMANDS 0`.
+7. Still open from round 1: remove the dead `AT+TSCORE` send, set `FD_PROBE_COMMANDS 0`.
 
 ---
 
@@ -778,21 +778,63 @@ Two secondary confirmations that the edge behaves as designed:
 | worst blackout (any box) | 6.02s | 4.02s | 3.37s | **0.91s** |
 
 The metric is the one every prior round used (frames with ≥1 box; it reproduces round 4's
-504/652 exactly). **But this capture contains two static phantoms** that keep it saturated:
+504/652 exactly). **But two boxes in this capture never move, and they keep it saturated:**
 
-- **cx≈211, h=115–193** — present in 287 frames from t=12190 to t=122940, never moves. Furniture.
-- **cx≈20, w≈23, h≈60** — a second static blob on the left.
+- **cx≈211, h=115–193** — present in 290 of 477 frames from t=12190 to t=122940. Unidentified;
+  assumed fixture, but see the caveat below.
+- **cx≈20, w≈23, h≈60** — **this is a second person, seated at the left edge** (operator-confirmed).
+  It is **not** a phantom. See the next section.
 
-Neither is a person, and both mask the subject's absence. Scoring **subject boxes only**:
+Both mask the walking subject's absence. Scoring **the walking subject only**:
 
-| | any-box | **subject-only** |
+| | any-box | **walking subject only** |
 |---|---|---|
 | detection rate | 94.1% | **78.2% (373/477)** |
 | worst blackout | 0.91s | **8.22s** |
 
-**78.2% is the honest number**, and it is a marginal gain on round 4, not the leap the headline
-suggests. The phantoms also spawn real tracks (ids 2, 3, 11, 12, 21, 22, 24) that consume
-association slots — they cost nothing in false alarms this round, but they are not free.
+**78.2% is the honest number for fall analysis**, and it is a marginal gain on round 4, not the leap
+the headline suggests.
+
+⚠ **Do not "fix" the metric by suppressing stationary tracks.** An earlier draft of this section
+recommended exactly that. It was wrong, and dangerously so — one of the two stationary boxes is a
+human being.
+
+## ⚠ A seated person is tracked, and can never trigger an alarm
+
+The operator confirms someone was **sitting at the left edge** for the whole capture. That is the
+`cx≈20, w≈23, h≈60` box. The tracker handles them well and the alarm logic cannot touch them.
+
+Two tracks cover this person, and both reach **confirmed** `kUpright` through T1:
+
+```
+id=11  t=37670..62260   h_ref converges 60..62   upcnt=5, Upright(Z)
+id=21  t=85020..122940  h_ref converges 57..62   upcnt=5, Upright(Z)
+```
+
+`min_classify_h_ref = 100`. Every alarm site is gated on `classify_ok = t.h_ref >= min_classify_h_ref`
+(`fall_posture.cc:513, 549, 585`), and `born_upright` carries the same `box.h >= min_classify_h_ref`
+term (`:131`). **`h_ref` for this person never exceeds 62, so `classify_ok` is permanently false and
+T1b is equally unreachable.** If they slumped or fell out of that chair, the system would track it
+and stay silent.
+
+This is a **reachability defect of the same class as the one T1b fixed** — not a tuning gap. Lowering
+`min_classify_h_ref` is *not* the fix: the constant exists to reject small spurious boxes, and round 1
+raised it from 80 to 100 deliberately.
+
+**The cause is the left frame edge.** The person is clipped to a 23px-wide sliver, and only their
+upper body is resolved (box spans y 96..156 while the standing subject spans y 2..242). A seated
+adult fully in frame would present `h` well above 100. **Framing is what makes them unclassifiable**,
+which is the strongest argument yet for re-aiming.
+
+Their detection is also poor in its own right: **48% of frames (230/477)**, with the longest absences
+(13.5s, 6.9s, 5.0s) occurring when the walking subject crosses in front of the chair — 43% of the
+absences have a large box overlapping the seat, so merge/occlusion explains part but not all of it.
+
+⚠ **The right-hand `cx≈211` box is unresolved.** It sits *above* `min_classify_h_ref` (h 115–193), so
+unlike the seated person it **can** spawn alarm-capable tracks (ids 2, 11, 12, 21, 22, 24 span both).
+It produced no false positives here. Someone should confirm from the room whether it is a fixture or
+a third occupant before anyone reasons about it again — this round's lesson is that the log cannot
+tell you.
 
 ## The left frame edge, finally quantified
 
@@ -818,9 +860,10 @@ P(subject lost on next poll | box fully in frame)         =   4/252 = 1.6%
 32% of all subject frames are in the clipped state.
 ```
 
-**The camera is aimed too far right.** Confident person detections cluster at cx≈45 of 240 — the
-left fifth — while the right quarter of the frame contributes only the static phantom. The subject
-spends a third of their time half-outside the sensor.
+**The camera is aimed too far right.** Confident detections of the walking subject cluster at
+cx≈45 of 240 — the left fifth — and the seated occupant is further left still, clipped to a 23px
+sliver. The walking subject spends a third of their time half-outside the sensor; the seated one
+is never fully inside it.
 
 ### The 8.22s blackout is the safety-critical one
 
@@ -848,7 +891,11 @@ misses for framing to rescue. What it buys:
    the condition T1b patches** — T1b is the safety net, not the fix.
 3. **Recovers most of the blind time.** The three left-edge blackouts are 69 of 104 subject-blind
    polls (**66%**). At the in-frame loss rate, subject detection projects from 78.2% to **~92%**.
-4. **Likely evicts the right-side phantom**, removing seven spurious tracks.
+4. **Brings the seated occupant above `min_classify_h_ref` — the biggest win of the four.** They are
+   currently tracked at `h_ref` 57–62 against a threshold of 100, so *no fall of theirs can ever
+   alarm*. A seated, stationary occupant is also the person in that room most likely to need fall
+   detection. Framing is the only thing standing between them and a working alarm; no firmware
+   change reaches this without weakening the small-box rejection that keeps false positives at zero.
 
 Cost: re-aiming a camera. **It remains the highest-value remaining work, and it is still not
 firmware.** Recommend panning left by ~40–50px of frame width (≈20°) and re-running a 3-fall
@@ -861,13 +908,22 @@ backstops, and both were load-bearing here.
 
 ## What to do next
 
-1. **Re-aim the camera left.** Everything above. Sensing, not firmware.
-2. **Gate the baseline re-seed on an upright pose** — still open. T1b closes it only for tracks that
+1. **Re-aim the camera left.** Everything above. Sensing, not firmware. It is now the only thing
+   standing between the seated occupant and an alarm that can fire at all.
+2. **Identify the `cx≈211` box from the room.** It is above `min_classify_h_ref` and therefore
+   alarm-capable. Nobody should reason about it from the log again — round 5 already misclassified
+   one stationary box as furniture when it was a person.
+   **This question is five rounds old.** "Open problems" #2, written at `c27d082`, says of the
+   stationary `41x115` box at `cx≈189`: *"If it is furniture rather than a second person, moving or
+   re-aiming the camera may be worth more than any further tuning."* It was never answered, and every
+   round since has quietly assumed furniture. Answer it by looking at the room, not the log.
+3. **Gate the baseline re-seed on an upright pose** — still open. T1b closes it only for tracks that
    take the descent path; a track that never descends can still latch onto a prone box.
-3. **Suppress static phantoms.** Seven tracks and a badly inflated detection metric come from two
-   boxes that never move. A long-lived zero-motion track could be excluded from the metric and from
-   association cheaply.
-4. **`ALERT_COOLDOWN_MS = 15000` did not bite this round** (27.8s / 29.2s spacing) but remains the
+4. ~~**Suppress static phantoms.**~~ **Withdrawn.** Proposed in the first draft of the round 5
+   writeup on the assumption that the two stationary boxes were furniture. One of them is a seated
+   person. Suppressing long-lived zero-motion tracks would make the system deliberately blind to
+   stationary occupants — the exact population fall detection exists for. **Do not do this.**
+5. **`ALERT_COOLDOWN_MS = 15000` did not bite this round** (27.8s / 29.2s spacing) but remains the
    binding constraint on closely-spaced falls. Unchanged from round 4's assessment.
-5. Phase B — still deferred; round 5 does not change the round 4 analysis.
-6. Still open from round 1: remove the dead `AT+TSCORE` send, set `FD_PROBE_COMMANDS 0`.
+6. Phase B — still deferred; round 5 does not change the round 4 analysis.
+7. Still open from round 1: remove the dead `AT+TSCORE` send, set `FD_PROBE_COMMANDS 0`.
