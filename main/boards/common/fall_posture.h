@@ -150,6 +150,11 @@ struct TrackedPerson {
     bool has_baseline = false;
     int upright_confirm_count = 0;  // T1 accumulator
     int baseline_reject_streak = 0;  // consecutive h samples rejected as outliers; drives re-seed
+    // The track's FIRST box looked like a standing person (upright aspect, person-sized). Set once
+    // in CreateTrack and never updated -- by the time a collapse is visible the current box is no
+    // longer upright, so the seed is the only frame that can answer "was this a person standing?".
+    // Gates T1b, the provisional-baseline descent path out of kInit.
+    bool born_upright = false;
 
     // Short history for windowed (least-squares) velocity, in chronological order. The timestamps
     // are GAP-COMPRESSED (see PushHistory and Tuning::max_gap_counted_ms), not raw: a velocity is

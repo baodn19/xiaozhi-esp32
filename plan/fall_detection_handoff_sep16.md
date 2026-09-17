@@ -610,9 +610,7 @@ framing and the left edge — is what limits this system now.
 
 ## What to do next
 
-1. **The `kInit`-born-mid-fall path.** The only remaining miss, and provably unreachable by tuning.
-   A track that first appears already collapsing has no learned `h_ref`; to classify it at all the
-   fall logic would have to fall back on frame geometry instead of a learned baseline.
+1. ~~**The `kInit`-born-mid-fall path.**~~ **Fixed — see "T1b" below.**
 2. **The left frame edge — now implicated in a degraded or missed fall in all four rounds.** The
    3.20s blackout that caused this miss began with `w=28` for `h=214`. This is the highest-value
    sensing work, and it is framing, not firmware.
@@ -622,3 +620,95 @@ framing and the left edge — is what limits this system now.
    fall 2's alert at 74570 would have been 14.1s later — suppressed on-device.
 5. Then reconsider Phase B, with M8 already landed and the decimation cross-check as its gate.
 6. Still open from round 1: remove the dead `AT+TSCORE` send, set `FD_PROBE_COMMANDS 0`.
+
+---
+
+# T1b — the fix for the `kInit`-born-mid-fall path
+
+**Round 4 now alerts on 4 of 4 falls, and round 2 on 2 of 3** (it was 3/4 and 1/3).
+
+## The defect
+
+`kInit` had exactly one exit: T1, which needs `upright_confirm_frames = 5` consecutive frames of a
+**stable** height. A person who enters the detector's view already collapsing never produces those
+frames, so the track sits in `kInit` for the whole fall — and `kInit` has no descent edge at all.
+The fall is structurally unreachable, which is why the tuning sweep in round 4 could not touch it.
+
+This is not a one-capture curiosity. It is the *same* failure the doc already recorded for round 2's
+~29s fall ("T1 needs 5 consecutive; the count peaked at 2. The track therefore stayed in `kInit`,
+which by design never alarms"). Two captures, two sessions, one missing edge.
+
+## The fix
+
+A second exit from `kInit` — **T1b: provisional-baseline descent** — in `fall_posture.cc`:
+
+```cpp
+if (t.born_upright && f.descent_sig) {
+    EnterState(t, PostureState::kDescending, now_ms);
+}
+```
+
+`born_upright` is one new `bool` on `TrackedPerson`, set once in `CreateTrack`: did this track's
+**first** box look like a standing person — upright aspect (`w/h < upright_max_ratio`) and
+person-sized (`h >= min_classify_h_ref`)? It has to be the seed frame, because by the time a
+collapse is visible the current box is no longer upright.
+
+Three properties make this safe:
+
+- **`has_baseline` stays `false`.** The track is still a hypothesis for association purposes: it
+  keeps the loose fixed pixel gate and keeps losing box-contention ties to confirmed tracks, so
+  round 3's confirmed-first fix is fully preserved.
+- **Every alarm gate is downstream and untouched.** To fire, the track must still clear
+  `descent_sig`, two consecutive ground frames, `ground_confirm_ms = 2500` at
+  `ground_frames_duty_min = 0.70`, `was_ballistic` (`peak_norm_vel > 0.32`, `pause_count == 0`,
+  `descent_observed_ms < 1800`) **and** `min_classify_h_ref`. T1's own job is rejecting
+  *stationary* spurious boxes, and a stationary box passes none of those.
+- **It closes the latent prone-baseline latch for free.** `UpdateBaseline` only learns in
+  `kInit`/`kUpright`, so moving to `kDescending` freezes `h_ref` at its pre-fall value — the track
+  can no longer re-seed its baseline onto a prone box the way round 4's did at 60770.
+
+## Result
+
+Both previously-missed falls now take the **full** path, not a dropout inference:
+
+```
+round 4  Init -> Descending 59110 -> GroundUnconfirmed 60290 -> ALERT,ground_confirmed 62930
+round 2  Init -> Descending 29020 -> GroundUnconfirmed 30110 -> ALERT,ground_confirmed 32610
+```
+
+Latency 3.8s and 3.6s, in line with the 3.5–4.3s of the falls that already worked.
+
+| Fixture | before | after |
+|---|---|---|
+| `capture_round4_1640` (4 real falls) | 3 | **4** |
+| `capture_round2_sep16_1508` (3 real falls) | 1 | **2** |
+| `capture_round3_sep16_1608` | 3 | 3 — byte-identical |
+| `capture_conf25_falls` | 3 | 3 — byte-identical |
+| `capture_conf25_check` | 0 | 0 |
+| tscore=50 `monitor.log` (false-positive control) | 0 | **0** |
+| `make test` | ALL PASS | ALL PASS |
+
+Two new tests, and the negative one has teeth — deleting the `born_upright` term makes
+`TestBornNonUprightNeverAlarms` fail with an alert:
+
+- `TestBornMidFallFiresT1b` — a track seeded upright then collapsing alarms **with
+  `has_baseline == false`**, proving it never went through T1.
+- `TestBornNonUprightNeverAlarms` — the identical collapse seeded from a wide box stays in `kInit`
+  and alarms zero times.
+
+## Cost and caveats
+
+- `sizeof(TrackedPerson)` 240 → **244 B**; ×15 tracks = **+60 B**, and `tracks_` lives inside
+  `PostureTracker` (a `FallDetectionController` member), **not** on the DetectionTask stack.
+  **`Candidate` is untouched**, so the 225-entry stack hazard from round 3 does not apply here.
+- `fall_posture.cc` compiles clean under `-Wall -Wextra -Werror -Wpedantic -Wshadow`. (Three
+  `-Wconversion` hits exist in `LeastSquaresSlope` and the duty calculation; all three are
+  pre-existing — the count is identical before and after this change.)
+- **`idf.py build` was NOT run.** The ESP-IDF Python venv in this environment is broken
+  (`python_env/idf5.5_py3.14_env` missing after a Python upgrade), so the target build could not be
+  exercised. `fall_posture.cc` is by design free of ESP-IDF/FreeRTOS/NVS includes and this change
+  adds none, but **the target build is still unverified — run it before flashing.**
+- `ALERT_COOLDOWN_MS = 15000` now bites, exactly as predicted: round 4's new alert at 62930 is
+  **11.6s** before the 74570 one, so **on hardware the second will be suppressed.** That is the
+  re-enactment spacing (falls 11s apart), not a detection failure — but the cooldown is now the
+  binding constraint on closely-spaced falls and should be revisited.

@@ -252,6 +252,103 @@ void TestDeliberateLieDownIsBenign() {
     CHECK(g_alert_count == 0);
 }
 
+// -------------------------------------------------------------------------------------------
+// 5. T1b -- born mid-fall. A person can enter the detector's view ALREADY collapsing (Sep 16
+//    rounds 2 and 4: a blackout killed the confirmed track during the approach and the
+//    replacement track was created a few hundred ms before impact). T1 cannot fire during a
+//    collapse -- it requires a *stable* height -- so without the provisional-baseline edge such a
+//    track sits in kInit for the whole fall and never alarms, no matter how clean the descent is.
+//    has_baseline must stay false throughout: the alarm here is earned downstream by
+//    ballisticity + the sustained-ground duty cycle, NOT by T1.
+// -------------------------------------------------------------------------------------------
+void TestBornMidFallFiresT1b() {
+    PostureTracker tracker = MakeTracker();
+    ResetAlertCount();
+    uint32_t now_ms = 0;
+    const uint32_t dt_ms = 200;
+    const float x = 70;
+
+    // Seed frame only -- no Establish(), so T1 never gets its upright_confirm_frames. The box is
+    // upright-shaped (50/110 = 0.45 < upright_max_ratio) and clears min_classify_h_ref, which is
+    // exactly what born_upright records.
+    {
+        BoxObservation b = Box(x, 41, 50, 110);
+        tracker.Update(&b, 1, now_ms);
+        now_ms += dt_ms;
+    }
+    CHECK(tracker.TrackAt(0).state == PostureState::kInit);
+    CHECK(tracker.TrackAt(0).born_upright);
+
+    // Same collapse as TestBallisticFallFiresT11: standing (w=50,h=110,cy=96) -> lying sideways
+    // (w=140,h=60,cy=146) over ~800 ms.
+    for (int i = 1; i <= 4; i++) {
+        float frac = i / 4.0f;
+        float w = 50 + frac * (140 - 50);
+        float h = 110 + frac * (60 - 110);
+        float cy = 96 + frac * (146 - 96);
+        BoxObservation b = Box(x, cy - h / 2.0f, w, h);
+        tracker.Update(&b, 1, now_ms);
+        now_ms += dt_ms;
+    }
+    const float final_w = 140, final_h = 60, final_cy = 146;
+    uint32_t hold_until = now_ms + 3000;
+    while (now_ms < hold_until) {
+        BoxObservation b = Box(x, final_cy - final_h / 2.0f, final_w, final_h);
+        tracker.Update(&b, 1, now_ms);
+        now_ms += dt_ms;
+    }
+
+    printf("[born-mid-fall/T1b] final state=%s alerts=%d reason=%s has_baseline=%d\n",
+           PostureStateName(tracker.TrackAt(0).state), g_alert_count, g_last_alert_reason,
+           tracker.TrackAt(0).has_baseline);
+    CHECK(tracker.TrackAt(0).state == PostureState::kFallConfirmed);
+    CHECK(g_alert_count == 1);
+    CHECK(!tracker.TrackAt(0).has_baseline);  // never went through T1
+}
+
+// -------------------------------------------------------------------------------------------
+// 6. The complement that gives test 5 its teeth: an identical collapse whose SEED box was not
+//    upright-shaped must stay silent. h_ref on a fresh track is a one-frame guess, so a track
+//    born on a box that never looked like a standing person has nothing credible to measure a
+//    collapse against. Delete the born_upright term from T1b and this test fires an alert.
+// -------------------------------------------------------------------------------------------
+void TestBornNonUprightNeverAlarms() {
+    PostureTracker tracker = MakeTracker();
+    ResetAlertCount();
+    uint32_t now_ms = 0;
+    const uint32_t dt_ms = 200;
+    const float x = 70;
+
+    // Person-sized (h=110 clears min_classify_h_ref) but wide: 140/110 = 1.27, far past
+    // upright_max_ratio. Fails born_upright on aspect alone.
+    {
+        BoxObservation b = Box(x, 41, 140, 110);
+        tracker.Update(&b, 1, now_ms);
+        now_ms += dt_ms;
+    }
+    CHECK(!tracker.TrackAt(0).born_upright);
+
+    for (int i = 1; i <= 4; i++) {
+        float frac = i / 4.0f;
+        float h = 110 + frac * (60 - 110);
+        float cy = 96 + frac * (146 - 96);
+        BoxObservation b = Box(x, cy - h / 2.0f, 140, h);
+        tracker.Update(&b, 1, now_ms);
+        now_ms += dt_ms;
+    }
+    uint32_t hold_until = now_ms + 3000;
+    while (now_ms < hold_until) {
+        BoxObservation b = Box(x, 146 - 60 / 2.0f, 140, 60);
+        tracker.Update(&b, 1, now_ms);
+        now_ms += dt_ms;
+    }
+
+    printf("[born-non-upright] final state=%s alerts=%d\n",
+           PostureStateName(tracker.TrackAt(0).state), g_alert_count);
+    CHECK(tracker.TrackAt(0).state != PostureState::kFallConfirmed);
+    CHECK(g_alert_count == 0);
+}
+
 }  // namespace
 
 int main() {
@@ -259,6 +356,8 @@ int main() {
     TestCrouchCancelsViaT10();
     TestBallisticFallFiresT11();
     TestDeliberateLieDownIsBenign();
+    TestBornMidFallFiresT1b();
+    TestBornNonUprightNeverAlarms();
 
     if (g_failures == 0) {
         printf("ALL PASS\n");

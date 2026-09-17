@@ -124,6 +124,11 @@ void PostureTracker::CreateTrack(const BoxObservation& box, uint32_t now_ms) {
         t.cy = box.y + box.h / 2.0f;
         t.h_ref = box.h;   // seed candidate baseline; confirmed at T1
         t.cy_ref = t.cy;
+        // Does this first box look like a person standing up? min_classify_h_ref (not T1's weaker
+        // upright_min_h_frac_of_frame) because T1b below skips the 5-frame confirmation and so
+        // must be at least as strict as the height the alarm path itself demands.
+        t.born_upright = box.h > 0.0f && (box.w / box.h) < tuning_.upright_max_ratio &&
+                         box.h >= tuning_.min_classify_h_ref;
         t.last_seen_ms = now_ms;
         t.state = PostureState::kInit;
         t.state_enter_ms = now_ms;
@@ -370,6 +375,28 @@ void PostureTracker::UpdatePosture(TrackedPerson& t, const Features& f, uint32_t
             if (t.upright_confirm_count >= tuning_.upright_confirm_frames) {
                 t.has_baseline = true;
                 EnterState(t, PostureState::kUpright, now_ms);
+                break;
+            }
+
+            // T1b: provisional-baseline descent. A person can enter the detector's view ALREADY
+            // falling -- Sep 16 round 4: a 3.2s blackout killed the confirmed track mid-approach,
+            // the person reappeared 480ms before impact, and the replacement track sat in kInit
+            // through a descent observed on 8 polls out of 8. T1 cannot fire during a collapse (it
+            // wants a *stable* height), so without this edge such a fall is structurally
+            // unreachable -- no tuning value rescues it.
+            //
+            // h_ref here is a one-frame guess, not a learned baseline, so the seed box must have
+            // looked like a standing person (born_upright) before we will believe a collapse
+            // measured against it. has_baseline stays false deliberately: association must keep
+            // treating this track as the hypothesis it is, and must keep losing box-contention
+            // ties to genuinely confirmed tracks.
+            //
+            // This does not weaken the alarm gates. Everything that makes kGroundUnconfirmed->T11
+            // trustworthy -- ballisticity, pause_count, the ground duty cycle, min_classify_h_ref
+            // -- lives downstream and is untouched; T1's own job is rejecting *stationary*
+            // spurious boxes, which cannot pass descent_sig or peak_norm_vel anyway.
+            if (t.born_upright && f.descent_sig) {
+                EnterState(t, PostureState::kDescending, now_ms);
             }
             break;
         }
