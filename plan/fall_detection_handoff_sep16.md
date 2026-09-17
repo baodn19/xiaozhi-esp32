@@ -489,3 +489,136 @@ handle deep inside the UART driver.
   result stayed byte-identical while the device was unbootable. **Offline validation does not cover
   memory footprint** — that is the one thing that still needs a hardware cycle.
 
+
+---
+
+# Round 4: three of four falls alert — and Phase B is not the lever
+
+`347c393` flashed, **four** falls re-enacted. The operator reported them at ~16s, ~27s, ~57s and
+~87s, with alerts ~3s, ~3s and ~7s after falls 2, 3 and 4. Device clock runs **+43.5s** ahead of
+operator wall-clock; every fall maps to within 1.5s, so the correspondence is not in doubt:
+
+| operator | device descent onset | alert | latency | result |
+|---|---|---|---|---|
+| ~16s | 59110 | — | — | **MISS** |
+| ~27s | 71040 | 74570 | 3.5s | `ground_confirmed` |
+| ~57s | 99610 | 103930 | 4.3s | `ground_confirmed` |
+| ~87s | ~131000 (inside a blackout) | 138550 | 7.5s | `ground_confirmed` |
+
+Replay reproduces the device's 17 `FDEVT` lines exactly. Alerts are 29.4s and 34.6s apart, so
+round 3's cooldown artefact is gone and all three fired on-device. **Zero false positives** across
+150.8s. `FDSTACK_FREE` is a flat **2436 of 8192** — healthy, well clear of the ~1 KB defect line.
+
+## Sensing is the best it has ever been
+
+| | round 2 | round 3 | **round 4** |
+|---|---|---|---|
+| detection rate | 32.8% | 65.3% | **77.3% (504/652)** |
+| span | 56.0s | 70.3s | 150.8s |
+| frame rate | 4.41 fps | 4.31 fps | 4.33 fps |
+| worst blackout | 6.02s | 4.02s | **3.37s** |
+
+Leave the camera alone.
+
+## The miss is not a sensing failure
+
+The ~16s fall was **observed 8 polls out of 8** — `h` 151→120→86→62→54, aspect 0.21→0.78→1.15→
+1.21→1.30→2.70. A textbook descent, fully in frame.
+
+It failed because **the track was born 480ms before the descent started**:
+
+```
+53770..54470  id=7  person upright at the LEFT EDGE, h=235..214  ->  upcnt reaches 3 of 5
+54470..57670  3.20s blackout                                     ->  id=7 dies
+58630         id=9 CREATED, h=151, kInit, upcnt=0
+59110..60530  the fall, 8/8 polls observed, in kInit throughout  ->  kInit NEVER alarms, by design
+```
+
+`id=7` was the person's real upright track (`h_ref=233`) and it only ever got **700ms / 4 polls**
+of upright observation before the detector lost it. Those 4 boxes were left-edge and badly clipped
+— `x=15..26`, `w=28..47` for a body of `h=214..235` (aspect 0.13–0.20, against 0.24–0.36 for the
+same person mid-frame) — with scores decaying `71 → 64 → 58 → 33` and then nothing for 3.2s.
+
+**Tuning cannot reach this.** Swept on the replay harness across every surviving fixture:
+
+| variant | round 4 | round 3 | round 2 | `conf25_check` |
+|---|---|---|---|---|
+| as committed | **3** | 3 | 1 | 0 |
+| `zombie_expiry_ms` 2500 → 4000 | 3 | **2** | 1 | 0 |
+| `upright_confirm_frames` 5 → 3 | 3 | 3 | 1 | 0 |
+| both | **2** | **2** | 1 | 0 |
+
+Neither knob rescues the miss and both cost alerts elsewhere. The gap `id=7` had to survive was
+3.20s against a 2.5s `zombie_expiry_ms`; closing that by tuning breaks round 3.
+
+### Latent: the baseline re-seed adopted a prone box
+
+At 60770, after 5 rejections, `UpdateBaseline` re-seeded `h_ref := 54` **from the box of a person
+lying on the floor**. For the next 6.5s the tracker's model of that person read `h_n=1.00,
+drop_n=0.00` — "standing at normal height, has not dropped" — and `h_ref=54` is below
+`min_classify_h_ref=100`, so the track could not have alarmed at all.
+
+It recovered here only because the person got up (`h_ref` 54 → 78 → 193 by 69120, and `id=9` went
+on to catch falls 2–4). **A person who stays down leaves it latched on a prone baseline.** The
+re-seed (added in `c27d082` to fix the opposite latch-up) needs an upright-pose precondition.
+
+---
+
+# Phase B is **not** necessary — its stated premise is false in this capture
+
+The plan and round 3's next-steps both say the poll-rate change "shortens every blackout". Round 4
+falsifies that.
+
+**The module is not being under-asked.** 653 polls, 652 replies, none dropped. `perf` is
+`[7, 48, 0]` on all 652 frames — inference is a constant 55ms. `Update()` spacing is
+min 190 / median 230 / p95 250 / max 290 ms: no jitter, no starvation, ~18fps of headroom unused.
+
+**All 11 blackouts — 18.61s across 72 polls — consist entirely of polls that were answered with an
+empty box list.** Not one was a missing poll. The detector was asked and said "no person".
+
+Blindness is bimodal, and only one mode is a sampling problem. With `p(empty) = 0.227` over 61 runs:
+
+| empty-run length | observed | expected if per-poll failure were independent |
+|---|---|---|
+| 1 | 39 | 51.0 |
+| 2 | 11 | 11.6 |
+| 3 | 5 | 2.6 |
+| 4 | 4 | 0.60 |
+| 5 | 3 | 0.14 |
+| 6 | 1 | 0.03 |
+| 9 / 12 / 14 | 1 each | ~1e-6 and far below |
+
+Short runs match independent per-poll failure; long runs are impossible under it (a 14-run is
+p≈1e-9). **49% of empty polls sit in sustained runs of ≥4; 26% are isolated single misses.**
+
+So doubling the poll rate would:
+
+- halve the observation gap for the **isolated** component (26% of empty polls) — a real gain;
+- do **nothing** for the sustained blackouts (49%) — polling a blind detector twice as often
+  returns twice as many empty answers. These are the ones that mattered: the 3.20s that killed
+  `id=7` and caused the only miss, and the 3.37s that swallowed fall 4's entire descent;
+- shave ~one poll interval (~115ms) off each blackout tail — ~1.3s of 18.61s, about **7%**.
+
+**Rate is not irrelevant.** Decimating round 4 to ~2.2fps drops it from 3 alerts to 2 (even frames)
+or 1 (odd frames), so 4.33fps sits on a slope, not a plateau, and Phase B would add genuine margin.
+But it does not address the one remaining miss, and it costs M3–M7: six modules including a
+velocity-window rework (M5), an EMA rewrite the plan itself says **cannot** be bit-neutral (M6), and
+a full test migration (M9).
+
+**Verdict: defer Phase B.** It is real margin against the wrong bottleneck. Detector *recall* —
+framing and the left edge — is what limits this system now.
+
+## What to do next
+
+1. **The `kInit`-born-mid-fall path.** The only remaining miss, and provably unreachable by tuning.
+   A track that first appears already collapsing has no learned `h_ref`; to classify it at all the
+   fall logic would have to fall back on frame geometry instead of a learned baseline.
+2. **The left frame edge — now implicated in a degraded or missed fall in all four rounds.** The
+   3.20s blackout that caused this miss began with `w=28` for `h=214`. This is the highest-value
+   sensing work, and it is framing, not firmware.
+3. **Gate the baseline re-seed on an upright-ish pose.** Cheap, clearly correct, closes the latent
+   prone-baseline latch above.
+4. **`ALERT_COOLDOWN_MS = 15000` needs revisiting before fall 1 is fixed.** Had it alerted (~60.5s),
+   fall 2's alert at 74570 would have been 14.1s later — suppressed on-device.
+5. Then reconsider Phase B, with M8 already landed and the decimation cross-check as its gate.
+6. Still open from round 1: remove the dead `AT+TSCORE` send, set `FD_PROBE_COMMANDS 0`.
