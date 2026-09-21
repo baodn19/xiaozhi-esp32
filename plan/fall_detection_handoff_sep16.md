@@ -1049,3 +1049,90 @@ on the operator's machine works, so someone has a working toolchain. Build there
 
 Steps 1, 2, 4 and 5 need **no falls at all** — four minutes of capture total, and they answer more
 open questions than round 5 did.
+
+---
+
+# ⚠ The seated occupant is occluded, not clipped — re-aiming will not fix them
+
+Added after the round 6 plan above, which needs amending because of it.
+
+The round 5 writeup assumed the seated person's tiny `h` came from the left frame edge. **It does
+not.** Their box bottom sits at **y = 156 ± 6, which is 84px above the frame floor** — while the
+standing subject is resolved down to **y = 227** elsewhere in the same scene. The floor is visible
+there. Nothing is being cut off by the frame.
+
+```
+seated occupant   top y  96 ± 3     bottom y 156 ± 6     h 59.8
+standing subject  top y  30         bottom y 227         h ~197
+box bottoms for cx<=60:  y150-179 = 224 boxes   <- a hard horizontal cutoff
+                         y210-239 =  77 boxes   <- the walking subject, reaching the floor
+```
+
+A seated adult is ~0.75× standing height, so at this distance they should present **~148px**.
+Observed: **59.8px — a 2.5× shortfall.** About 60% of the body is missing, cut at a consistent
+horizontal line, in a region where the floor is otherwise visible.
+
+**They are sitting behind something** — a desk or table between them and the camera. The walking
+subject passes *in front* of it, which is why the same x-region reaches the floor.
+
+**Consequences:**
+
+- **The +20px pan does nothing for the seated occupant.** It moves `cx`; the occluder stays. The pan
+  is still correct for the *walking* subject's left clipping and the fall zone, but it was never
+  going to fix the more serious gap.
+- **Only a viewpoint change fixes this** — a higher mount angled down over the occluder, or a
+  different side of the room. This is why a full re-site is the right instinct, not an overreach.
+
+## Amended round 6 plan for a re-sited camera
+
+A complete viewpoint change **does not break the empty-room control — it retargets it.** What is
+lost and what survives:
+
+| | status under a new viewpoint |
+|---|---|
+| Empty-room control | **Still required, and worth more.** A new view has an unknown furniture inventory and no FP baseline at all. Run it on the *new* view. |
+| The `cx≈211` identity question | **Void, and no longer worth answering.** It was about interpreting the old view. Round 5's conclusions (T1b, left edge, seated occupant) do not rest on it. |
+| "Seated before" capture | **Drop it.** Round 5 *is* the before: `h_ref` 57–62. Saves a capture. |
+| Seated pass/fail (`h_ref > 100`) | **Survives unchanged.** The criterion is absolute, not a comparison. |
+| The `+20px` pan figure | **Void.** Specific to the old geometry. The principles below replace it. |
+
+### Choosing the new viewpoint — the geometry budget
+
+The frame is **240 × 240**, and round 5 shows the scene barely fits: standing subject **h ≈ 197**,
+prone body **w ≈ 196**, activity span **268px of content in 240px**. Constraints that transfer:
+
+1. **Seated occupant unoccluded, `h > 100`.** The binding constraint and the reason to move. Mount
+   higher and angle down, or shoot from a side the desk does not block.
+2. **A prone body must fit with margin.** It is the widest thing the detector ever sees (196px, 82%
+   of frame width, in round 5) and prone is the posture that matters.
+3. **The whole landing zone in frame, corners included.** Round 5's worst failure was a body in the
+   bottom-left corner, invisible for 8.22s.
+4. **Nobody clipped at a boundary during a fall or on the ground.**
+
+⚠ **Constraints 1 and 2 pull against each other.** Backing off 25% makes a prone body fit
+comfortably (196 → ~147) but shrinks an unoccluded seated person to ~111px — only just over the
+threshold of 100. Moving closer helps the seated person and clips prone bodies. Two ways out:
+
+- **Mount high and angle down.** A downward view foreshortens a prone body into a compact blob
+  instead of a long horizontal bar, easing constraint 2, while keeping a seated person tall in
+  frame. This is the standard geometry for fall detection and it also clears the desk occlusion —
+  it satisfies 1, 2 and 3 at once. **Recommended.**
+- **Check whether the model input must be square.** A room is wider than it is tall; the prone
+  constraint is horizontal and the seated constraint vertical. If a non-square input is possible,
+  both relax. Worth ten minutes before moving furniture.
+
+### Revised capture order
+
+1. **Re-site the camera** (high, angled down, desk occlusion cleared).
+2. `capture_round6_empty.log` — ~90s, nobody in view. Furniture inventory + the project's first
+   true false-positive baseline.
+3. `capture_round6_seated.log` — ~30s, sit still in the usual chair.
+   **PASS: `h_ref > 100`.** Known before: 57–62.
+4. `capture_round6_walk.log` — ~60s, walk the full activity area, no falls. Confirms nobody clips
+   at a boundary and a standing person stays ~150–200px.
+5. `capture_round6_falls.log` — 3–4 falls, **>15s apart**, one deliberately in the worst corner.
+   Record wall-clock times.
+
+Steps 2–4 are **three minutes and no falls**, and they gate step 5. If step 3 fails, stop and read
+the note in the round 6 plan above about a seated-posture branch — do **not** lower
+`min_classify_h_ref`.
