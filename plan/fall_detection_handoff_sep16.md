@@ -927,3 +927,125 @@ backstops, and both were load-bearing here.
    binding constraint on closely-spaced falls. Unchanged from round 4's assessment.
 6. Phase B — still deferred; round 5 does not change the round 4 analysis.
 7. Still open from round 1: remove the dead `AT+TSCORE` send, set `FD_PROBE_COMMANDS 0`.
+
+---
+
+# Round 6 plan — resolve the occupants, then fix the framing
+
+Written at the end of round 5. Nothing below has been run yet.
+
+## ⚠ Correction: "pan left 40–50px" was wrong
+
+The round 5 writeup above recommended panning left by ~40–50px. **That would make things worse.**
+Sweeping the pan offset against every walking-subject box in the capture:
+
+| shift | subj clipped L | clipped R | total | seated clipped | **fall-zone clipped** |
+|---|---|---|---|---|---|
+| **+0 (today)** | 68 | 38 | **106** | 1 | **10** |
+| +10 | 3 | 56 | 59 | 0 | 1 |
+| **+15 … +25** | **0** | 57 | **57** | **0** | **0** |
+| +30 | 0 | 83 | 83 | 0 | 0 |
+| +40 *(the old advice)* | 0 | 141 | **141** | 0 | 0 |
+| +50 | 0 | 181 | 181 | 0 | 6 |
+
+The optimum is a **flat minimum at +15 to +25px — call it +20**, about 8% of frame width. Past +30 it
+degrades fast, and +40 is worse in total than doing nothing.
+
+**The deeper problem: the scene does not fit the sensor.** The walking subject's box spans
+**−15 .. 253 across the capture — 268px of content in a 240px frame.** Panning only trades left
+clipping for right clipping. +20 is worth doing because it moves the *remaining* clipping off the
+safety-critical moments (fall-zone and seated-occupant clipping both go to zero, and what is left is
+an upright person clipped on the right while walking, which tracks fine). **But a pan is a
+mitigation, not a fix.** The real fix is more horizontal coverage — move the camera back, or widen
+the FOV. Worth checking whether the vision pipeline is centre-cropping a wider sensor frame down to
+square, because if so there is free FOV being discarded.
+
+*Caveat: these numbers extrapolate from boxes that are themselves already clipped, so the true width
+of the left-edge boxes is unknown. Treat +20 as the right order of magnitude, not a calibrated value.*
+
+## Step 1 — the empty-room control (do this first; no hardware change)
+
+The operator can guarantee an empty field of view. **This is the experiment that settles the
+five-round-old question**, and it is ~90 seconds of work.
+
+```
+# nobody in the field of view at all, camera untouched, ~90s
+idf.py monitor | tee log/capture_round6_empty.log
+```
+
+Reads directly, no replay needed:
+
+```bash
+grep -c FDEVT log/capture_round6_empty.log        # expect 0 alerts
+python3 tools/capture_stg log/capture_round6_empty.log
+```
+
+| outcome | meaning |
+|---|---|
+| `cx≈211, h=115–193` **still present** | It is furniture. Round 5's reading was right, and the tracks it spawns are genuinely spurious. |
+| `cx≈211` **gone** | It was a person, and a second safety gap exists that nobody has looked at. |
+| `cx≈20, h≈60` **gone** | Confirms the seated-occupant finding. Expected. |
+| **any box at all** | That is the definitive furniture inventory for this room. Record it. |
+| **any `FDEVT` line** | A false positive on an empty room — that would be new and important. |
+
+This also gives the first true false-positive baseline the project has ever had: every previous
+"zero false positives" number was measured with a person in the room.
+
+## Step 2 — the seated-occupant test (the acceptance criterion for re-aiming)
+
+The round 5 finding is that a seated person is tracked at `h_ref` 57–62 against
+`min_classify_h_ref = 100`, so **no fall of theirs can ever alarm**. That gives a pass/fail test for
+any framing change that needs no falls at all — just sit still.
+
+```
+# sit in the same left-edge chair, ~30s, stay still.  Camera UNCHANGED.
+idf.py monitor | tee log/capture_round6_seated_before.log
+# then apply the +20px pan, repeat:
+idf.py monitor | tee log/capture_round6_seated_after.log
+```
+
+```bash
+./tools/fall_replay/fall_replay --trace < log/capture_round6_seated_after.log | grep -oE 'h_ref=[0-9.]+' | sort -u
+```
+
+**PASS: `h_ref` for the seated track exceeds 100.** Before is known to be 57–62.
+
+This is the single highest-value measurement in the whole plan, because it is the difference between
+a seated occupant being coverable at all and being structurally invisible. It is also cheap, fully
+deterministic, and needs nobody to throw themselves on the floor.
+
+⚠ **It may fail even with perfect framing.** The seated box is short because only the upper body
+resolves (y 96..156), and un-clipping horizontally may widen the box without heightening it. If
+`h_ref` lands at, say, 80 — better but still under 100 — that is a real finding and the decision
+moves to firmware: a seated-posture branch with its own threshold, *not* a blanket reduction of
+`min_classify_h_ref` (round 1 raised it 80→100 deliberately, and dropping it back risks the
+false-positive record).
+
+## Step 3 — round 6 falls
+
+Only after steps 1–2. Three or four falls, **spaced >15s apart** (`ALERT_COOLDOWN_MS`), at least one
+deliberately in the **bottom-left corner** — that is the geometry that produced round 5's 8.22s
+blind period on a person lying on the floor. Record wall-clock fall times; they have unlocked every
+diagnosis so far.
+
+Targets, against round 5: walking-subject detection **78.2% → ~92%**; falls alerting on
+`ground_confirmed` rather than `zombie_dropout` **2/3 → 3/3**; zero false positives held.
+
+## ⚠ Before any of this: the target build is still unverified
+
+`idf.py build` has **never been run on `2649d85`** — the ESP-IDF venv in this environment is broken
+(`python_env/idf5.5_py3.14_env` missing after a Python upgrade). Round 5's capture proves the flash
+on the operator's machine works, so someone has a working toolchain. Build there.
+
+## Ordering, and why
+
+1. **Empty-room control** — 90s, no hardware change, settles a five-round-old question, and
+   retro-validates or breaks round 5's analysis. Cheapest information in the project.
+2. **Seated-before** — 30s, locks the baseline while the aim is still round 5's.
+3. **Apply +20px pan.**
+4. **Seated-after** — 30s, pass/fail on `h_ref > 100`.
+5. **Empty-room on the new aim** — 90s, new furniture inventory and FP baseline.
+6. **Round 6 falls.**
+
+Steps 1, 2, 4 and 5 need **no falls at all** — four minutes of capture total, and they answer more
+open questions than round 5 did.
