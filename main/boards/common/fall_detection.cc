@@ -1,0 +1,443 @@
+#include "fall_detection.h"
+
+#include "application.h"
+#include "assets/lang_config.h"
+#include "board.h"
+#include "display.h"
+
+#include <nvs.h>
+#include <nvs_flash.h>
+#include <driver/uart.h>
+#include <esp_log.h>
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <freertos/semphr.h>
+
+#include <cstdio>
+#include <cstring>
+#include <string>
+#include <vector>
+
+#define TAG "FallDetection"
+#define UART_BUF_SIZE (1024) // 15 people detection, ~50 bytes/ person, total ~750 bytes
+#define TARGET_PERSON_ID 0           // '0' is the target ID for Person in YOLO
+
+// Boxes below this confidence are dropped before association, so low-confidence jitter never
+// reaches the tracker. Mirrors the detect_threshold gate in sensecap-watcher/sscma_camera.cc:118.
+// Must track FD_TSCORE below and tools/fall_replay/main.cc's hardcoded `score >= 25` -- if these
+// three drift apart, the replay harness stops reproducing device behaviour. See
+// plan/fall_detection_sensing_fix.md M2.
+#define MIN_BOX_SCORE 25
+
+// Module-side score gate sent via AT+TSCORE at init (fall_detection.cc constructor). The module's
+// default cut (50) hard-clips prone-body boxes, which score ~8 points lower than upright ones --
+// exactly the frames a fall needs. See plan/fall_detection_sensing_fix.md M1.
+#define FD_TSCORE 25
+
+// How long the alert stays suppressed after firing, so one fall cannot re-trigger per frame.
+#define ALERT_COOLDOWN_MS 15000
+
+// Dumps every raw UART line (and poll send time) as FDLOG/FDPOLL entries for
+// offline replay. Disable for normal field operation to cut UART log noise.
+#define FD_CAPTURE_MODE 1
+
+// One-off diagnostic sweep: sends each command in kProbeCommands once at task start and captures
+// the module's reply, to establish which AT commands this firmware actually implements.
+//
+// Why: the Sep 16 re-capture showed AT+TSCORE=25 rejected with
+//   {"type": 2, "name": "AT", "code": 5, "data": "Unknown command: AT+TSCORE=25"}
+// while the poll command AT+INVOKE=1,0,1\r -- same bare \r terminator -- succeeded on all 259
+// polls. So the terminator is not the problem and this module's firmware simply does not
+// implement TSCORE, even though it is in the vendored client's command table
+// (managed_components/wvirgil123__sscma_client/include/sscma_client_commands.h:35). The module
+// does expose the value we want: every INVOKE reply echoes "config": {"tscore": 50, "tiou": 35}
+// under "algorithm", so the threshold is reachable under *some* name -- this sweep finds it.
+//
+// Costs ~8 s of startup before polling begins (kProbeCount * kProbeDrainMs). Set to 0 for normal
+// field operation.
+#define FD_PROBE_COMMANDS 0
+
+#if FD_PROBE_COMMANDS && !FD_CAPTURE_MODE
+#error "FD_PROBE_COMMANDS needs FD_CAPTURE_MODE: the replies are only visible as FDLOG entries."
+#endif
+
+// DetectionTask holds two UART_BUF_SIZE buffers on its stack (2 KB at 1024) and
+// calls into sscanf / ESP_LOGI, each of which needs ~1 KB of frame on top. It also runs
+// PostureTracker::Associate(), whose candidate array is another 2.7 KB of stack.
+//
+// 6144 left only 412 bytes untouched on real hardware (measured: FDSTACK_FREE bottomed out at
+// 412 in the Sep 16 round-3 capture). That is not headroom, it is a near miss -- and overflowing
+// here does not fault cleanly, it corrupts whatever is below and surfaces as an assert or watchdog
+// deep inside the UART driver. Raised to 8192; keep tuning it from FDSTACK_FREE and treat anything
+// under ~1 KB as a defect.
+static constexpr uint32_t kDetectionTaskStackSize = 8192;
+
+uint32_t FallDetectionController::GetLocalFallCount() {
+    nvs_handle_t nvs_handle;
+    uint32_t count = 0;
+    if (nvs_open("fall_tracker", NVS_READONLY, &nvs_handle) == ESP_OK) {
+        nvs_get_u32(nvs_handle, "total_falls", &count);
+        nvs_close(nvs_handle);
+    }
+    return count;
+}
+
+void FallDetectionController::AlarmSoundTask(void* /*pvParameters*/) {
+    auto& app = Application::GetInstance();
+    TickType_t start_time = xTaskGetTickCount();
+    const TickType_t duration = pdMS_TO_TICKS(20000); // 20 seconds
+
+    while ((xTaskGetTickCount() - start_time) < duration) {
+        app.PlaySound(Lang::Sounds::OGG_SUCCESS);
+        vTaskDelay(pdMS_TO_TICKS(2000));
+    }
+    vTaskDelete(NULL);
+}
+
+uint32_t FallDetectionController::IncrementLocalFallCount() {
+    nvs_handle_t nvs_handle;
+    uint32_t count = GetLocalFallCount() + 1;
+
+    if (nvs_open("fall_tracker", NVS_READWRITE, &nvs_handle) == ESP_OK) {
+        nvs_set_u32(nvs_handle, "total_falls", count);
+        nvs_commit(nvs_handle);
+        nvs_close(nvs_handle);
+    }
+    return count;
+}
+
+void FallDetectionController::TriggerFallAlert(uint32_t now_ms, const TrackedPerson& track, const char* reason) {
+    xSemaphoreTake(state_mutex_, portMAX_DELAY);
+    if (alert_cooldown_until_ms_ != 0 && now_ms < alert_cooldown_until_ms_) {
+        xSemaphoreGive(state_mutex_);
+        return;
+    }
+    alert_cooldown_until_ms_ = now_ms + ALERT_COOLDOWN_MS;
+    xSemaphoreGive(state_mutex_);
+
+    uint32_t total_falls = IncrementLocalFallCount();
+
+    auto& app = Application::GetInstance();
+    if (app.GetDeviceState() == kDeviceStateSpeaking || app.GetDeviceState() == kDeviceStateListening) {
+        app.AbortSpeaking(kAbortReasonWakeWordDetected);
+    }
+
+    ESP_LOGW(TAG, "🚨 CRITICAL FALL DETECTED (track %d, %s)", track.id, reason);
+
+    auto* board = static_cast<Board*>(&Board::GetInstance());
+    if (board) {
+        board->SendEyeCommand(0x04); // 0x04 = WARNING / FALL DETECTED
+    }
+
+    xTaskCreate(AlarmSoundTask, "FallAlarmSoundTask", 3072, &Application::GetInstance(), 5, NULL);
+
+    auto* display = Board::GetInstance().GetDisplay();
+    if (display) display->SetChatMessage("system", "🚨 EMERGENCY: Fall detected!");
+
+    float ground_duty = track.window_frames > 0
+        ? static_cast<float>(track.ground_frames) / track.window_frames
+        : 0.0f;
+
+    char evidence[192];
+    snprintf(evidence, sizeof(evidence),
+             "\"track_id\":%d,\"reason\":\"%s\",\"peak_norm_vel\":%.2f,\"drop_n\":%.2f,\"ground_duty\":%.2f",
+             track.id, reason, track.peak_norm_vel, track.last_features.drop_n, ground_duty);
+
+    std::string mcp_payload = "{"
+        "\"jsonrpc\":\"2.0\","
+        "\"method\":\"notifications/event\","
+        "\"params\":{"
+            "\"event\":\"fall_detection\","
+            "\"status\":\"panic\","
+            "\"message\":\"Critical fall detected\","
+            "\"total_falls\":" + std::to_string(total_falls) + "," +
+            evidence +
+        "}"
+    "}";
+
+    app.SendMcpMessage(mcp_payload);
+
+    // Deliberately returns immediately. This runs on DetectionTask via ProcessDetectionLine, so
+    // blocking here stops UART draining; the cooldown is enforced by alert_cooldown_until_ms_
+    // above instead. Every call below this point is already non-blocking: SendMcpMessage only
+    // Schedule()s, AlarmSoundTask is its own task, and AudioService::PlaySound queues.
+}
+
+void FallDetectionController::OnFallAlert(void* ctx, uint32_t now_ms, const TrackedPerson& track,
+                                           const char* reason) {
+    static_cast<FallDetectionController*>(ctx)->TriggerFallAlert(now_ms, track, reason);
+}
+
+void FallDetectionController::OnEventLog(void* /*ctx*/, uint32_t now_ms, const TrackedPerson& track,
+                                          PostureState from, PostureState to) {
+#if FD_CAPTURE_MODE
+    ESP_LOGI(TAG, "FDEVT,%d,%s,%s,%lu,vy=%.2f,vh=%.2f,drop=%.2f,r=%.2f",
+             track.id, PostureStateName(from), PostureStateName(to), (unsigned long)now_ms,
+             track.last_features.v_cy_n, track.last_features.v_h_n, track.last_features.drop_n,
+             track.last_features.r);
+#endif
+}
+
+void FallDetectionController::OnSuppressLog(void* /*ctx*/, uint32_t now_ms, const TrackedPerson& track,
+                                             const char* reason) {
+#if FD_CAPTURE_MODE
+    ESP_LOGW(TAG, "FDEVT,%d,SUPPRESS,%s,%lu", track.id, reason, (unsigned long)now_ms);
+#endif
+}
+
+void FallDetectionController::ProcessDetectionLine(const char* line, uint32_t now_ms) {
+    const char* ptr = strstr(line, "\"boxes\"");
+    if (!ptr) return;
+
+    ptr = strchr(ptr, '[');
+    if (!ptr) return;
+    ptr++; // Skip outer array bracket
+
+    std::vector<BoxObservation> boxes;
+
+    while ((ptr = strchr(ptr, '[')) != nullptr) {
+        int x = 0, y = 0, w = 0, h = 0, score = 0, target = 0;
+
+        if (sscanf(ptr, "[%d,%d,%d,%d,%d,%d]", &x, &y, &w, &h, &score, &target) == 6 ||
+            sscanf(ptr, "[%d, %d, %d, %d, %d, %d]", &x, &y, &w, &h, &score, &target) == 6) {
+
+            if (target == TARGET_PERSON_ID && w > 0 && h > 0 && score >= MIN_BOX_SCORE) {
+                // SSCMA reports (x, y) as the box CENTER, not the top-left corner -- confirmed from
+                // capture.csv, where y + h exceeds the 240 px frame height on every single box.
+                // BoxObservation and everything downstream (fall_posture.cc) is defined in top-left
+                // coordinates, so convert here at the parse boundary.
+                boxes.push_back(BoxObservation{
+                    static_cast<float>(x) - static_cast<float>(w) / 2.0f,
+                    static_cast<float>(y) - static_cast<float>(h) / 2.0f,
+                    static_cast<float>(w), static_cast<float>(h), score});
+            }
+        }
+
+        const char* close_bracket = strchr(ptr, ']');
+        if (close_bracket) {
+            ptr = close_bracket + 1;
+        } else {
+            ptr++;
+        }
+    }
+
+    posture_tracker_.Update(boxes.data(), boxes.size(), now_ms);
+}
+
+#if FD_PROBE_COMMANDS
+namespace {
+
+struct ProbeCommand {
+    const char* body;        // command text with no terminator
+    const char* terminator;  // sent verbatim after body
+    const char* term_name;   // printable form of terminator -- a raw \r would break the log line
+};
+
+// Query forms only, plus the two TSCORE set controls at the end.
+//
+// Deliberately no speculative set commands (AT+ALGO=..., etc): the argument order is unknown, the
+// module re-echoes its algorithm config on every INVOKE, and a wrong set could reconfigure the
+// detector for the rest of the run -- poisoning the fall data this same build needs to collect.
+// Round 2 can set the value once these replies show the real syntax.
+const ProbeCommand kProbeCommands[] = {
+    // Identity / capability -- establishes that a reply means "implemented" for this firmware.
+    {"AT+ID?",        "\r",   "CR"},
+    {"AT+NAME?",      "\r",   "CR"},
+    {"AT+VER?",       "\r",   "CR"},
+    {"AT+STAT?",      "\r",   "CR"},
+    {"AT+INFO?",      "\r",   "CR"},
+    // Algorithm surface -- "tscore" lives under "algorithm" in the INVOKE echo, so if the
+    // threshold is settable at all, it is most likely through one of these.
+    {"AT+ALGOS?",     "\r",   "CR"},
+    {"AT+ALGO?",      "\r",   "CR"},
+    // Model / sensor surface.
+    {"AT+MODELS?",    "\r",   "CR"},   // control: already known to be rejected
+    {"AT+MODEL?",     "\r",   "CR"},
+    {"AT+SENSORS?",   "\r",   "CR"},
+    {"AT+SENSOR?",    "\r",   "CR"},
+    // The actual target. A code 0 here with a value would mean TSCORE exists as a query and only
+    // our *set* syntax was wrong -- a very different fix from "not implemented".
+    {"AT+TSCORE?",    "\r",   "CR"},
+    {"AT+TIOU?",      "\r",   "CR"},
+    // Controls, last. The first reproduces the known rejection; the second settles the plan's
+    // "\r\n" fallback with direct evidence instead of inference from the poll command.
+    {"AT+TSCORE=25",  "\r",   "CR"},
+    {"AT+TSCORE=25",  "\r\n", "CRLF"},
+};
+const size_t kProbeCount = sizeof(kProbeCommands) / sizeof(kProbeCommands[0]);
+
+// Per-probe reply window. Unknown-command errors come back immediately; this is sized for a slow
+// query, not for the client library's conservative 2000 ms CMD_WAIT_DELAY.
+const uint32_t kProbeDrainMs = 500;
+
+// Drains UART for window_ms, emitting each complete line as an FDLOG entry so the existing capture
+// tooling (and fall_replay, which skips any line without a "boxes" key) reads these unchanged.
+// Borrows the caller's buffers rather than declaring its own -- DetectionTask already holds two
+// UART_BUF_SIZE buffers and the task stack has no room for a third.
+void ProbeDrain(uart_port_t uart_num, uint32_t window_ms, uint32_t* fd_seq,
+                uint8_t* data, size_t data_cap, char* line, size_t line_cap) {
+    int pos = 0;
+    TickType_t start = xTaskGetTickCount();
+
+    while ((xTaskGetTickCount() - start) < pdMS_TO_TICKS(window_ms)) {
+        int len = uart_read_bytes(uart_num, data, data_cap - 1, pdMS_TO_TICKS(20));
+        for (int i = 0; i < len; i++) {
+            char c = data[i];
+            if (c == '\n' || c == '\r') {
+                if (pos > 0) {
+                    line[pos] = '\0';
+                    ESP_LOGI(TAG, "FDLOG,%lu,%lu,0,%s",
+                             (unsigned long)(*fd_seq)++,
+                             (unsigned long)(xTaskGetTickCount() * portTICK_PERIOD_MS),
+                             line);
+                    pos = 0;
+                }
+            } else if (pos < (int)line_cap - 1) {
+                line[pos++] = c;
+            }
+        }
+    }
+}
+
+}  // namespace
+#endif  // FD_PROBE_COMMANDS
+
+void FallDetectionController::DetectionTask(void* pvParameters) {
+    auto* self = static_cast<FallDetectionController*>(pvParameters);
+    uint8_t data[UART_BUF_SIZE];
+
+    char line_buffer[UART_BUF_SIZE];
+    int line_pos = 0;
+
+    TickType_t last_poll_time = xTaskGetTickCount();
+    TickType_t last_heartbeat = xTaskGetTickCount();
+#if FD_CAPTURE_MODE
+    uint32_t fd_seq = 0;
+    bool line_overflow = false; // True signals potential data loss in FDLOG entries
+#endif
+
+#if FD_PROBE_COMMANDS
+    // The constructor's own AT+MODELS? / AT+TSCORE= replies are already sitting in the RX buffer.
+    // Drain them under their own marker first, so they are not misattributed to probe 0.
+    ESP_LOGI(TAG, "FDPROBE,init,-,(constructor replies)");
+    ProbeDrain(self->uart_num_, kProbeDrainMs, &fd_seq, data, sizeof(data),
+               line_buffer, sizeof(line_buffer));
+
+    for (size_t i = 0; i < kProbeCount; i++) {
+        const ProbeCommand& probe = kProbeCommands[i];
+
+        // Marker first: every FDLOG line until the next FDPROBE is this command's reply.
+        ESP_LOGI(TAG, "FDPROBE,%u,%s,%s", (unsigned)i, probe.term_name, probe.body);
+
+        uart_write_bytes(self->uart_num_, probe.body, strlen(probe.body));
+        uart_write_bytes(self->uart_num_, probe.terminator, strlen(probe.terminator));
+
+        ProbeDrain(self->uart_num_, kProbeDrainMs, &fd_seq, data, sizeof(data),
+                   line_buffer, sizeof(line_buffer));
+    }
+
+    ESP_LOGI(TAG, "FDPROBE,done,-,(%u commands)", (unsigned)kProbeCount);
+    last_poll_time = xTaskGetTickCount();  // start the poll cadence fresh after the sweep
+#endif
+
+    for (;;) {
+        // ESP32-S3 sending request to Grove Vision Module every 200ms
+        if ((xTaskGetTickCount() - last_poll_time) > pdMS_TO_TICKS(200)) {
+            const char* poll_cmd = "AT+INVOKE=1,0,1\r";
+            uart_write_bytes(self->uart_num_, poll_cmd, strlen(poll_cmd));
+            last_poll_time = xTaskGetTickCount();
+#if FD_CAPTURE_MODE
+            ESP_LOGI(TAG, "FDPOLL,%lu", (unsigned long)(last_poll_time * portTICK_PERIOD_MS));
+#endif
+        }
+
+        int len = uart_read_bytes(self->uart_num_, data, UART_BUF_SIZE - 1, pdMS_TO_TICKS(50));
+
+        if (len > 0) {
+            for (int i = 0; i < len; i++) {
+                char c = data[i];
+                if (c == '\n' || c == '\r') {
+                    if (line_pos > 0) {
+                        line_buffer[line_pos] = '\0';
+
+                        // Sampled once and passed down, so a replayed FDLOG reproduces the exact
+                        // timebase the line was processed with.
+                        uint32_t now_ms = xTaskGetTickCount() * portTICK_PERIOD_MS;
+#if FD_CAPTURE_MODE
+                        ESP_LOGI(TAG, "FDLOG,%lu,%lu,%d,%s",
+                                 (unsigned long)fd_seq++,
+                                 (unsigned long)now_ms,
+                                 line_overflow ? 1 : 0,
+                                 line_buffer);
+                        line_overflow = false;
+#endif
+                        self->ProcessDetectionLine(line_buffer, now_ms);
+                        line_pos = 0;
+                    }
+                } else if (line_pos < (sizeof(line_buffer) - 1)) {
+                    line_buffer[line_pos++] = c;
+#if FD_CAPTURE_MODE
+                } else {
+                    line_overflow = true;
+#endif
+                }
+            }
+        }
+
+        if ((xTaskGetTickCount() - last_heartbeat) >= pdMS_TO_TICKS(1000)) {
+#if FD_CAPTURE_MODE
+            // Bytes of stack never touched: tune kDetectionTaskStackSize from this.
+            // Peak for UART_BUF_SIZE (1024) is ~5.7 KB = 2.1 KB (DetectionTask) + 2.7 KB
+            // (Associate's candidate array) + ~1 KB (sscanf / ESP_LOGI).
+            // Anything under ~1 KB free here is a defect, not a tight fit -- see the note on
+            // kDetectionTaskStackSize.
+            ESP_LOGI(TAG, "FDSTACK_FREE,%u", (unsigned)uxTaskGetStackHighWaterMark(nullptr));
+#endif
+            last_heartbeat = xTaskGetTickCount();
+        }
+
+        vTaskDelay(pdMS_TO_TICKS(10));
+    }
+}
+
+FallDetectionController::FallDetectionController(uart_port_t uart_bus, int tx, int rx)
+    : uart_num_(uart_bus) {
+    state_mutex_ = xSemaphoreCreateMutex();
+
+    posture_tracker_.SetFallAlertCallback(&FallDetectionController::OnFallAlert, this);
+#if FD_CAPTURE_MODE
+    posture_tracker_.SetEventLogCallback(&FallDetectionController::OnEventLog, this);
+    posture_tracker_.SetSuppressLogCallback(&FallDetectionController::OnSuppressLog, this);
+#endif
+
+    uart_config_t uart_config = {
+        .baud_rate = 921600,
+        .data_bits = UART_DATA_8_BITS,
+        .parity = UART_PARITY_DISABLE,
+        .stop_bits = UART_STOP_BITS_1,
+        .flow_ctrl = UART_HW_FLOWCTRL_DISABLE
+    };
+    uart_param_config(uart_num_, &uart_config);
+    uart_set_pin(uart_num_, tx, rx, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+
+    uart_driver_install(uart_num_, UART_BUF_SIZE * 2, 0, 0, NULL, 0);
+
+    vTaskDelay(pdMS_TO_TICKS(2000));
+
+    const char* query_cmd = "AT+MODELS?\r";
+    uart_write_bytes(uart_num_, query_cmd, strlen(query_cmd));
+
+    vTaskDelay(pdMS_TO_TICKS(1000));
+
+    char tscore_cmd[24];
+    snprintf(tscore_cmd, sizeof(tscore_cmd), "AT+TSCORE=%d\r", FD_TSCORE);
+    uart_write_bytes(uart_num_, tscore_cmd, strlen(tscore_cmd));
+    vTaskDelay(pdMS_TO_TICKS(200));
+
+    xTaskCreatePinnedToCore(DetectionTask, "FallDetTask", kDetectionTaskStackSize, this, 1, nullptr, 1);
+    ESP_LOGI(TAG, "Fall Detection Initialized via UART (YOLO Array Mode).");
+}
+
+FallDetectionController::~FallDetectionController() {
+    if (state_mutex_) vSemaphoreDelete(state_mutex_);
+}

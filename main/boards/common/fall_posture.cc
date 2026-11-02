@@ -1,0 +1,651 @@
+#include "fall_posture.h"
+
+#include <algorithm>
+#include <cmath>
+
+namespace {
+
+// Least-squares slope of v(t) over the last n (t_ms, v) samples, units of v per ms. Recovers most
+// of the fall/crouch margin that a single-frame difference loses to quantization at the Grove
+// module's 240x240 inference resolution -- see plan/fall_detection_state_machine.md "Frame geometry".
+float LeastSquaresSlope(const float* t_ms, const float* v, int n) {
+    if (n < 2) return 0.0f;
+
+    float t_mean = 0, v_mean = 0;
+    for (int i = 0; i < n; i++) {
+        t_mean += t_ms[i];
+        v_mean += v[i];
+    }
+    t_mean /= n;
+    v_mean /= n;
+
+    float num = 0, den = 0;
+    for (int i = 0; i < n; i++) {
+        float dt = t_ms[i] - t_mean;
+        num += dt * (v[i] - v_mean);
+        den += dt * dt;
+    }
+    if (den < 1e-6f) return 0.0f;
+    return num / den;
+}
+
+}  // namespace
+
+const char* PostureStateName(PostureState state) {
+    switch (state) {
+        case PostureState::kInit: return "Init";
+        case PostureState::kUpright: return "Upright";
+        case PostureState::kDescending: return "Descending";
+        case PostureState::kLowTransient: return "LowTransient";
+        case PostureState::kGroundUnconfirmed: return "GroundUnconfirmed";
+        case PostureState::kFallConfirmed: return "FallConfirmed";
+        case PostureState::kLyingBenign: return "LyingBenign";
+    }
+    return "Unknown";
+}
+
+PostureTracker::PostureTracker(const Tuning& tuning) : tuning_(tuning) {}
+
+void PostureTracker::SetFallAlertCallback(FallAlertCallback cb, void* ctx) {
+    alert_cb_ = cb;
+    alert_ctx_ = ctx;
+}
+
+void PostureTracker::SetEventLogCallback(EventLogCallback cb, void* ctx) {
+    event_cb_ = cb;
+    event_ctx_ = ctx;
+}
+
+void PostureTracker::SetSuppressLogCallback(SuppressLogCallback cb, void* ctx) {
+    suppress_cb_ = cb;
+    suppress_ctx_ = ctx;
+}
+
+void PostureTracker::FireAlert(TrackedPerson& t, const char* reason, uint32_t now_ms) {
+    if (t.alerted) return;
+    t.alerted = true;
+    if (alert_cb_) alert_cb_(alert_ctx_, now_ms, t, reason);
+}
+
+void PostureTracker::LogSuppressed(const TrackedPerson& t, const char* reason, uint32_t now_ms) {
+    if (suppress_cb_) suppress_cb_(suppress_ctx_, now_ms, t, reason);
+}
+
+void PostureTracker::PushHistory(TrackedPerson& t, uint32_t now_ms, float cy, float bottom, float h) {
+    constexpr int N = TrackedPerson::kVelWindow;
+
+    // Compress blind gaps out of the time axis the velocity regression runs on. Only frames where
+    // this track was matched reach here, so a raw delta silently includes however long the
+    // detector saw nothing -- and the resulting slope understates a collapse by exactly the factor
+    // the blackout stretched it. Cap each step at the same max_gap_counted_ms the descent duration
+    // uses: unobserved time is unknown time, and it belongs in neither term.
+    float comp_t;
+    if (t.hist_count == 0) {
+        comp_t = static_cast<float>(now_ms);
+    } else {
+        uint32_t gap = now_ms - t.hist_raw_last_ms;
+        if (gap > tuning_.max_gap_counted_ms) gap = tuning_.max_gap_counted_ms;
+        comp_t = t.hist_comp_last_ms + static_cast<float>(gap);
+    }
+    t.hist_raw_last_ms = now_ms;
+    t.hist_comp_last_ms = comp_t;
+
+    if (t.hist_count < N) {
+        int i = t.hist_count++;
+        t.hist_t_ms[i] = comp_t;
+        t.hist_cy[i] = cy;
+        t.hist_bottom[i] = bottom;
+        t.hist_h[i] = h;
+        return;
+    }
+    for (int i = 1; i < N; i++) {
+        t.hist_t_ms[i - 1] = t.hist_t_ms[i];
+        t.hist_cy[i - 1] = t.hist_cy[i];
+        t.hist_bottom[i - 1] = t.hist_bottom[i];
+        t.hist_h[i - 1] = t.hist_h[i];
+    }
+    t.hist_t_ms[N - 1] = comp_t;
+    t.hist_cy[N - 1] = cy;
+    t.hist_bottom[N - 1] = bottom;
+    t.hist_h[N - 1] = h;
+}
+
+void PostureTracker::CreateTrack(const BoxObservation& box, uint32_t now_ms) {
+    for (auto& t : tracks_) {
+        if (t.active) continue;
+
+        t = TrackedPerson{};
+        t.id = next_track_id_++;
+        t.active = true;
+        t.x = box.x;
+        t.y = box.y;
+        t.w = box.w;
+        t.h = box.h;
+        t.cy = box.y + box.h / 2.0f;
+        t.h_ref = box.h;   // seed candidate baseline; confirmed at T1
+        t.cy_ref = t.cy;
+        // Does this first box look like a person standing up? min_classify_h_ref (not T1's weaker
+        // upright_min_h_frac_of_frame) because T1b below skips the 5-frame confirmation and so
+        // must be at least as strict as the height the alarm path itself demands.
+        t.born_upright = box.h > 0.0f && (box.w / box.h) < tuning_.upright_max_ratio &&
+                         box.h >= tuning_.min_classify_h_ref;
+        t.last_seen_ms = now_ms;
+        t.state = PostureState::kInit;
+        t.state_enter_ms = now_ms;
+        PushHistory(t, now_ms, t.cy, box.y + box.h, box.h);
+        return;
+    }
+    // All slots full: box silently dropped. Documented, unchanged limitation from the original
+    // single-frame tracker (kMaxTrackedPeople was already sized generously at 15).
+}
+
+void PostureTracker::KillTrack(TrackedPerson& t) {
+    t = TrackedPerson{};
+}
+
+void PostureTracker::Associate(const BoxObservation* boxes, size_t count, uint32_t /*now_ms*/,
+                                int* assigned_track_out) {
+    for (size_t i = 0; i < count; i++) assigned_track_out[i] = -1;
+
+    // NOTE: this is a 225-entry array on the DetectionTask stack, which runs with very little
+    // headroom (FDSTACK_FREE bottomed out at 412 bytes on real hardware). Adding a field here
+    // costs 225 * sizeof(field+padding) of stack and WILL overflow it -- a bool added for the
+    // has_baseline sort padded this struct 12 -> 16 bytes, overran the stack, corrupted the UART
+    // driver's semaphore handle and crashed the device in uart_read_bytes. Keep it at 12 bytes
+    // and read anything else off tracks_ in the comparator instead.
+    struct Candidate {
+        float dist;
+        int box_idx;
+        int track_idx;
+    };
+    Candidate candidates[kMaxTrackedPeople * kMaxTrackedPeople];
+    int n_candidates = 0;
+
+    // M8: anchor association on the box BOTTOM (feet), not the centre. A fall collapses h, which
+    // moves the centre by half the height loss even when the body has not travelled -- so the
+    // centre gate rejects the prone box precisely when a fall is what produced it. Feet stay on
+    // the ground plane: in the Sep 16 capture fall #1's centre moved 92px (outside the gate) while
+    // its bottom moved 7px.
+    for (size_t bi = 0; bi < count; bi++) {
+        float bcx = boxes[bi].x + boxes[bi].w / 2.0f;
+        float bcy = boxes[bi].y + boxes[bi].h;
+
+        for (int ti = 0; ti < kMaxTrackedPeople; ti++) {
+            const TrackedPerson& t = tracks_[ti];
+            if (!t.active) continue;
+
+            float tcx = t.x + t.w / 2.0f;
+            float tcy = t.y + t.h;  // M8: feet anchor, matching bcy above
+            float dx = bcx - tcx, dy = bcy - tcy;
+            float dist = std::sqrt(dx * dx + dy * dy);
+
+            // Fixed pixel gate before a baseline exists; once h_ref is CONFIRMED the gate scales
+            // with distance instead of being uniformly generous. See design doc "Association".
+            // The test is has_baseline (set at T1), not h_ref > 0: CreateTrack seeds h_ref from the
+            // track's first box, so h_ref > 0 was true from birth and the fixed-gate branch was
+            // unreachable. Unconfirmed tracks were therefore gated on a baseline that was still a
+            // guess -- and when that guess came from a partial box the gate was correspondingly
+            // tight. Sep 16 fall #1: an unconfirmed track with a provisional h_ref=175 got a
+            // 61px gate, rejected the person's next box 70px away, and split into a second track
+            // seeded at prone height that could never alarm.
+            float gate = t.has_baseline ? tuning_.assoc_gate_ratio * t.h_ref : tuning_.assoc_gate_px;
+            if (dist < gate) {
+                candidates[n_candidates++] = {dist, static_cast<int>(bi), ti};
+            }
+        }
+    }
+
+    // Confirmed tracks first, then nearest. has_baseline is read from tracks_ rather than cached
+    // in Candidate for the stack reason above.
+    std::sort(candidates, candidates + n_candidates, [this](const Candidate& a, const Candidate& b) {
+        bool a_conf = tracks_[a.track_idx].has_baseline;
+        bool b_conf = tracks_[b.track_idx].has_baseline;
+        if (a_conf != b_conf) return a_conf;
+        return a.dist < b.dist;
+    });
+
+    bool track_claimed[kMaxTrackedPeople] = {};
+    for (int i = 0; i < n_candidates; i++) {
+        const Candidate& c = candidates[i];
+        if (assigned_track_out[c.box_idx] != -1) continue;  // box already claimed a closer track
+        if (track_claimed[c.track_idx]) continue;           // track already claimed by a closer box
+        assigned_track_out[c.box_idx] = c.track_idx;
+        track_claimed[c.track_idx] = true;
+    }
+}
+
+void PostureTracker::UpdateTrackObservation(TrackedPerson& t, const BoxObservation& box, uint32_t now_ms) {
+    float raw_cy = box.y + box.h / 2.0f;
+    float raw_bottom = box.y + box.h;
+
+    t.x = box.x;
+    t.y = box.y;
+    t.w = box.w;
+    t.h = box.h;
+
+    // cy = y + h/2 compounds quantization noise from both y and h. The design doc suggests an
+    // EMA on cy before differencing; that is deliberately not done here, because it would recur
+    // with the windowed least-squares velocity fit below and bias the slope during any transient
+    // (verified against the velocity-regression test) -- the regression window is where the
+    // smoothing happens instead.
+    t.cy = raw_cy;
+
+    PushHistory(t, now_ms, t.cy, raw_bottom, box.h);
+
+    t.last_seen_ms = now_ms;
+    t.frames_until_untracked = 0;
+    t.is_zombie = false;
+}
+
+void PostureTracker::UpdateBaseline(TrackedPerson& t, uint32_t /*now_ms*/) {
+    // Baseline only learns while kInit (building toward T1) or kUpright; frozen everywhere else
+    // so a fall in progress can't drag its own reference height down mid-episode.
+    if (t.state != PostureState::kInit && t.state != PostureState::kUpright) return;
+    if (t.h_ref <= 0.0f) {
+        t.h_ref = t.h;
+        t.cy_ref = t.cy;
+        return;
+    }
+
+    // Reject h samples that deviate too far from the running baseline -- partial occlusion
+    // behind furniture truncates h and would otherwise drag h_ref down to mimic an axial collapse.
+    float dev = std::fabs(t.h - t.h_ref) / t.h_ref;
+    if (dev > tuning_.baseline_reject_frac) {
+        // Rejection is right for a transient truncation, but h_ref is seeded from the very first
+        // box a track sees. Seed that from a partial detection and every *correct* sample after it
+        // is an outlier too, so h_ref latches at the wrong value and T1 can never fire -- the track
+        // is dead on arrival. A baseline contradicted this many times running is the wrong
+        // baseline, not a run of bad samples, so adopt what the detector is actually reporting.
+        if (++t.baseline_reject_streak >= tuning_.baseline_reseed_after) {
+            t.h_ref = t.h;
+            t.cy_ref = t.cy;
+            t.baseline_reject_streak = 0;
+        }
+        return;
+    }
+    t.baseline_reject_streak = 0;
+
+    t.h_ref = tuning_.baseline_ema_alpha * t.h + (1.0f - tuning_.baseline_ema_alpha) * t.h_ref;
+    t.cy_ref = tuning_.baseline_ema_alpha * t.cy + (1.0f - tuning_.baseline_ema_alpha) * t.cy_ref;
+}
+
+Features PostureTracker::ComputeFeatures(const TrackedPerson& t) const {
+    Features f;
+    if (t.h_ref <= 0.0f) return f;  // no baseline candidate yet
+
+    float slope_cy = LeastSquaresSlope(t.hist_t_ms, t.hist_cy, t.hist_count);
+    float slope_bot = LeastSquaresSlope(t.hist_t_ms, t.hist_bottom, t.hist_count);
+    float slope_h = LeastSquaresSlope(t.hist_t_ms, t.hist_h, t.hist_count);
+
+    f.h_n = t.h / t.h_ref;
+    f.r = (t.h > 0.0f) ? t.w / t.h : 0.0f;
+    f.v_cy_n = slope_cy * 1000.0f / t.h_ref;
+    f.v_bot_n = slope_bot * 1000.0f / t.h_ref;
+    f.v_h_n = slope_h * 1000.0f / t.h_ref;
+    f.drop_n = (t.cy - t.cy_ref) / t.h_ref;
+    f.bottom_valid = (t.y + t.h) < (tuning_.frame_h - tuning_.edge_margin);
+
+    f.is_upright = f.h_n > tuning_.upright_h_n_min && f.r < tuning_.upright_max_ratio &&
+                   f.drop_n < tuning_.upright_drop_n_max;
+
+    // OR, not AND: an axial (camera-axis) fall foreshortens -- height collapses while width stays
+    // roughly constant -- and never satisfies "wider than tall". The short branch catches it.
+    f.is_ground = f.drop_n > tuning_.ground_drop_n_min &&
+                  (f.r > tuning_.ground_ratio_min || f.h_n < tuning_.ground_h_n_max);
+
+    f.is_low = f.drop_n > tuning_.low_drop_n_min && !f.is_ground;
+
+    // The two sign guards are load-bearing: walking toward the camera grows height while the
+    // centroid descends; walking away collapses height while the top edge descends. Both look
+    // like falls without them.
+    f.descent_sig = (f.v_cy_n > tuning_.descent_v_cy_n_min || f.v_h_n < tuning_.descent_v_h_n_max) &&
+                     f.v_h_n <= tuning_.descent_v_h_n_grow_max && f.v_bot_n > tuning_.descent_v_bot_n_min;
+
+    return f;
+}
+
+bool PostureTracker::ComputeBallistic(const TrackedPerson& t) const {
+    // descent_observed_ms, not (now - descent_start_ms): the latter charges detector dropout to
+    // the descent. See Tuning::max_gap_counted_ms -- a real ballistic fall whose prone body the
+    // detector then lost for 2.91s measured 3.14s and was written off as a controlled descent.
+    return t.peak_norm_vel > tuning_.ballistic_peak_norm_vel_min && t.pause_count == 0 &&
+           t.descent_observed_ms < tuning_.ballistic_max_duration_ms;
+}
+
+void PostureTracker::EnterState(TrackedPerson& t, PostureState new_state, uint32_t now_ms) {
+    PostureState old = t.state;
+    if (event_cb_) event_cb_(event_ctx_, now_ms, t, old, new_state);
+
+    t.state = new_state;
+    t.state_enter_ms = now_ms;
+    t.upright_streak = 0;
+
+    switch (new_state) {
+        case PostureState::kInit:
+            break;
+        case PostureState::kUpright:
+            t.pause_count = 0;
+            t.stall_frames = 0;
+            t.peak_norm_vel = 0;
+            t.low_confirm_count = 0;
+            t.ground_confirm_count = 0;
+            break;
+        case PostureState::kDescending:
+            t.descent_start_ms = now_ms;
+            t.descent_observed_ms = 0;
+            t.descent_last_sample_ms = now_ms;
+            t.peak_norm_vel = 0;
+            t.stall_frames = 0;
+            t.pause_count = 0;
+            t.low_confirm_count = 0;
+            t.ground_confirm_count = 0;
+            break;
+        case PostureState::kLowTransient:
+            break;
+        case PostureState::kGroundUnconfirmed:
+            t.ground_enter_ms = now_ms;
+            t.ground_frames = 0;
+            t.window_frames = 0;
+            break;
+        case PostureState::kFallConfirmed:
+            break;
+        case PostureState::kLyingBenign:
+            t.lying_since_ms = now_ms;
+            break;
+    }
+}
+
+void PostureTracker::UpdatePosture(TrackedPerson& t, const Features& f, uint32_t now_ms) {
+    switch (t.state) {
+        case PostureState::kInit: {
+            // T1: baseline accepted once the box has held a stable, upright shape for
+            // upright_confirm_frames consecutive frames. Until this fires the track never alarms.
+            float r = (t.h > 0.0f) ? t.w / t.h : 0.0f;
+            bool ratio_ok = r < tuning_.upright_max_ratio;
+            bool height_stable_ok =
+                t.h_ref > 0.0f && std::fabs(t.h - t.h_ref) <= tuning_.upright_h_tolerance * t.h_ref;
+            bool height_frac_ok = t.h > tuning_.upright_min_h_frac_of_frame * tuning_.frame_h;
+
+            if (ratio_ok && height_stable_ok && height_frac_ok) {
+                t.upright_confirm_count++;
+            } else {
+                t.upright_confirm_count = 0;
+            }
+
+            if (t.upright_confirm_count >= tuning_.upright_confirm_frames) {
+                t.has_baseline = true;
+                EnterState(t, PostureState::kUpright, now_ms);
+                break;
+            }
+
+            // T1b: provisional-baseline descent. A person can enter the detector's view ALREADY
+            // falling -- Sep 16 round 4: a 3.2s blackout killed the confirmed track mid-approach,
+            // the person reappeared 480ms before impact, and the replacement track sat in kInit
+            // through a descent observed on 8 polls out of 8. T1 cannot fire during a collapse (it
+            // wants a *stable* height), so without this edge such a fall is structurally
+            // unreachable -- no tuning value rescues it.
+            //
+            // h_ref here is a one-frame guess, not a learned baseline, so the seed box must have
+            // looked like a standing person (born_upright) before we will believe a collapse
+            // measured against it. has_baseline stays false deliberately: association must keep
+            // treating this track as the hypothesis it is, and must keep losing box-contention
+            // ties to genuinely confirmed tracks.
+            //
+            // This does not weaken the alarm gates. Everything that makes kGroundUnconfirmed->T11
+            // trustworthy -- ballisticity, pause_count, the ground duty cycle, min_classify_h_ref
+            // -- lives downstream and is untouched; T1's own job is rejecting *stationary*
+            // spurious boxes, which cannot pass descent_sig or peak_norm_vel anyway.
+            if (t.born_upright && f.descent_sig) {
+                EnterState(t, PostureState::kDescending, now_ms);
+            }
+            break;
+        }
+
+        case PostureState::kUpright: {
+            if (f.descent_sig) {  // T2
+                EnterState(t, PostureState::kDescending, now_ms);
+            }
+            break;
+        }
+
+        case PostureState::kDescending: {
+            // Accumulate the descent's OBSERVED duration, capping each inter-frame gap: this
+            // function only runs on frames where the track was actually matched, so an uncapped
+            // delta would silently bill a detector blackout to the fall. See max_gap_counted_ms.
+            uint32_t gap = now_ms - t.descent_last_sample_ms;
+            t.descent_observed_ms += (gap > tuning_.max_gap_counted_ms) ? tuning_.max_gap_counted_ms : gap;
+            t.descent_last_sample_ms = now_ms;
+
+            // T3: track the peak descent speed and count distinct mid-fall pauses (a "stall run"
+            // reaching 2 frames counts once, so a long pause doesn't inflate pause_count).
+            float norm_vel = std::max(f.v_cy_n, -f.v_h_n);
+            t.peak_norm_vel = std::max(t.peak_norm_vel, norm_vel);
+            bool stalled = std::fabs(f.v_cy_n) < tuning_.stall_v_n_max;
+            if (stalled) {
+                t.stall_frames++;
+                if (t.stall_frames == 2) t.pause_count++;
+            } else {
+                t.stall_frames = 0;
+            }
+
+            if (f.is_upright) {
+                t.upright_streak++;
+            } else {
+                t.upright_streak = 0;
+            }
+            if (t.upright_streak >= tuning_.recovery_upright_streak) {  // T4
+                EnterState(t, PostureState::kUpright, now_ms);
+                break;
+            }
+
+            if (f.is_low && std::fabs(f.v_cy_n) < tuning_.low_transient_v_cy_n_max) {
+                t.low_confirm_count++;
+            } else {
+                t.low_confirm_count = 0;
+            }
+            if (t.low_confirm_count >= tuning_.low_transient_confirm_frames) {  // T5
+                EnterState(t, PostureState::kLowTransient, now_ms);
+                break;
+            }
+
+            if (f.is_ground) {
+                t.ground_confirm_count++;
+            } else {
+                t.ground_confirm_count = 0;
+            }
+            if (t.ground_confirm_count >= tuning_.ground_confirm_frames) {  // T6
+                t.was_ballistic = ComputeBallistic(t);
+                EnterState(t, PostureState::kGroundUnconfirmed, now_ms);
+                break;
+            }
+
+            if (now_ms - t.descent_start_ms > tuning_.descending_forced_exit_ms) {  // T7
+                if (f.is_ground) {
+                    t.was_ballistic = ComputeBallistic(t);
+                    EnterState(t, PostureState::kGroundUnconfirmed, now_ms);
+                } else if (f.is_low) {
+                    EnterState(t, PostureState::kLowTransient, now_ms);
+                } else {
+                    EnterState(t, PostureState::kUpright, now_ms);
+                }
+            }
+            break;
+        }
+
+        case PostureState::kLowTransient: {
+            if (f.is_upright) {
+                t.upright_streak++;
+            } else {
+                t.upright_streak = 0;
+            }
+            if (t.upright_streak >= tuning_.recovery_upright_streak) {  // T8
+                EnterState(t, PostureState::kUpright, now_ms);
+                break;
+            }
+            if (f.descent_sig) {  // T9: fall-from-seated re-enters the measured descent path
+                EnterState(t, PostureState::kDescending, now_ms);
+            }
+            break;
+        }
+
+        case PostureState::kGroundUnconfirmed: {
+            t.window_frames++;
+            if (f.is_ground) t.ground_frames++;
+
+            if (f.is_upright) {
+                t.upright_streak++;
+            } else {
+                t.upright_streak = 0;
+            }
+
+            bool expired = (now_ms - t.ground_enter_ms) >= tuning_.ground_confirm_ms;
+
+            if (!expired && t.upright_streak >= tuning_.recovery_upright_streak) {  // T10: crouch rejection
+                EnterState(t, PostureState::kUpright, now_ms);
+                break;
+            }
+
+            if (expired) {
+                float duty = t.window_frames > 0 ? static_cast<float>(t.ground_frames) / t.window_frames : 0.0f;
+                bool sustained_ballistic_ground = (duty >= tuning_.ground_frames_duty_min) && t.was_ballistic;
+
+                if (sustained_ballistic_ground) {  // T11
+                    bool classify_ok = t.h_ref >= tuning_.min_classify_h_ref;
+                    EnterState(t, PostureState::kFallConfirmed, now_ms);
+                    if (classify_ok) {
+                        FireAlert(t, "ground_confirmed", now_ms);
+                    } else {
+                        LogSuppressed(t, "min_h_ref", now_ms);
+                    }
+                } else {
+                    // Everything else at expiry -- low duty (flickery ground pose) or a controlled,
+                    // non-ballistic descent -- sinks to the benign lying state. T14 is the backstop
+                    // for a slow syncopal collapse that never looked ballistic.
+                    EnterState(t, PostureState::kLyingBenign, now_ms);
+                    LogSuppressed(t, "controlled_descent", now_ms);
+                }
+            }
+            break;
+        }
+
+        case PostureState::kLyingBenign: {
+            if (f.is_upright) {
+                t.upright_streak++;
+            } else {
+                t.upright_streak = 0;
+            }
+            if (t.upright_streak >= tuning_.recovery_upright_streak) {  // T13
+                EnterState(t, PostureState::kUpright, now_ms);
+                break;
+            }
+
+            // Immobility restarts the long-lie timer -- a person shifting position is not the
+            // "immobile on the floor" case T14 exists to catch.
+            bool moving = std::fabs(f.v_cy_n) >= tuning_.lying_immobile_v_n_max ||
+                          std::fabs(f.v_h_n) >= tuning_.lying_immobile_v_n_max;
+            if (moving) t.lying_since_ms = now_ms;
+
+            if (now_ms - t.lying_since_ms > tuning_.lying_benign_escalate_ms) {  // T14
+                bool classify_ok = t.h_ref >= tuning_.min_classify_h_ref;
+                EnterState(t, PostureState::kFallConfirmed, now_ms);
+                if (classify_ok) {
+                    FireAlert(t, "long_lie", now_ms);
+                } else {
+                    LogSuppressed(t, "min_h_ref", now_ms);
+                }
+            }
+            break;
+        }
+
+        case PostureState::kFallConfirmed: {
+            if (f.is_upright) {
+                t.upright_streak++;
+            } else {
+                t.upright_streak = 0;
+            }
+            if (t.upright_streak >= tuning_.fall_confirmed_recovery_streak) {  // T15
+                t.alerted = false;
+                EnterState(t, PostureState::kUpright, now_ms);
+            }
+            break;
+        }
+    }
+}
+
+void PostureTracker::ResolveZombie(TrackedPerson& t, uint32_t now_ms) {
+    bool ballistic = (t.zombie_from_state == PostureState::kGroundUnconfirmed)
+                          ? t.was_ballistic
+                          : ComputeBallistic(t);
+
+    if (ballistic) {
+        // "went down fast, then the detector lost them" is a fall, not a non-event -- person
+        // detectors collapse in confidence once a body goes prone, so dropout right after a
+        // ballistic descent is itself the confirmation signal.
+        if (event_cb_) event_cb_(event_ctx_, now_ms, t, t.state, PostureState::kFallConfirmed);
+        bool classify_ok = t.h_ref >= tuning_.min_classify_h_ref;
+        if (classify_ok) {
+            FireAlert(t, "zombie_dropout", now_ms);
+        } else {
+            LogSuppressed(t, "min_h_ref", now_ms);
+        }
+    } else {
+        if (event_cb_) event_cb_(event_ctx_, now_ms, t, t.state, PostureState::kInit);
+    }
+    KillTrack(t);
+}
+
+void PostureTracker::Update(const BoxObservation* boxes, size_t count, uint32_t now_ms) {
+    size_t consider = count > static_cast<size_t>(kMaxTrackedPeople) ? static_cast<size_t>(kMaxTrackedPeople) : count;
+
+    int assigned[kMaxTrackedPeople];
+    Associate(boxes, consider, now_ms, assigned);
+
+    for (size_t i = 0; i < consider; i++) {
+        int ti = assigned[i];
+        if (ti >= 0) {
+            TrackedPerson& t = tracks_[ti];
+            t.is_zombie = false;
+            UpdateTrackObservation(t, boxes[i], now_ms);
+            UpdateBaseline(t, now_ms);
+            Features f = ComputeFeatures(t);
+            t.last_features = f;
+            UpdatePosture(t, f, now_ms);
+        } else {
+            CreateTrack(boxes[i], now_ms);
+        }
+    }
+
+    for (int ti = 0; ti < kMaxTrackedPeople; ti++) {
+        TrackedPerson& t = tracks_[ti];
+        if (!t.active) continue;
+        if (t.last_seen_ms == now_ms) continue;  // matched this frame, above
+
+        if (t.is_zombie) {
+            if (now_ms - t.zombie_started_ms >= tuning_.zombie_expiry_ms) {
+                ResolveZombie(t, now_ms);
+            }
+            continue;
+        }
+
+        t.frames_until_untracked++;
+        if (t.frames_until_untracked > tuning_.max_missing_frames) {
+            if (t.state == PostureState::kDescending || t.state == PostureState::kGroundUnconfirmed ||
+                t.state == PostureState::kUpright) {
+                // Detector confidence collapses on prone bodies -- hold the track as a zombie
+                // instead of deleting the in-progress confirmation evidence. kUpright is included
+                // because dropout can hit right at a fall's onset, before descent_sig has had a
+                // frame to fire: killing the track there would discard an established baseline
+                // (has_baseline, from T1) for no reason other than a momentary miss, forcing a
+                // fresh 10-frame re-confirmation right as a fall is starting. ComputeBallistic()
+                // naturally resolves a kUpright zombie as non-ballistic (peak_norm_vel is 0 here),
+                // so this cannot fire a false alarm on its own -- it only preserves the baseline
+                // for the reappearing box to be classified against.
+                t.is_zombie = true;
+                t.zombie_started_ms = now_ms;
+                t.zombie_from_state = t.state;
+            } else {
+                KillTrack(t);
+            }
+        }
+    }
+}
